@@ -1,41 +1,3 @@
-"""
-Finds an optimized snarkmaker recipe.
-
-The basic snarkmaker recipe was compiled with this strategy:
-1. Use a recipe to turn a target block into a target block + offset block.
-   The offset block will be the target block after the snark turns the
-   glider stream.
-2. Use a recipe to move the target block to line up with the output block.
-3. Use a recipe to duplicate the target block into a
-   zero-degree block and a slow salvo target block.
-4. Use a recipe to pull the target block back.
-5. Send 90 recipes which turn the block into a zero degree
-   glider and back into a block. The 90 zero degree gliders hit
-   the zero-degree elbow and turn it into a snark.
-6. Remove the zero-degree elbow
-7. Push back the offset elbow far enough that you could run the
-   snarkmaker recipe again.
-
-This can be made much more efficient.
-- There is a known 73 glider single-sided recipe for
-  the snark, instead of 90.
-- We don't need to return to a block after each recipe.
-  We can just run a search from some random mess to the next
-  output glider, then the next, etc.
-
-This script will run a search that fuses all stages of
-the snarkmaker recipe. Starting from a block, it will
-search for a sequence of gliders that results in an offset
-block, with some random ash as the new target. Given an
-offset block, there are two possible positions of the snark
-which result in a pi explosion in different directions.
-
-The single sided recipe gives us a guide for how close our
-pattern is to making a snark -- if we have a known intermediate,
-then we know how many slow gliders it will take to complete the
-snark from there. We can use that to guide our search.
-"""
-
 from collections import defaultdict
 import lifelib
 from dataclasses import dataclass, field
@@ -55,6 +17,7 @@ import multiprocessing
 import itertools
 import more_itertools
 import functools
+from speedometer import Speedometer
 
 sess = lifelib.load_rules("b3s23")
 lt = sess.lifetree()
@@ -145,7 +108,6 @@ o$8006bo125$8130bo$8129b2o$8129bobo126$8262bo$8261b2o$8261bobo126$
 """
 )
 
-
 def preprocess_snark_recipe(snark_recipe):
     blocks = lt.pattern("")
     gliders = []
@@ -183,19 +145,66 @@ def preprocess_snark_recipe(snark_recipe):
         # snark reflects will be 0.
         recipe.append((y - x - snark_glider_offset, phase))
 
-    (blocks_x, blocks_y, _, _) = blocks.getrect()
-    blocks_depth_offset = blocks_x + blocks_y
-
-    return recipe, snark_glider_offset, blocks, blocks_depth_offset
+    return recipe, snark_glider_offset, blocks
 
 
 # recipe is the sequence of glider lanes and phases
 # snark_glider_offset is the x offset to make the snark input
 #   lane equal 0
 # blocks is the initial elbow
-# blocks_depth_offset is the offset to make the starting elbow
+# elbow_depth_offset is the offset to make the starting elbow
 #   block depth equal 0
-recipe, snark_glider_offset, blocks, blocks_depth_offset = preprocess_snark_recipe(snark_recipe_73)
+recipe, snark_glider_offset, blocks = preprocess_snark_recipe(snark_recipe_73)
+
+
+def mk_glider(lane, delay):
+    """Makes a glider with the given
+    lane and generations of delay"""
+    offset = (delay + 3) // 4
+    shift = snark_glider_offset + lane
+    rem = (4 - delay % 4) % 4
+    return canonical_glider[rem](offset - shift + (shift // 2), offset + (shift // 2))
+
+def offset_based_on_glider(p):
+    """Removes the glider in the SPEBOE pattern
+    and offsets the pattern based on the standard
+    glider
+    """
+    standard_glider = mk_glider(0, 0)
+    g = p.match(standard_glider, halo=halo)
+    (x, y, _, _) = g.getrect()
+    return (p - g.convolve(standard_glider))(-x, -y)
+
+PI_BLOCKS = list(
+    map(
+        offset_based_on_glider,
+        [lt.pattern("2o$2o2b3o$4bo$5bo!"), lt.pattern("2o$2o3$3o$o$bo!")],
+    )
+)
+
+def find_elbow_depth_offset():
+    (blocks_x, blocks_y, _, _) = PI_BLOCKS[0].getrect()
+    return blocks_x + blocks_y
+
+elbow_depth_offset = find_elbow_depth_offset()
+print('elbow depth offset', elbow_depth_offset)
+
+def find_pattern_flip_offset():
+    option1 = PI_BLOCKS[0] + mk_glider(0, 0) + mk_glider(0, 97)
+    option1 = option1[1024]
+    option2 = PI_BLOCKS[1] + mk_glider(0, 0) + mk_glider(0, 97)
+    option2 = option2[1024]('swap_xy')
+
+    (x1, y1, _, _) = option1.getrect()
+    (x2, y2, _, _) = option2.getrect()
+
+    return (x1 - x2, y1 - y2)
+
+pattern_flip_offset = find_pattern_flip_offset()
+
+def flip_pattern_to_other_side(pattern):
+    """Flips the pattern as if it started with the other pi block"""
+    return pattern.transform('swap_xy')(pattern_flip_offset[0], pattern_flip_offset[1])
 
 EMPTY = lt.pattern()
 
@@ -281,15 +290,6 @@ def recipe_str(recipe):
     for lane, phase in recipe:
         res.append(f"{lane}{'a' if phase else 'b'}")
     return ",".join(res)
-
-
-def mk_glider(lane, delay):
-    """Makes a glider with the given
-    lane and generations of delay"""
-    offset = (delay + 3) // 4
-    shift = snark_glider_offset + lane
-    rem = (4 - delay % 4) % 4
-    return canonical_glider[rem](offset - shift + (shift // 2), offset + (shift // 2))
 
 
 def reconstruct(recipe, spacing):
@@ -631,20 +631,6 @@ def try_to_save_gliders(recipe_cache, min_lane=-40, max_lane=40):
                         print("REDISCOVERED")
 
 
-"""
-Scoring criteria ideas:
-- If there is a partial match for a known precursor, multiply the
-  probabilities of the remaining pieces.
-- Weight for known precursor: (1+epsilon)^(total - slow gliders)
-- Offset block distance
-- Recipe length (generations)
-- Recipe envelope depth (allow creating another snark as close as possible)
-- Separation between the zero-degree elbow and precursor
-- Zero-degree elbow components not behind precursor
-- Zero-degree elbow population
-"""
-
-
 @dataclass(eq=True, unsafe_hash=True)
 class PatternRef:
     """
@@ -816,29 +802,7 @@ def single_channel_stream(distances, lane=0):
         total_distance += d
     return p
 
-
-def offset_based_on_glider(p):
-    """Removes the glider in the SPEBOE pattern
-    and offsets the pattern based on the standard
-    glider
-    """
-    standard_glider = mk_glider(0, 0)
-    g = p.match(standard_glider, halo=halo)
-    (x, y, _, _) = g.getrect()
-    return (p - g.convolve(standard_glider))(-x, -y)
-
-
-PI_BLOCKS = list(
-    map(
-        offset_based_on_glider,
-        [lt.pattern("2o$2o2b3o$4bo$5bo!"), lt.pattern("2o$2o3$3o$o$bo!")],
-    )
-)
-
-print([x.getrect() for x in PI_BLOCKS])
-
 block_pattern = lt.pattern("2o$2o!")
-
 
 def mk_glider_interaction_envelopes():
     """Makes a set of patterns showing the envelope of
@@ -891,33 +855,6 @@ def optimized_stream_simulation(stream):
     pattern, skipped = just_before_interaction_recursive(total_gens, stream[0:-1])
     pattern = pattern + mk_glider(0, total_gens - skipped + stream[-1])
     return pattern[total_gens - skipped + stream[-1]]
-
-
-class Speedometer:
-    def __init__(self, interval_s):
-        self.n_finished = 0
-        self.last_time = time.monotonic()
-        self.begin_time = self.last_time
-        self.n_finished_since = 0
-        self.interval = interval_s
-
-    def tick(self, n=1):
-        now = time.monotonic()
-        self.n_finished += n
-        self.n_finished_since += n
-        return now - self.last_time > 10
-
-    def get_current_speed_and_reset(self):
-        now = time.monotonic()
-        result = self.n_finished_since / (now - self.last_time)
-        self.n_finished_since = 0
-        self.last_time = now
-        return result
-
-    def overall_speed(self):
-        now = time.monotonic()
-        return self.n_finished / (now - self.begin_time)
-
 
 def recursive_priority_process_wrapper(queue, pipe, f):
     while True:
@@ -987,7 +924,6 @@ class PendingTracker:
         if len(self.pending_heap):
             return self.pending_heap[0][0]
         return float("inf")
-
 
 def recursive_priority_imap_unordered(fn, initial_items, n_processes=20):
     """Given a function and a list of (priority, data) pairs, applies
@@ -1123,24 +1059,50 @@ def offset_snark_for_elbow(elbow_digest, depth):
             return None
         return r + depth // 2
 
-stream = single_channel_stream((0, 122, 160, 144, 199, 98, 90, 102, 109, 91))
-print(write_life_history(
-    stream,
-    white = PI_BLOCKS[0]
-))
+@dataclass
+class PatternComponent:
+    digest: int
+    x: int
+    y: int
+    w: int
+    h: int
 
-random_elbow = lt.pattern('b2o$o2bo$o2bo$b2o!')(-10, 20)
-(rx, ry, rw, rh) = random_elbow.getrect()
-random_elbow_depth = rx + ry + rw + rh - blocks_depth_offset
-random_elbow_lane = rx - ry - snark_glider_offset
-print(random_elbow_lane, random_elbow_depth)
-diag_offs = offset_snark_for_elbow(random_elbow.digest(), random_elbow_depth)
-print(diag_offs)
-print(write_life_history(
-    green=mk_glider(0, 500),
-    white=snark(diag_offs, diag_offs) + random_elbow,
-    red=blocks,
-))
+    def lane(self):
+        return max(
+            self.x - self.y - snark_glider_offset,
+            (self.x + self.w) - (self.y + self.h) - snark_glider_offset,
+            key=abs
+        )
+    
+    def depth(self):
+        return self.x + self.y + self.w + self.h - elbow_depth_offset
+    
+    def offset_elbow(self):
+        if self.digest not in offset_elbows:
+            return None
+        return offset_snark_for_elbow(self.digest, self.depth())
+
+def extract_offset_elbow(components: List[PatternComponent]):
+    extreme_lane = 0
+    extreme_component = None
+    for c in components:
+        lane = c.lane()
+        if abs(lane) >= abs(extreme_lane):
+            extreme_lane = lane
+            extreme_component = c
+    if extreme_component is None:
+        return None
+    offset = extreme_component.offset_elbow()
+    if offset is None:
+        return None
+    return extreme_component, extreme_lane, offset
+
+def score_offset_elbow(pattern):
+    components = [PatternComponent(c.digest(), *c.getrect()) for c in pattern.components()]
+    offset_elbow = extract_offset_elbow(components)
+    if offset_elbow is None:
+        return 0
+    extreme_component, extreme_lane, offset = offset_elbow
 
 def find_p2_output(job, queue):
     initial_gens = sum(job.stream)
@@ -1166,12 +1128,11 @@ def find_p2_output(job, queue):
         end_pattern2 = end_pattern[2]
 
         if end_pattern == end_pattern2:
-            # the pattern settles into a p1 or p2. It's a valid
+            # the pattern settles into a p1 or p2. It could be a valid
             # result! We need to get statistics about it for scoring.
             lanes = []
-            depths = []
+            depths = {}
             for c in end_pattern.components():
-                # We want to score the 
                 (x, y, w, h) = c.getrect()
                 is_pi_equivalent = c.digest() in offset_elbows
                 lanes.append(
@@ -1185,11 +1146,8 @@ def find_p2_output(job, queue):
                         c
                     )
                 )
-                depths.append((
-                    x + w + y + h,
-                    is_pi_equivalent,
-                    c
-                ))
+                depths[c] = x + w + y + h
+
             if len(lanes) > 1:
                 lanes.sort(key=lambda x: abs(x[0]))
                 (max_lane, is_pi_equivalent) = lanes[-1]
