@@ -17,8 +17,8 @@ import functools
 from speedometer import Speedometer
 from font import write_text
 from lifetree import lt
+from gliders import canonical_glider
 
-canonical_glider = lt.pattern("ooo$o$bo!")
 halo = lt.pattern("3o$3o$3o!")
 
 # Snark slow salvo recipe
@@ -56,6 +56,7 @@ o$8006bo125$8130bo$8129b2o$8129bobo126$8262bo$8261b2o$8261bobo126$
 9419b2o$9418b2o$9420bo!
 """
 )
+
 
 def preprocess_snark_recipe(snark_recipe):
     blocks = lt.pattern("")
@@ -114,6 +115,7 @@ def mk_glider(lane, delay):
     rem = (4 - delay % 4) % 4
     return canonical_glider[rem](offset - shift + (shift // 2), offset + (shift // 2))
 
+
 def offset_based_on_glider(p):
     """Removes the glider in the SPEBOE pattern
     and offsets the pattern based on the standard
@@ -124,6 +126,7 @@ def offset_based_on_glider(p):
     (x, y, _, _) = g.getrect()
     return (p - g.convolve(standard_glider))(-x, -y)
 
+
 PI_BLOCKS = list(
     map(
         offset_based_on_glider,
@@ -131,31 +134,38 @@ PI_BLOCKS = list(
     )
 )
 
+
 def find_elbow_depth_offset():
     (blocks_x, blocks_y, _, _) = PI_BLOCKS[0].getrect()
     return blocks_x + blocks_y
 
+
 elbow_depth_offset = find_elbow_depth_offset()
-print('elbow depth offset', elbow_depth_offset)
+print("elbow depth offset", elbow_depth_offset)
+
 
 def find_pattern_flip_offset():
     option1 = PI_BLOCKS[0] + mk_glider(0, 0) + mk_glider(0, 97)
     option1 = option1[1024]
     option2 = PI_BLOCKS[1] + mk_glider(0, 0) + mk_glider(0, 97)
-    option2 = option2[1024]('swap_xy')
+    option2 = option2[1024]("swap_xy")
 
     (x1, y1, _, _) = option1.getrect()
     (x2, y2, _, _) = option2.getrect()
 
     return (x1 - x2, y1 - y2)
 
+
 pattern_flip_offset = find_pattern_flip_offset()
+
 
 def flip_pattern_to_other_side(pattern):
     """Flips the pattern as if it started with the other pi block"""
-    return pattern.transform('swap_xy')(pattern_flip_offset[0], pattern_flip_offset[1])
+    return pattern.transform("swap_xy")(pattern_flip_offset[0], pattern_flip_offset[1])
+
 
 EMPTY = lt.pattern()
+
 
 def write_life_history(
     green=EMPTY,  # on
@@ -230,8 +240,10 @@ probabilities = {
     lt.pattern("2o$obo$2bo$2b2o!").octodigest(): math.log(1 / 6407),  # eater 1
 }
 
+
 def get_pattern_frequency(pattern: PatternRef):
-    return probabilities.get(pattern.octodigest, float('-inf'))
+    return probabilities.get(pattern.octodigest, float("-inf"))
+
 
 def recipe_str(recipe):
     """Writes the recipe as a string"""
@@ -249,14 +261,8 @@ def reconstruct(recipe, spacing):
     return start
 
 
-def one_by_one(recipe):
-    pattern = blocks
-    for lane, phase in recipe:
-        pattern = pattern + mk_glider(lane, 400 - phase)
-        pattern = pattern[512]
-    return pattern
-
 snark = reconstruct(recipe, 100)[50000]
+
 
 @cache
 def recipe_from_json(so_far, remaining):
@@ -313,7 +319,7 @@ class Recipe:
         prob = 0
         for c in self.pattern.components():
             d = c.octodigest()
-            prob = prob + probabilities.get(d, float('-inf'))
+            prob = prob + probabilities.get(d, float("-inf"))
         return prob
 
 
@@ -347,7 +353,6 @@ class RecipeGraph:
         # a map of recipe to list of possible next recipes
         self.cache = {}
         self.end_target = reconstruct(recipe, 100)[30000]
-
 
     def explore(self, recipe: Recipe, depth=1, width=1):
         """
@@ -452,8 +457,8 @@ class RecipeGraph:
         return patt
 
     def all_recipes(self):
-        return set(list(self.cache.keys()) +
-            [item for l in self.cache.values() for item in l]
+        return set(
+            list(self.cache.keys()) + [item for l in self.cache.values() for item in l]
         )
 
     def to_json(self):
@@ -464,28 +469,28 @@ class RecipeGraph:
             recipe_ids[x] = next_id
             next_id += 1
         return {
-            'recipes': [{'id': recipe_ids[x], 'recipe': x.to_json()} for x in all_recipes],
-            'transitions': {
+            "recipes": [
+                {"id": recipe_ids[x], "recipe": x.to_json()} for x in all_recipes
+            ],
+            "transitions": {
                 recipe_ids[k]: [recipe_ids[r] for r in v] for k, v in self.cache.items()
-            }
+            },
         }
 
     def from_json(j):
         result = RecipeGraph()
-        recipes = j['recipes']
+        recipes = j["recipes"]
         recipes_by_id = {}
         for r in recipes:
-            id = r['id']
-            recipe = Recipe.from_json(r['recipe'])
+            id = r["id"]
+            recipe = Recipe.from_json(r["recipe"])
             recipes_by_id[id] = recipe
 
-        transitions = j['transitions']
+        transitions = j["transitions"]
         for k, vs in transitions.items():
             k = int(k)
             recipe = recipes_by_id[k]
-            result.cache[recipe] = [
-                recipes_by_id[v] for v in vs
-            ]
+            result.cache[recipe] = [recipes_by_id[v] for v in vs]
         return result
 
     def unique_patterns(self):
@@ -493,6 +498,7 @@ class RecipeGraph:
         for r in self.all_recipes():
             recipes_by_digest_xy[(r.digest, r.x, r.y)] = r
         return recipes_by_digest_xy.values()
+
 
 def relative_probability(pattern):
     """
@@ -529,7 +535,7 @@ def explore_common_precursors(recipe_cache, first_recipe, depth, width, max_pool
         )
 
     for i in range(0, depth):
-        print('Searching depth', i, file=sys.stderr, flush=True)
+        print("Searching depth", i, file=sys.stderr, flush=True)
         sample = sort_pool()[0:max_pool]
         for s in sample:
             next_results = recipe_cache.explore(s, depth=1, width=width)
@@ -538,19 +544,24 @@ def explore_common_precursors(recipe_cache, first_recipe, depth, width, max_pool
 
     print(recipe_cache.stamp_collection(include_glider=True).rle_string())
 
+
 def mk_recipe_graph():
     """Explores the RecipeGraph to find possible
     precursors for the snark, printing out the unique
     intermediate patterns."""
     recipe_cache = RecipeGraph()
-    explore_common_precursors(recipe_cache, first_recipe, depth=73, width=72, max_pool=65536)
+    explore_common_precursors(
+        recipe_cache, first_recipe, depth=73, width=72, max_pool=65536
+    )
     print(json.dumps([r.to_json() for r in recipe_cache.unique_patterns()]))
 
+
 print("Loading recipe intermediates", file=sys.stderr)
-with open('recipe-intermediates.json', 'r') as recipe_intermediates_file:
+with open("recipe-intermediates.json", "r") as recipe_intermediates_file:
     recipe_intermediates = [
         Recipe.from_json(r) for r in json.loads(recipe_intermediates_file.read())
     ]
+
 
 def try_to_save_gliders(recipe_cache, min_lane=-40, max_lane=40):
     """
@@ -607,11 +618,13 @@ class PatternRef:
     def octodigest(self):
         return self.pattern.octodigest()
 
+
 class PatternCache:
     """
     Caches patterns with a unique ID object based
     on the digest and position.
     """
+
     def __init__(self):
         self.next_id = 0
         # Map of (digest, x, y) to PatternRef
@@ -671,6 +684,7 @@ class PatternCache:
             r.force_keep[id] = r._set_id(pattern, id)
         r.next_id = j["next_id"]
 
+
 class ComponentSearch:
     """Class to help search for partial matches of
     recipes in glider results.
@@ -710,13 +724,16 @@ class ComponentSearch:
         in that recipe"""
         return self.recipe_to_components[recipe]
 
+
 pattern_cache = PatternCache()
 component_search = ComponentSearch(pattern_cache)
 for r in recipe_intermediates:
     component_search.add_recipe(r)
 
+
 def pattern_components(cache, pattern):
     return set(map(cache.id, pattern.components()))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -751,7 +768,9 @@ def single_channel_stream(distances, lane=0):
         total_distance += d
     return p
 
+
 block_pattern = lt.pattern("2o$2o!")
+
 
 def mk_glider_interaction_envelopes():
     """Makes a set of patterns showing the envelope of
@@ -804,6 +823,7 @@ def optimized_stream_simulation(stream):
     pattern, skipped = just_before_interaction_recursive(total_gens, stream[0:-1])
     pattern = pattern + mk_glider(0, total_gens - skipped + stream[-1])
     return pattern[total_gens - skipped + stream[-1]]
+
 
 def recursive_priority_process_wrapper(queue, pipe, f):
     while True:
@@ -874,6 +894,7 @@ class PendingTracker:
             return self.pending_heap[0][0]
         return float("inf")
 
+
 def recursive_priority_imap_unordered(fn, initial_items, n_processes=20):
     """Given a function and a list of (priority, data) pairs, applies
     fn to data in priority order across multiple processes. Yields
@@ -896,7 +917,8 @@ def recursive_priority_imap_unordered(fn, initial_items, n_processes=20):
             r, w = multiprocessing.Pipe()
             readers.append(r)
             p = multiprocessing.Process(
-                target=recursive_priority_process_wrapper, args=(pending_queue, w, fn),
+                target=recursive_priority_process_wrapper,
+                args=(pending_queue, w, fn),
             )
             processes.append(p)
             p.start()
@@ -920,10 +942,12 @@ def recursive_priority_imap_unordered(fn, initial_items, n_processes=20):
                 priority, args = id_to_args[id]
                 del id_to_args[id]
                 pending_tracker.mark_done(priority)
+
                 def queue(new_jobs=new_jobs):
                     for j in new_jobs:
                         heapq.heappush(local_queue, j)
                     send_tasks(pending_tracker.min_cost_pending() + 1)
+
                 yield (args, result, new_jobs, queue, pending_tracker, local_queue)
 
         for i in range(0, n_processes):
@@ -931,7 +955,6 @@ def recursive_priority_imap_unordered(fn, initial_items, n_processes=20):
         pending_queue.join()
         for p in processes:
             p.join()
-
 
 
 @dataclass(order=True)
@@ -966,35 +989,43 @@ before_hit_digests_seen = set()
 
 # Patterns that work as offset elbow to be used after
 # the snark.
-offset_elbows = set(lt.pattern(rle).digest() for rle in [
-    'oo$oo', # block
-    'boo$obbo$boo', # beehive horizontal
-    'bo$obo$obo$bo', # beehive vertical
-    '2o$obo$b2o!', # ship nw<->se
-    '2o$obo$bo!', # boat nw
-    'bo$obo$b2o!', # boat se
-    'b2o$o2bo$o2bo$b2o!', # pond
-])
+offset_elbows = set(
+    lt.pattern(rle).digest()
+    for rle in [
+        "oo$oo",  # block
+        "boo$obbo$boo",  # beehive horizontal
+        "bo$obo$obo$bo",  # beehive vertical
+        "2o$obo$b2o!",  # ship nw<->se
+        "2o$obo$bo!",  # boat nw
+        "bo$obo$b2o!",  # boat se
+        "b2o$o2bo$o2bo$b2o!",  # pond
+    ]
+)
 
 elbow_offsets_even = {
-    lt.pattern(rle).digest(): v for rle, v in {
-    'oo$oo': -20, # block
-    'boo$obbo$boo': -17, # beehive horizontal
-    'bo$obo$obo$bo': -21, # beehive vertical
-    '2o$obo$b2o!': -21, # ship nw<->se
-    '2o$obo$bo!': -21, # boat nw
-    'b2o$o2bo$o2bo$b2o!': -17, # pond
-}.items()}
+    lt.pattern(rle).digest(): v
+    for rle, v in {
+        "oo$oo": -20,  # block
+        "boo$obbo$boo": -17,  # beehive horizontal
+        "bo$obo$obo$bo": -21,  # beehive vertical
+        "2o$obo$b2o!": -21,  # ship nw<->se
+        "2o$obo$bo!": -21,  # boat nw
+        "b2o$o2bo$o2bo$b2o!": -17,  # pond
+    }.items()
+}
 elbow_offsets_odd = {
-    lt.pattern(rle).digest(): v for rle, v in {
-    'oo$oo': -16,
-    'boo$obbo$boo': None,  # beehive horizontal
-    'bo$obo$obo$bo': None, # beehive vertical
-    '2o$obo$b2o!': None, # ship nw<->se
-    '2o$obo$bo!': None, # boat nw
-    'bo$obo$b2o!': -16, # boat se
-    'b2o$o2bo$o2bo$b2o!': -21 # pond
-}.items()}
+    lt.pattern(rle).digest(): v
+    for rle, v in {
+        "oo$oo": -16,
+        "boo$obbo$boo": None,  # beehive horizontal
+        "bo$obo$obo$bo": None,  # beehive vertical
+        "2o$obo$b2o!": None,  # ship nw<->se
+        "2o$obo$bo!": None,  # boat nw
+        "bo$obo$b2o!": -16,  # boat se
+        "b2o$o2bo$o2bo$b2o!": -21,  # pond
+    }.items()
+}
+
 
 def offset_snark_for_elbow(elbow_digest, depth):
     if depth % 2 == 0:
@@ -1008,6 +1039,7 @@ def offset_snark_for_elbow(elbow_digest, depth):
             return None
         return r + depth // 2
 
+
 @dataclass
 class PatternComponent:
     digest: int
@@ -1020,16 +1052,17 @@ class PatternComponent:
         return max(
             self.x - self.y - snark_glider_offset,
             (self.x + self.w) - (self.y + self.h) - snark_glider_offset,
-            key=abs
+            key=abs,
         )
-    
+
     def depth(self):
         return self.x + self.y + self.w + self.h - elbow_depth_offset
-    
+
     def offset_elbow(self):
         if self.digest not in offset_elbows:
             return None
         return offset_snark_for_elbow(self.digest, self.depth())
+
 
 def extract_offset_elbow(components: List[PatternComponent]):
     extreme_lane = 0
@@ -1046,12 +1079,16 @@ def extract_offset_elbow(components: List[PatternComponent]):
         return None
     return extreme_component, extreme_lane, offset
 
+
 def score_offset_elbow(pattern):
-    components = [PatternComponent(c.digest(), *c.getrect()) for c in pattern.components()]
+    components = [
+        PatternComponent(c.digest(), *c.getrect()) for c in pattern.components()
+    ]
     offset_elbow = extract_offset_elbow(components)
     if offset_elbow is None:
         return 0
     extreme_component, extreme_lane, offset = offset_elbow
+
 
 def find_p2_output(job, queue):
     initial_gens = sum(job.stream)
@@ -1089,10 +1126,10 @@ def find_p2_output(job, queue):
                         max(
                             x - y - snark_glider_offset,
                             (x + w) - (y + h) - snark_glider_offset,
-                            key=abs
+                            key=abs,
                         ),
                         is_pi_equivalent,
-                        c
+                        c,
                     )
                 )
                 depths[c] = x + w + y + h
@@ -1154,13 +1191,16 @@ def find_p2_output(job, queue):
 
     return result
 
-starting_candidates = [
-    (0,)
-]
+
+starting_candidates = [(0,)]
 
 sys.exit(0)
 
 if __name__ == "__main__":
+    pass
+
+
+def search():
     speedo = Speedometer(interval_s=10)
     starting_jobs = [
         (
@@ -1180,7 +1220,7 @@ if __name__ == "__main__":
         new_jobs,
         queue,
         pending_tracker,
-        local_queue
+        local_queue,
     ) in recursive_priority_imap_unordered(
         find_p2_output, starting_jobs, n_processes=20
     ):
@@ -1219,7 +1259,7 @@ if __name__ == "__main__":
             )
 
         valid_new_jobs = [
-            (cost,job) for cost,job in new_jobs if job.stream in valid_new_streams
+            (cost, job) for cost, job in new_jobs if job.stream in valid_new_streams
         ]
         queue(valid_new_jobs)
 
