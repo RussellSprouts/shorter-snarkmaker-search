@@ -47,15 +47,15 @@ def flip_pattern_as_if_other_pi_block(pattern):
     opposite pi block."""
     return pattern("swap_xy", 1, 0)
 
+def test():
+    option1 = mk_glider(0, 0) + PI_BLOCKS[0]
+    option1 = option1[1024]
+    option2 = mk_glider(0, 0) + PI_BLOCKS[1]
+    option2 = option2[1024]
 
-option1 = mk_glider(0, 0) + PI_BLOCKS[0]
-option1 = option1[1024]
-option2 = mk_glider(0, 0) + PI_BLOCKS[1]
-option2 = option2[1024]
-
-if flip_pattern_as_if_other_pi_block(option2) != option1:
-    raise "flip pattern mismatch"
-
+    if flip_pattern_as_if_other_pi_block(option2) != option1:
+        raise "flip pattern mismatch"
+test()
 
 def extract_recipe_lanes(pattern):
     """Extracts a slow-salvo recipe from the given pattern.
@@ -103,12 +103,27 @@ def extract_recipe_lanes(pattern):
 
     last_glider, _ = recipe.pop()
 
-    return tuple((l - last_glider, p) for l, p in recipe), starting_block(
+    shifted = tuple((l - last_glider, p) for l, p in recipe)
+
+    for lane, phase in shifted:
+        if lane > 127 or lane < -128:
+            raise f"Not supported: Recipe contains a glider on {lane}, which is out of range of a signed byte"
+
+    return shifted, starting_block(
         last_glider, 0
     )
 
 
+def reconstruct(recipe, starting_block, spacing):
+    start = starting_block
+    for i, (lane, phase) in enumerate(recipe):
+        start = start + mk_glider(lane, spacing * 4 * (i + 1) - phase)
+
+    return start
+
+
 if __name__ == "__main__":
+    # Builds a snark with 73 gliders
     snark_recipe_73 = lt.pattern(
         """
         2o$2o63$68b3o$68bo$69bo126$195b3o$195bo$196bo125$336bo$335b2o$335bobo
@@ -141,11 +156,11 @@ if __name__ == "__main__":
         9419b2o$9418b2o$9420bo!
         """
     )
-    recipe, blocks = extract_recipe_lanes(snark_recipe_73)
+    recipe, starting_block = extract_recipe_lanes(snark_recipe_73)
 
-    print(recipe, blocks)
+    print(recipe, starting_block)
 
-    patt = blocks
+    patt = starting_block
     for i, (lane, phase) in enumerate(recipe):
         patt = patt + mk_glider(lane, 400 * i - phase)
 

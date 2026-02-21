@@ -6,6 +6,20 @@ import itertools
 
 from lifetree import lt
 
+MAX_SQLITE_INT = 2**63 - 1
+
+
+def digest_to_signed(digest):
+    if digest <= MAX_SQLITE_INT:
+        return digest
+    return int.from_bytes(int.to_bytes(digest, 8), signed=True)
+
+
+def digest_from_signed(digest):
+    if digest >= 0:
+        return digest
+    return int.from_bytes(int.to_bytes(digest, 8, signed=True))
+
 
 @dataclass
 class StartingPoint:
@@ -103,7 +117,9 @@ class Recipe:
 
     def glider_stream_to_bytes(gs):
         return bytes(
-            b for lane, phase in gs for b in (int.to_bytes(lane, signed=True), phase)
+            b
+            for lane, phase in gs
+            for b in (int.from_bytes(int.to_bytes(lane, signed=True)), phase)
         )
 
     def from_row(row):
@@ -111,7 +127,7 @@ class Recipe:
             id=row["id"],
             so_far=Recipe.glider_stream_from_bytes(row["so_far"]),
             remaining=Recipe.glider_stream_from_bytes(row["remaining"]),
-            digest=row["digest"],
+            digest=digest_from_signed(row["digest"]),
             x=row["x"],
             y=row["y"],
             rle_string=row["rle_string"],
@@ -287,8 +303,8 @@ class ProcessingDatabase:
                 (
                     result.stream + bytes((child.follow_up,)),
                     result.starting_point,
-                    child.digest,
-                    child.before_hit_digest,
+                    digest_to_signed(child.digest),
+                    digest_to_signed(child.before_hit_digest),
                     child.x,
                     child.y,
                     child.offset_block_lane,
@@ -308,12 +324,12 @@ class ProcessingDatabase:
 
         for id in self.conn.executemany(
             """DELETE FROM queue WHERE id = ? RETURNING id""",
-            [(job.id,) for job, _ in results]
+            [(job.id,) for job, _ in results],
         ):
             print(f"Deleted {id['id']}")
 
-    def add_recipe_intermediates(self, recipes: Recipe):
-        self.conn.execute(
+    def add_recipe_intermediates(self, recipes: List[Recipe]):
+        self.conn.executemany(
             """
             INSERT INTO recipe_intermediates (so_far, remaining, digest, rle_string, x, y)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -322,7 +338,7 @@ class ProcessingDatabase:
                 (
                     Recipe.glider_stream_to_bytes(recipe.so_far),
                     Recipe.glider_stream_to_bytes(recipe.remaining),
-                    recipe.digest,
+                    digest_to_signed(recipe.digest),
                     recipe.rle_string,
                     recipe.x,
                     recipe.y,
@@ -338,6 +354,7 @@ class ProcessingDatabase:
         self.conn.commit()
         self.conn.close()
 
+
 if __name__ == "__main__":
     filename = "new-db.sqlite"
     db = ProcessingDatabase(filename)
@@ -345,30 +362,39 @@ if __name__ == "__main__":
     queue_stats = db.queue_stats()
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
 
+    print(f"Database contains {len(db.recipe_intermediates)} recipe intermediates")
+
     for job in db.pop_queue(1):
         print(job)
-        db.save_results([(job, StreamJobResult(
-            starting_point=0,
-            stream=b'',
-            valid_children=[
-                StreamResult(
-                    follow_up=90,
-                    digest=123,
-                    before_hit_digest=456,
-                    x=0,
-                    y=0,
-                    offset_block_lane=100,
-                    lane_width=20,
-                    population=16,
-                    best_full_intermediate_match=None,
-                    best_partial_intermediate_match=None,
-                    intermediate_match_fraction=0,
-                    elbow_intermediate_depth_separation=0,
-                    elbow_intermediate_overlapping_population=0,
-                    max_depth=1
+        db.save_results(
+            [
+                (
+                    job,
+                    StreamJobResult(
+                        starting_point=0,
+                        stream=b"",
+                        valid_children=[
+                            StreamResult(
+                                follow_up=90,
+                                digest=123,
+                                before_hit_digest=456,
+                                x=0,
+                                y=0,
+                                offset_block_lane=100,
+                                lane_width=20,
+                                population=16,
+                                best_full_intermediate_match=None,
+                                best_partial_intermediate_match=None,
+                                intermediate_match_fraction=0,
+                                elbow_intermediate_depth_separation=0,
+                                elbow_intermediate_overlapping_population=0,
+                                max_depth=1,
+                            )
+                        ],
+                    ),
                 )
             ]
-        ))])
+        )
     db.commit()
 
     for results in db.conn.execute("""SELECT * FROM results"""):
