@@ -17,7 +17,7 @@ guide the search.
 
 ## Finding an offset elbow
 
-![Diagram showing offset block schematic](diagram1.svg)
+![Diagram showing offset block schematic](images/diagram1.svg)
 
 The first step of the search is to find an offset elbow. This is
 a block or equivalent still life that is far away on the lane axis.
@@ -36,7 +36,7 @@ more options for follow-up recipes once the snark is complete.
 
 ## Constructing the snark
 
-![Diagram showing snark building schematic](diagram2.svg)
+![Diagram showing snark building schematic](images/diagram2.svg)
 
 The original Snarkmaker recipe worked using a zero degree elbow.
 Using the library of composable recipes, an average of 25 gliders on lane 0
@@ -67,7 +67,7 @@ and increases our changes that we can clean up at the end.
   also consider partial matches weighted by the rarity of the missing components.
   
   For example, here are the first few steps of the recipe:
-  ![Diagram showing the first 5 gliders of the slow salvo snark recipe](snark-first-few-steps.png)
+  ![Diagram showing the first 5 gliders of the slow salvo snark recipe](images/snark-first-few-steps.png)
 
   However, the 73 glider recipe is actually a whole family of recipes -- at many
   points, we have options for which glider to send next.
@@ -76,14 +76,14 @@ and increases our changes that we can clean up at the end.
   grows into many possibilities. There are often separate areas of the constellation
   which we can make progress on independently. This gives our search more freedom
   to make progress at any given step.
-  ![Diagram showing a stamp collection of intermediate stages of possible snark recipe orderings](snark-recipe-options.png)
+  ![Diagram showing a stamp collection of intermediate stages of possible snark recipe orderings](images/snark-recipe-options.png)
 
   There are some precursors that are quite simple, such as this
   constellation of 2 traffic lights and a block. It normally takes 11 slow
   gliders to turn a block into this pattern, but it's conceivable that we
   could find this directly in our ash and skip ahead several stages.
 
-  ![alt text](snark-simple-precursor.png)
+  ![alt text](images/snark-simple-precursor.png)
 
   When we consider the "in-progress recipe" and "zero degree elbow ash cloud",
   it is relative to one of these intermediate precursors. Ash components which match
