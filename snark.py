@@ -21,54 +21,75 @@ if __name__ == "__main__":
     parser_recipe_intermediates = subcommand.add_parser('recipe-intermediates', description='Processes the input recipe to find intermediate stages')
     parser_recipe_intermediates.add_argument(
         '-i',
-        '--input_recipe',
+        '--input-recipe',
         help='Input rle/mc file for the recipe. The slow salvo gliders should travel NW and hit a block. There should be one extra glider at the end that defines lane 0.',
         type=pathlib.Path,
         required=True
     )
     parser_recipe_intermediates.add_argument(
         '-o',
-        '--output_db',
+        '--output-db',
         help='Output sqlite database file.',
         type=pathlib.Path,
         required=True,
     )
     parser_recipe_intermediates.add_argument(
         '-d',
-        '--search_depth',
+        '--search-depth',
         help='How many gliders deep to search from the initial block. -1 for the entire recipe.',
         default=-1,
         type=int
     )
     parser_recipe_intermediates.add_argument(
         '-w',
-        '--search_width',
+        '--search-width',
         help='The search tries to move a slice of future gliders to the present. Check slices of length 1 to search_width.',
         default=3,
         type=int
     )
     parser_recipe_intermediates.add_argument(
         '-n',
-        '--max_pool',
+        '--max-pool',
         type=int,
         default=2048,
         help='Maximum number of recipes to keep in the pool at each depth.'
     )
 
-    parser.add_argument(
-        "--target-depth",
-        default=2,
-        type=int,
-        help="How many steps to look ahead in the slow salvo recipe. A lucky reaction could theoretically do the work of multiple slow salvo gliders.",
+    parser_optimize = subcommand.add_parser('optimize', description='Optimizes the recipe.')
+    parser_optimize.add_argument(
+        '-r',
+        '--recipe-intermediates',
+        help='Database file of recipe-intermediates',
+        type=pathlib.Path,
+        required=True
     )
-
-    parser.add_argument(
-        "--salvo-size",
-        default=4,
+    parser_optimize.add_argument(
+        '-o',
+        '--output-db',
+        help='Output sqlite database file.',
         type=int,
-        help="How many gliders to send in each salvo to find",
+        required=True
     )
-
+    parser_optimize.add_argument(
+        '-n',
+        '--max-gens',
+        type=int,
+        help='Max number of generations to search',
+    )
+    parser_optimize.add_argument(
+        '-g',
+        '--gen-options',
+        type=str,
+        default='90-255',
+        help='Options for spacing of gliders in a stream. E.g. "74,75,78-255". Defaults to "90-255". Maximum 255.'
+    )
+    parser_optimize.add_argument(
+        '-l',
+        '--min-offset-block-lane',
+        type=int,
+        default=80,
+        help='Minimum offset for the offset block. (The block that will become the new elbow after the snark is created).'
+    )
     args = parser.parse_args()
 
     match args.command:
@@ -80,6 +101,8 @@ if __name__ == "__main__":
                 search_width=args.search_width,
                 max_pool=args.max_pool
             )
+        case 'optimize':
+            pass
 
 sys.exit(0)
 
