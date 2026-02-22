@@ -1,6 +1,8 @@
 import math
+from typing import Set
 
 from lifetree import lt
+from component_search import PatternRef
 
 # https://conwaylife.com/wiki/Most_common_objects_on_Catagolue
 # Very simple heuristic to see how unlikely a constellation
@@ -17,9 +19,18 @@ probabilities = {
     lt.pattern("2o$obo$2bo$2b2o!").octodigest(): math.log(1 / 6407),  # eater 1
 }
 
+NEGATIVE_INFINITY = float('-inf')
+
+def total_probability(patterns: Set[PatternRef]) -> float:
+    total = 0
+    for pattern in patterns:
+        total += get_pattern_frequency(pattern)
+        if total == NEGATIVE_INFINITY:
+            return NEGATIVE_INFINITY
+    return total
 
 def get_pattern_frequency(pattern: PatternRef):
-    return probabilities.get(pattern.octodigest, float("-inf"))
+    return probabilities.get(pattern.octodigest, NEGATIVE_INFINITY)
 
 def relative_probability(pattern):
     """

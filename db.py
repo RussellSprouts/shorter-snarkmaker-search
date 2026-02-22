@@ -74,13 +74,17 @@ class StreamResult:
     y: int
     offset_block_lane: int
     lane_width: int
-    population: int
-    best_full_intermediate_match: int
-    best_partial_intermediate_match: int
-    intermediate_match_fraction: float
-    elbow_intermediate_depth_separation: int
-    elbow_intermediate_overlapping_population: int
     max_depth: int
+    population: int
+
+    full_intermediate: int
+    full_intermediate_depth_separation: int
+    full_intermediate_overlapping_population: int
+
+    partial_intermediate: int
+    partial_intermediate_log_prob: float
+    partial_intermediate_depth_separation: int
+    partial_intermediate_overlapping_population: int
 
 
 @dataclass
@@ -104,6 +108,12 @@ class Recipe:
     x: int
     y: int
     rle_string: str
+
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("pattern", None)
+        return state
 
     @cached_property
     def pattern(self):
@@ -192,13 +202,15 @@ class ProcessingDatabase:
                 y INTEGER,
                 offset_block_lane INTEGER,
                 lane_width INTEGER,
+                max_depth INTEGER,
                 population INTEGER,
-                best_full_intermediate_match INTEGER REFERENCES recipe_intermediates(id),
-                best_partial_intermediate_match INTEGER REFERENCES recipe_intermediates(id),
-                intermediate_match_fraction REAL,
-                elbow_intermediate_depth_separation INTEGER,
-                elbow_intermediate_overlapping_population INTEGER,
-                max_depth INTEGER
+                full_intermediate INTEGER REFERENCES recipe_intermediates(id),
+                full_intermediate_depth_separation INTEGER,
+                full_intermediate_overlapping_population INTEGER,
+                partial_intermediate INTEGER REFERENCES recipe_intermediates(id),
+                partial_intermediate_log_prob REAL,
+                partial_intermediate_depth_separation INTEGER,
+                partial_intermediate_overlapping_population INTEGER
             )
             """
         )
@@ -239,36 +251,42 @@ class ProcessingDatabase:
 
         self.reset_in_progress_queue()
 
-        self.conn.commit()
-
         self.starting_points = {
             row["id"]: StartingPoint.from_row(row)
             for row in self.conn.execute("""SELECT * FROM starting_points""")
         }
 
+        self.reload_recipe_intermediates()
+
+        self.n_queued = sum(self.queue_stats().values())
+
+    def reload_recipe_intermediates(self):
         self.recipe_intermediates = {
             row["id"]: Recipe.from_row(row)
             for row in self.conn.execute("""SELECT * from recipe_intermediates""")
         }
-
     def pop_queue(self, max_cost, max_num_results=1000) -> List[StreamJob]:
-        return [
+        result = [
             StreamJob.from_row(row)
             for row in self.conn.execute(
                 """UPDATE queue
                    SET in_progress = 1
                    WHERE id in (
                      SELECT id FROM queue WHERE in_progress = 0 AND cost < ?
-                     ORDER BY cost
+                     ORDER BY cost ASC
                      LIMIT ?
                    )
                    RETURNING id, cost, starting_point, stream, follow_up_gen_limit, max_depth""",
                 (max_cost, max_num_results),
             )
         ]
+        if not result:
+            print([row['in_progress'] for row in self.conn.execute("""SELECT in_progress FROM queue""")])
+        return result
 
     def reset_in_progress_queue(self):
         self.conn.execute("""UPDATE queue SET in_progress = 0 WHERE in_progress = 1""")
+
 
     def queue_stats(self):
         return {
@@ -279,10 +297,12 @@ class ProcessingDatabase:
         }
 
     def push_queue(self, jobs):
+        self.n_queued += len(jobs)
         self.conn.executemany(
-            """INSERT INTO queue (cost, starting_point, stream, follow_up_gen_limit, max_depth) VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO queue (in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth) VALUES (?, ?, ?, ?, ?, ?)""",
             [
                 (
+                    0,
                     job.cost,
                     job.starting_point,
                     job.stream,
@@ -293,12 +313,15 @@ class ProcessingDatabase:
             ],
         )
 
-    def save_results(self, results: List[(StreamJob, StreamJobResult)]):
+
+    def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
+        print("Saving results", results)
+        self.n_queued -= len(results)
         self.conn.executemany(
             """
             INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, population, best_full_intermediate_match, best_partial_intermediate_match, intermediate_match_fraction, elbow_intermediate_depth_separation, elbow_intermediate_overlapping_population, max_depth)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, population, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -309,25 +332,26 @@ class ProcessingDatabase:
                     child.y,
                     child.offset_block_lane,
                     child.lane_width,
-                    child.population,
-                    child.best_full_intermediate_match,
-                    child.best_partial_intermediate_match,
-                    child.intermediate_match_fraction,
-                    child.elbow_intermediate_depth_separation,
-                    child.elbow_intermediate_overlapping_population,
                     child.max_depth,
+                    child.population,
+                    child.full_intermediate,
+                    child.full_intermediate_depth_separation,
+                    child.full_intermediate_overlapping_population,
+                    child.partial_intermediate,
+                    child.partial_intermediate_log_prob,
+                    child.partial_intermediate_depth_separation,
+                    child.partial_intermediate_overlapping_population,
                 )
                 for _, result in results
                 for child in result.valid_children
             ],
         )
 
-        for id in self.conn.executemany(
+        self.conn.executemany(
             """DELETE FROM queue WHERE id = ? RETURNING id""",
             [(job.id,) for job, _ in results],
-        ):
-            print(f"Deleted {id['id']}")
-
+        )
+        
     def add_recipe_intermediates(self, recipes: List[Recipe]):
         self.conn.executemany(
             """

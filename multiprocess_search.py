@@ -1,10 +1,10 @@
 import multiprocessing
 import heapq
-from typing import Callable
+from typing import Callable, Generator, List
 from multiprocessing import connection
 import sys
 
-from db import ProcessingDatabase, StreamJobResult, StreamResult
+from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
 
 
 def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
@@ -22,8 +22,8 @@ def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
                 return
             new_jobs = []
 
-            def add_to_queue(cost, data):
-                new_jobs.append((cost, data))
+            def add_to_queue(data):
+                new_jobs.append(data)
 
             res = f(args, queue=add_to_queue, shared_args=shared_args)
             pipe.send((id, "ok", res, new_jobs))
@@ -100,23 +100,24 @@ class MultiprocessSearch:
             self.processes.append(p)
             p.start()
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[tuple[StreamJob, StreamJobResult, List[StreamJob]]]:
         def send_tasks(max_val):
             if self.pending_queue.qsize() < 1000:
-                for task in db.pop_queue(max_val, 1000):
+                for task in self.db.pop_queue(max_val, 1000):
                     self.pending_tracker.mark_pending(task.cost)
                     self.id_to_args[self.next_id] = (task.cost, task)
                     self.pending_queue.put((self.next_id, task))
                     self.next_id += 1
-                db.commit()
+                self.db.commit()
 
-        stats = db.queue_stats()
+        stats = self.db.queue_stats()
         queued_costs = list(stats.keys())
         if len(queued_costs) == 0:
             print("Warning: queue is empty, not processing.", file=sys.stderr)
             return
 
         # start the first tasks.
+        print("Starting tasks", min(stats.keys()) + 1)
         send_tasks(min(stats.keys()) + 1)
 
         while self.pending_tracker.n_pending:
@@ -125,10 +126,10 @@ class MultiprocessSearch:
                 priority, args = self.id_to_args[id]
                 del self.id_to_args[id]
                 self.pending_tracker.mark_done(priority)
-                db.save_results([
+                self.db.save_results([
                     (args, result)
                 ])
-                db.commit()
+                self.db.commit()
 
                 yield (args, result, new_jobs)
 
@@ -145,30 +146,3 @@ class MultiprocessSearch:
         self.pending_queue.join()
         for p in self.processes:
             p.join()
-
-def process_and_do_nothing(job, queue, shared_args):
-    print("did job", job)
-    return StreamJobResult(
-        starting_point=0,
-        stream=b'',
-        valid_children=[
-            StreamResult(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-        ]
-    )
-
-if __name__ == "__main__":
-    db = ProcessingDatabase("new-db.sqlite")
-    print(f"Opened database.")
-    queue_stats = db.queue_stats()
-    print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
-
-    with MultiprocessSearch(process_and_do_nothing, (), db, 1) as search:
-        for (job, result, new_jobs) in search:
-            print(job, result)
-            search.queue(new_jobs)
-
-    print("Finished.")
-    for result in db.conn.execute("""SELECT * FROM queue"""):
-        print(result)
-    for result in db.conn.execute("""SELECT * FROM results"""):
-        print(result)

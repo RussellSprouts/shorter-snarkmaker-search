@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, List
+from typing import Any, Set
 import weakref
 from collections import defaultdict
 
@@ -26,6 +26,10 @@ class PatternRef:
     @cached_property
     def octodigest(self):
         return self.pattern.octodigest()
+    
+    @cached_property
+    def depth(self):
+        return sum(self.pattern.getrect())
 
 
 class PatternCache:
@@ -80,7 +84,7 @@ class ComponentSearch:
         for pr in components:
             self.component_to_recipe[pr].add(recipe)
 
-    def overlapping_recipes(self, components: List[PatternRef]):
+    def overlapping_recipes(self, components: Set[PatternRef]) -> Set[Recipe]:
         """Given a list of components, returns a map of
         recipe to set of components that are overlapping"""
         result = defaultdict(set)
@@ -90,7 +94,7 @@ class ComponentSearch:
                 result[r].add(c)
         return result
 
-    def recipe_components(self, recipe):
+    def recipe_components(self, recipe: Recipe) -> Set[PatternRef]:
         """Given a recipe, returns the set of components
         in that recipe"""
         return self.recipe_to_components[recipe]

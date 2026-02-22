@@ -10,5 +10,3 @@ def range_str_to_list(r):
             result.append(int(s))
     result.sort()
     return result
-
-print(range_str_to_list('74,75,78-255'))

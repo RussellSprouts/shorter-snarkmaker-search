@@ -14,15 +14,14 @@ def mk_glider(lane, delay):
     return canonical_glider[rem](offset - lane + (lane // 2), offset + (lane // 2))
 
 
-def offset_based_on_glider(p):
+def offset_based_on_glider(p, glider=mk_glider(0, 0)):
     """Removes the glider in the SPEBOE pattern
     and offsets the pattern based on the standard
     glider
     """
-    standard_glider = mk_glider(0, 0)
-    g = p.match(standard_glider, halo=halo)
+    g = p.match(glider, halo=halo)
     (x, y, _, _) = g.getrect()
-    return (p - g.convolve(standard_glider))(-x, -y)
+    return (p - g.convolve(glider))(-x, -y)
 
 
 PI_BLOCKS = list(
