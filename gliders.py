@@ -121,6 +121,14 @@ def reconstruct(recipe, starting_block, spacing):
 
     return start
 
+def single_channel_stream(distances, lane=0):
+    p = lt.pattern()
+    total_distance = 0
+    for d in distances:
+        p += mk_glider(lane, d + total_distance)
+        total_distance += d
+    return p
+
 
 if __name__ == "__main__":
     # Builds a snark with 73 gliders

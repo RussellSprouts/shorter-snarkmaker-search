@@ -30,6 +30,10 @@ def get_envelope(gens):
 
 @functools.lru_cache(maxsize=2**20)
 def just_before_interaction_recursive(total_gens, stream, shortest_gap=90):
+    """Cached function which returns the resulting pattern and gens
+    skipped for the last possible generation before a glider with delay shortest_gap
+    would interact with the results from stream.
+    """
     if not len(stream):
         return PI_BLOCKS[0], 0
     else:
