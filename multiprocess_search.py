@@ -4,12 +4,19 @@ from typing import Callable, Generator, List
 from multiprocessing import connection
 import sys
 
+from component_search import ComponentSearch, PatternCache
 from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
 
 
 def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
     """Wrapper to handle pulling tasks from the queue and applying
     the provided function."""
+
+    pattern_cache = PatternCache()
+    shared_args.component_search = ComponentSearch(pattern_cache)
+    for recipe in shared_args.recipe_intermediates.values():
+        shared_args.component_search.add_recipe(recipe)
+
     while True:
         id = None
         try:
@@ -26,12 +33,14 @@ def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
                 new_jobs.append(data)
 
             res = f(args, queue=add_to_queue, shared_args=shared_args)
-            pipe.send((id, "ok", res, new_jobs))
+            pipe.send((id, multiprocessing.current_process().name, res, new_jobs))
         except Exception as e:
+            print(f"Process error! {multiprocessing.current_process().name}")
             pipe.send((id, "err", e, []))
             raise
         finally:
             queue.task_done()
+
 
 
 class PendingTracker:
@@ -102,7 +111,9 @@ class MultiprocessSearch:
 
     def __iter__(self) -> Generator[tuple[StreamJob, StreamJobResult, List[StreamJob]]]:
         def send_tasks(max_val):
-            if self.pending_queue.qsize() < 1000:
+            if self.pending_queue.empty():
+                if max_val == float('inf'):
+                    max_val = 2**63-1
                 for task in self.db.pop_queue(max_val, 1000):
                     self.pending_tracker.mark_pending(task.cost)
                     self.id_to_args[self.next_id] = (task.cost, task)
@@ -117,10 +128,9 @@ class MultiprocessSearch:
             return
 
         # start the first tasks.
-        print("Starting tasks", min(stats.keys()) + 1)
         send_tasks(min(stats.keys()) + 1)
 
-        while self.pending_tracker.n_pending:
+        while self.pending_tracker.n_pending or self.db.n_queued:
             for r in connection.wait(self.readers):
                 id, status, result, new_jobs = r.recv()
                 priority, args = self.id_to_args[id]
@@ -129,13 +139,12 @@ class MultiprocessSearch:
                 self.db.save_results([
                     (args, result)
                 ])
-                self.db.commit()
-
                 yield (args, result, new_jobs)
+                send_tasks(self.pending_tracker.min_cost_pending())
+
 
     def queue(self, new_jobs):
         self.db.push_queue(new_jobs)
-        self.db.commit()
 
     def __enter__(self):
         return self
