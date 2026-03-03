@@ -1,3 +1,9 @@
+import signal
+
+# ignore Ctrl+C until later, so that subprocesses ignore Ctrl+C.
+# lifelib uses a subprocess.
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Set
@@ -32,6 +38,11 @@ from probability import total_probability, NEGATIVE_INFINITY
 from life_history import write_life_history
 from arg_parser import range_str_to_list
 from multiprocess_search import MultiprocessSearch
+
+def interrupt_handler(_a, _b):
+    print("Gracefully exiting...")
+    sys.exit(1)
+signal.signal(signal.SIGINT, interrupt_handler)
 
 halo = lt.pattern("3o$3o$3o!")
 
@@ -130,6 +141,55 @@ def snark_offset_for_elbow_block(offsets, input_pattern):
     return (input_pattern_depth - offset) // 2
 
 
+def setup_next_search(
+    input_results_db: pathlib.Path,
+    output_starting_points_db: pathlib.Path,
+    queries: List[str],
+    reset_costs: bool,
+):
+    in_db = ProcessingDatabase(input_results_db)
+    out_db = ProcessingDatabase(output_starting_points_db)
+
+    results: Set[SavedResult] = set()
+    print(queries)
+    if not queries:
+        print("No queries given, transfering all results", file=sys.stdout)
+        queries = ["1 = 1"]
+    for query in queries:
+        query = query[0]
+        for result in in_db.conn.execute(f"SELECT * FROM results LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"):
+            results.add(SavedResult.from_row(result))
+
+    results: List[SavedResult] = list(results)
+    results.sort(key=lambda a: in_db.starting_points[a.starting_point].cost + len(a.stream))
+
+    next_id = 0
+    things_to_add = [
+        (
+            StartingPoint(
+                id=(next_id := next_id + 1),
+                cost=0 if reset_costs else r.cost,
+                stream=in_db.starting_points[r.starting_point].stream + r.stream,
+                follow_up_gen_limit=255,
+                max_depth=r.max_depth,
+            ),
+            StreamJob(
+                id=None,
+                cost=0 if reset_costs else r.cost,
+                starting_point=next_id,
+                stream=b"",
+                follow_up_gen_limit=255,
+                max_depth=r.max_depth,
+            ),
+        )
+        for r in results
+    ]
+    out_db.conn.execute('DELETE FROM queue;')
+    out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
+    out_db.push_queue(list(map(lambda x: x[1], things_to_add)))
+    out_db.commit()
+
+
 def view_results(input_results_db):
     db = ProcessingDatabase(input_results_db)
 
@@ -140,7 +200,11 @@ def view_results(input_results_db):
             query = input("> ")
             try:
                 cursor = db.conn.execute(query)
-                for row in cursor:
+                pattern = lt.pattern()
+                red_pattern = lt.pattern()
+                for i, row in enumerate(cursor):
+                    if i > 100:
+                        break
                     result = SavedResult.from_row(row)
                     starting_point = db.starting_points[result.starting_point]
                     full_intermediate = (
@@ -155,31 +219,33 @@ def view_results(input_results_db):
                     )
 
                     if full_intermediate:
-                        red_pattern = lt.pattern(full_intermediate.rle_string)(
-                            full_intermediate.x + (result.full_intermediate_shift or 0),
-                            full_intermediate.y + (result.full_intermediate_shift or 0),
+                        red_pattern = red_pattern + lt.pattern(full_intermediate.rle_string)(
+                            i * 256 + full_intermediate.x + (result.full_intermediate_shift or 0) - result.flipped_offset_block,
+                            full_intermediate.y + (result.full_intermediate_shift or 0) - result.flipped_offset_block,
                         )
                     elif partial_intermediate:
-                        red_pattern = lt.pattern(partial_intermediate.rle_string)(
-                            partial_intermediate.x + (result.partial_intermediate_shift or 0),
-                            partial_intermediate.y + (result.partial_intermediate_shift or 0),
+                        red_pattern = red_pattern + lt.pattern(partial_intermediate.rle_string)(
+                            i*256 + partial_intermediate.x
+                            + (result.partial_intermediate_shift or 0)
+                            - result.flipped_offset_block,
+                            partial_intermediate.y
+                            + (result.partial_intermediate_shift or 0)
+                            - result.flipped_offset_block,
                         )
-                    else:
-                        red_pattern = lt.pattern()
                     stream = starting_point.stream + result.stream
                     block = (
                         PI_BLOCKS[1] if result.flipped_offset_block else PI_BLOCKS[0]
                     )
-                    pattern = single_channel_stream(stream) + block
-
+                    pattern = pattern + (single_channel_stream(stream) + block)(i * 256, 0)
                     print(SavedResult.from_row(row))
-                    print(
-                        write_life_history(
-                            green=pattern - red_pattern,
-                            red=red_pattern - pattern,
-                            white=pattern & red_pattern,
-                        )
+
+                print(
+                    write_life_history(
+                        green=pattern - red_pattern,
+                        red=red_pattern - pattern,
+                        white=pattern & red_pattern,
                     )
+                )
             except Exception as e:
                 print(e)
     finally:
@@ -195,6 +261,8 @@ class OptimizeArgs:
     gen_options: List[int]
     min_offset_block_lane: int
     snark_offsets: Dict[int, Set[int]]
+    partial_progress_factor: float
+    partial_range: Set[int]
 
 
 def abs_lane(x):
@@ -263,7 +331,8 @@ def score_pattern(
     original_components = set(
         shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
     )
-    max_depth = max(job.max_depth, max(map(lambda c: c.depth, original_components)))
+    depth = max(map(lambda c: c.depth, original_components))
+    max_depth = max(job.max_depth, depth)
     # components shifted to line up with the snark that would
     # hit the elbow
     components = set(
@@ -275,6 +344,7 @@ def score_pattern(
     best_full_intermediate_match: Optional[Recipe] = None
     best_partial_intermediate_match: Optional[Recipe] = None
     best_partial_prob = NEGATIVE_INFINITY
+    best_partial_positive_prob = NEGATIVE_INFINITY
     full_elbow_intermediate_depth_separation = 0
     full_elbow_intermediate_overlapping_population = 0
     full_intermediate_shift = 0
@@ -283,6 +353,8 @@ def score_pattern(
     partial_intermediate_shift = 0
 
     for recipe in overlapping_recipes:
+        if len(recipe.so_far) not in shared_args.partial_range:
+            continue
         recipe_components = shared_args.component_search.recipe_components(recipe)
         missing = recipe_components - components
         elbow = components - recipe_components
@@ -293,7 +365,7 @@ def score_pattern(
                 best_full_intermediate_match.remaining
             ):
                 best_full_intermediate_match = recipe
-                elbow_min_depth = min(map(lambda x: x.depth, elbow))
+                elbow_min_depth = min(map(lambda x: x.depth, elbow), default=float('inf'))
                 partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
                 full_elbow_intermediate_depth_separation = (
                     elbow_min_depth - partial_match_max_depth
@@ -314,12 +386,13 @@ def score_pattern(
                 continue
             p -= len(
                 recipe.remaining
-            )  # a recipe further along should count for more TODO tune the factor
+            ) * shared_args.partial_progress_factor
             if p > best_partial_prob:
                 best_partial_prob = p
                 best_partial_intermediate_match = recipe
+                best_partial_positive_prob = total_probability(partial_match)
 
-                elbow_min_depth = min(map(lambda x: x.depth, elbow))
+                elbow_min_depth = min(map(lambda x: x.depth, elbow), default=float('inf'))
                 partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
                 partial_elbow_intermediate_depth_separation = (
                     elbow_min_depth - partial_match_max_depth
@@ -342,6 +415,7 @@ def score_pattern(
         offset_block_lane=furthest_lane,
         lane_width=abs_lane(lanes[-1][0]),  # next highest lane
         max_depth=max_depth,
+        depth=depth,
         population=end_pattern.population,
         flipped_offset_block=1 if recursed else 0,
         full_intermediate=(
@@ -356,6 +430,7 @@ def score_pattern(
             else None
         ),
         partial_intermediate_log_prob=best_partial_prob,
+        partial_intermediate_positive_log_prob=best_partial_positive_prob,
         partial_intermediate_depth_separation=partial_elbow_intermediate_depth_separation,
         partial_intermediate_overlapping_population=partial_elbow_intermediate_overlapping_population,
         partial_intermediate_shift=partial_intermediate_shift,
@@ -397,6 +472,7 @@ def combine_score(
         offset_block_lane=a.offset_block_lane,
         lane_width=a.lane_width,
         max_depth=a.max_depth,
+        depth=a.depth,
         population=a.population,
         flipped_offset_block=a.flipped_offset_block,
         full_intermediate=a.full_intermediate if a_better else b.full_intermediate,
@@ -420,6 +496,11 @@ def combine_score(
             a.partial_intermediate_log_prob
             if a_partial_better
             else b.partial_intermediate_log_prob
+        ),
+        partial_intermediate_positive_log_prob=(
+            a.partial_intermediate_positive_log_prob
+            if a_partial_better
+            else b.partial_intermediate_positive_log_prob
         ),
         partial_intermediate_depth_separation=(
             a.partial_intermediate_depth_separation
@@ -561,9 +642,12 @@ def optimize(
     max_gens: int,
     gen_options: str,
     min_offset_block_lane: int,
+    partial_progress_factor: float,
+    partial_range: str
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
+    partial_range: Set[int] = set(range_str_to_list(partial_range))
     if not output_db.recipe_intermediates:
         print(
             f"Transferring recipe_intermediates from {recipe_intermediates_db}",
@@ -593,6 +677,8 @@ def optimize(
         gen_options=gen_options,
         min_offset_block_lane=min_offset_block_lane,
         snark_offsets=snark_offsets,
+        partial_progress_factor=partial_progress_factor,
+        partial_range=partial_range
     )
     queue_stats = output_db.queue_stats()
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -607,7 +693,7 @@ def optimize(
                 raise Exception("error in child process") from result
             if speedo.tick(job.follow_up_gen_limit - gen_options[0]):
                 print(
-                    f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending()} gens ({search.pending_tracker.pending_items.get(search.pending_tracker.min_cost_pending(), [float('inf'),0])[1]} remaining), {search.db.n_queued} total queued",
+                    f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending() + gen_options[0]} gens ({search.pending_tracker.pending_items.get(search.pending_tracker.min_cost_pending(), [float('inf'),0])[1]} remaining), {search.db.n_queued} total queued",
                     file=sys.stderr,
                 )
 
@@ -712,6 +798,19 @@ if __name__ == "__main__":
         default=80,
         help="Minimum offset for the offset block. (The block that will become the new elbow after the snark is created).",
     )
+    parser_optimize.add_argument(
+        '-p',
+        '--partial-progress-factor',
+        type=float,
+        default=0.1,
+        help="For partial intermediates, a factor affecting how much the distance of the partial from a complete snark affects its score."
+    )
+    parser_optimize.add_argument(
+        '--partial-range',
+        type=str,
+        default='0-255',
+        help="The range of partial intermediates to consider, based on the number of gliders so far."
+    )
 
     parser_view_results = subcommand.add_parser(
         "view-results", description="Explore and view results"
@@ -741,7 +840,19 @@ if __name__ == "__main__":
         help="Output file with starting points set up",
     )
     parser_setup_next_search.add_argument(
-        "-q", "--query", type=str, help="SQL query to select the relevant paths"
+        "-q",
+        "--query",
+        type=str,
+        help="SQL WHERE clause to select the relevant paths. Database query will be `SELECT * FROM results WHERE {query};`",
+        action="append",
+        nargs="*",
+    )
+    parser_setup_next_search.add_argument(
+        "-r",
+        "--reset-costs",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="If true, the starting options will all have cost 0, regardless of the result cost.",
     )
 
     args = parser.parse_args()
@@ -762,6 +873,15 @@ if __name__ == "__main__":
                 max_gens=args.max_gens,
                 gen_options=args.gen_options,
                 min_offset_block_lane=args.min_offset_block_lane,
+                partial_progress_factor=args.partial_progress_factor,
+                partial_range=args.partial_range,
             )
         case "view-results":
             view_results(input_results_db=args.input_results_db)
+        case "setup-next-search":
+            setup_next_search(
+                input_results_db=args.input_results_db,
+                output_starting_points_db=args.output_starting_points_db,
+                queries=args.query,
+                reset_costs=args.reset_costs,
+            )

@@ -66,7 +66,8 @@ class StreamJob:
     def __repr__(self):
         return f"StreamJob(id={self.id}, cost={self.cost}, starting_point={self.starting_point}, stream=bytes({tuple(self.stream)}), follow_up_gen_limit={self.follow_up_gen_limit}, max_depth={self.max_depth})"
 
-@dataclass
+
+@dataclass(frozen=True)
 class SavedResult:
     stream: bytes
     starting_point: int
@@ -77,6 +78,7 @@ class SavedResult:
     offset_block_lane: int
     lane_width: int
     max_depth: int
+    depth: int
     population: int
     flipped_offset_block: int
 
@@ -86,32 +88,45 @@ class SavedResult:
     full_intermediate_shift: int
     partial_intermediate: int
     partial_intermediate_log_prob: float
+    partial_intermediate_positive_log_prob: float
     partial_intermediate_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
 
     def from_row(row: sqlite3.Row):
         return SavedResult(
-            stream=row['stream'],
-            starting_point=row['starting_point'],
-            digest=row['digest'],
-            before_hit_digest=row['before_hit_digest'],
-            x=row['x'],
-            y=row['y'],
-            offset_block_lane=row['offset_block_lane'],
-            lane_width=row['lane_width'],
-            max_depth=row['max_depth'],
-            population=row['population'],
-            flipped_offset_block=row['flipped_offset_block'],
-            full_intermediate=row['full_intermediate'],
-            full_intermediate_depth_separation=row['full_intermediate_depth_separation'],
-            full_intermediate_overlapping_population=row['full_intermediate_overlapping_population'],
-            full_intermediate_shift=row['full_intermediate_shift'],
-            partial_intermediate=row['partial_intermediate'],
-            partial_intermediate_log_prob=row['partial_intermediate_log_prob'],
-            partial_intermediate_depth_separation=row['partial_intermediate_depth_separation'],
-            partial_intermediate_overlapping_population=row['partial_intermediate_overlapping_population'],
-            partial_intermediate_shift=row['partial_intermediate_shift'],
+            stream=row["stream"],
+            starting_point=row["starting_point"],
+            digest=row["digest"],
+            before_hit_digest=row["before_hit_digest"],
+            x=row["x"],
+            y=row["y"],
+            offset_block_lane=row["offset_block_lane"],
+            lane_width=row["lane_width"],
+            max_depth=row["max_depth"],
+            depth=row["depth"] if "depth" in row.keys() else row["max_depth"],
+            population=row["population"],
+            flipped_offset_block=row["flipped_offset_block"],
+            full_intermediate=row["full_intermediate"],
+            full_intermediate_depth_separation=row[
+                "full_intermediate_depth_separation"
+            ],
+            full_intermediate_overlapping_population=row[
+                "full_intermediate_overlapping_population"
+            ],
+            full_intermediate_shift=row["full_intermediate_shift"],
+            partial_intermediate=row["partial_intermediate"],
+            partial_intermediate_log_prob=row["partial_intermediate_log_prob"],
+            partial_intermediate_positive_log_prob=row[
+                "partial_intermediate_positive_log_prob"
+            ],
+            partial_intermediate_depth_separation=row[
+                "partial_intermediate_depth_separation"
+            ],
+            partial_intermediate_overlapping_population=row[
+                "partial_intermediate_overlapping_population"
+            ],
+            partial_intermediate_shift=row["partial_intermediate_shift"],
         )
 
     def __repr__(self):
@@ -126,6 +141,7 @@ class SavedResult:
             f"offset_block_lane={self.offset_block_lane}, "
             f"lane_width={self.lane_width}, "
             f"max_depth={self.max_depth}, "
+            f"depth={self.depth}, "
             f"population={self.population}, "
             f"flipped_offset_block={self.flipped_offset_block}, "
             f"full_intermediate={self.full_intermediate}, "
@@ -134,11 +150,13 @@ class SavedResult:
             f"full_intermediate_shift={self.full_intermediate_shift}, "
             f"partial_intermediate={self.partial_intermediate}, "
             f"partial_intermediate_log_prob={self.partial_intermediate_log_prob}, "
+            f"partial_intermediate_positive_log_prob={self.partial_intermediate_positive_log_prob}, "
             f"partial_intermediate_depth_separation={self.partial_intermediate_depth_separation}, "
             f"partial_intermediate_overlapping_population={self.partial_intermediate_overlapping_population}, "
             f"partial_intermediate_shift={self.partial_intermediate_shift}"
             ")"
         )
+
 
 @dataclass
 class StreamResult:
@@ -150,6 +168,7 @@ class StreamResult:
     offset_block_lane: int
     lane_width: int
     max_depth: int
+    depth: int
     population: int
     flipped_offset_block: int
 
@@ -160,6 +179,7 @@ class StreamResult:
 
     partial_intermediate: int
     partial_intermediate_log_prob: float
+    partial_intermediate_positive_log_prob: float
     partial_intermediate_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
@@ -188,7 +208,6 @@ class Recipe:
     x: int
     y: int
     rle_string: str
-
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -275,7 +294,6 @@ class ProcessingDatabase:
             """
         )
 
-
         # Table of processing results
         self.conn.execute(
             """
@@ -289,6 +307,7 @@ class ProcessingDatabase:
                 offset_block_lane INTEGER,
                 lane_width INTEGER,
                 max_depth INTEGER,
+                depth INTEGER,
                 population INTEGER,
                 flipped_offset_block INTEGER,
                 full_intermediate INTEGER REFERENCES recipe_intermediates(id),
@@ -297,6 +316,7 @@ class ProcessingDatabase:
                 full_intermediate_shift INTEGER,
                 partial_intermediate INTEGER REFERENCES recipe_intermediates(id),
                 partial_intermediate_log_prob REAL,
+                partial_intermediate_positive_log_prob REAL,
                 partial_intermediate_depth_separation INTEGER,
                 partial_intermediate_overlapping_population INTEGER,
                 partial_intermediate_shift INTEGER
@@ -354,8 +374,9 @@ class ProcessingDatabase:
             row["id"]: Recipe.from_row(row)
             for row in self.conn.execute("""SELECT * from recipe_intermediates""")
         }
+
     def pop_queue(self, max_cost, max_num_results=1000) -> List[StreamJob]:
-        result = [
+        result = sorted([
             StreamJob.from_row(row)
             for row in self.conn.execute(
                 """UPDATE queue
@@ -368,7 +389,7 @@ class ProcessingDatabase:
                    RETURNING id, cost, starting_point, stream, follow_up_gen_limit, max_depth""",
                 (max_cost, max_num_results),
             )
-        ]
+        ], key=lambda a:a.cost)
         return result
 
     def push_queue(self, jobs):
@@ -388,13 +409,23 @@ class ProcessingDatabase:
             ],
         )
 
+    def add_starting_points(self, starting_points: List[StartingPoint]):
+        self.conn.executemany(
+            """INSERT INTO starting_points
+            (id, cost, stream, follow_up_gen_limit, max_depth)
+            VALUES (?, ?, ?, ?, ?)""",
+            (
+                (s.id, s.cost, s.stream, s.follow_up_gen_limit, s.max_depth)
+                for s in starting_points
+            ),
+        )
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
         self.n_queued -= len(results)
         self.conn.executemany(
             """INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, population, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -406,13 +437,16 @@ class ProcessingDatabase:
                     child.offset_block_lane,
                     child.lane_width,
                     child.max_depth,
+                    child.depth,
                     child.population,
+                    child.flipped_offset_block,
                     child.full_intermediate,
                     child.full_intermediate_depth_separation,
                     child.full_intermediate_overlapping_population,
                     child.full_intermediate_shift,
                     child.partial_intermediate,
                     child.partial_intermediate_log_prob,
+                    child.partial_intermediate_positive_log_prob,
                     child.partial_intermediate_depth_separation,
                     child.partial_intermediate_overlapping_population,
                     child.partial_intermediate_shift,
@@ -427,10 +461,8 @@ class ProcessingDatabase:
             [(job.id,) for job, _ in results],
         )
 
-
     def reset_in_progress_queue(self):
         self.conn.execute("""UPDATE queue SET in_progress = 0 WHERE in_progress = 1""")
-
 
     def queue_stats(self):
         return {
@@ -439,7 +471,6 @@ class ProcessingDatabase:
                 """SELECT cost, COUNT(cost) FROM queue GROUP BY cost"""
             )
         }
-
 
     def add_recipe_intermediates(self, recipes: List[Recipe]):
         self.conn.executemany(

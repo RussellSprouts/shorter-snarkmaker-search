@@ -43,7 +43,7 @@ def write_life_history(
             data[x - min_x, y - min_y] = state
 
     states = ".ABCDEF"
-    result = f"x = {min_x}, y = {min_y}, rule = LifeHistory\n"
+    result = f"x = {W}, y = {H}, rule = LifeHistory\n"
     for y in range(0, H):
         all_zeros = True
         row = ""

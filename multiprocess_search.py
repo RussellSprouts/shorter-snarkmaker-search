@@ -3,6 +3,8 @@ import heapq
 from typing import Callable, Generator, List
 from multiprocessing import connection
 import sys
+import signal
+from queue import Empty
 
 from component_search import ComponentSearch, PatternCache
 from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
@@ -11,6 +13,8 @@ from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
 def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
     """Wrapper to handle pulling tasks from the queue and applying
     the provided function."""
+
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     pattern_cache = PatternCache()
     shared_args.component_search = ComponentSearch(pattern_cache)
@@ -114,7 +118,7 @@ class MultiprocessSearch:
             if self.pending_queue.empty():
                 if max_val == float('inf'):
                     max_val = 2**63-1
-                for task in self.db.pop_queue(max_val, 1000):
+                for task in self.db.pop_queue(max_val, 10000):
                     self.pending_tracker.mark_pending(task.cost)
                     self.id_to_args[self.next_id] = (task.cost, task)
                     self.pending_queue.put((self.next_id, task))
@@ -150,8 +154,20 @@ class MultiprocessSearch:
         return self
 
     def __exit__(self, exc_type, exc, tb):
+        print("Draining queue (if any)")
+        try:
+            while True:
+                self.pending_queue.get_nowait()
+                self.pending_queue.task_done()
+        except Empty:
+            pass
+        print("Done.")
+        print("Done.")
+        print("Joining subprocesses...")
         for i in range(0, self.n_processes):
             self.pending_queue.put(("stop", None))
         self.pending_queue.join()
         for p in self.processes:
             p.join()
+        print("Committing database")
+        self.db.commit()
