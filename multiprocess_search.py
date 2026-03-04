@@ -162,12 +162,8 @@ class MultiprocessSearch:
         except Empty:
             pass
         print("Done.")
-        print("Done.")
-        print("Joining subprocesses...")
-        for i in range(0, self.n_processes):
-            self.pending_queue.put(("stop", None))
-        self.pending_queue.join()
+        print("Closing subprocesses...")
         for p in self.processes:
-            p.join()
+            p.terminate()
         print("Committing database")
         self.db.commit()
