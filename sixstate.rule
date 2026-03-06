@@ -1,0 +1,8 @@
+@RULE SixState
+# A no-op rule with six states we can use to manipulate LifeHistory patterns
+@TABLE
+n_states: 6
+neighbourhood: vonNeumann
+symmetries: rotate4
+var a={0,1,2,3,4,5}
+a,0,0,0,0,a
