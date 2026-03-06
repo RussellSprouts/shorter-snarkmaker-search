@@ -11,6 +11,7 @@ import sys
 import argparse
 import math
 import pathlib
+import traceback
 
 from speedometer import Speedometer
 from font import write_text
@@ -39,9 +40,12 @@ from life_history import write_life_history
 from arg_parser import range_str_to_list
 from multiprocess_search import MultiprocessSearch
 
+
 def interrupt_handler(_a, _b):
     print("Gracefully exiting...")
     sys.exit(1)
+
+
 signal.signal(signal.SIGINT, interrupt_handler)
 
 halo = lt.pattern("3o$3o$3o!")
@@ -141,6 +145,43 @@ def snark_offset_for_elbow_block(offsets, input_pattern):
     return (input_pattern_depth - offset) // 2
 
 
+def combine_starting_points(input_dbs, output_db, reset_costs):
+    print(input_dbs)
+    out_db = ProcessingDatabase(output_db)
+    out_db.conn.execute("DELETE FROM queue;")
+    out_db.conn.execute("DELETE FROM starting_points;")
+
+    total_transferred = 0
+    for i in input_dbs:
+        [i] = i
+        in_db = ProcessingDatabase(i)
+        for s in in_db.starting_points.values():
+            s.id = None
+            out_db.add_starting_points([s])
+            total_transferred += 1
+
+    # reload so we know the new ids
+    out_db.reload_starting_points()
+
+    out_db.push_queue(
+        [
+            StreamJob(
+                id=None,
+                cost=0 if reset_costs else s.cost,
+                starting_point=s.id,
+                stream=b"",
+                follow_up_gen_limit=255,
+                max_depth=s.max_depth,
+            )
+            for s in out_db.starting_points.values()
+        ]
+    )
+
+    out_db.commit()
+
+    print(f"Tranferred {total_transferred} starting points.")
+
+
 def setup_next_search(
     input_results_db: pathlib.Path,
     output_starting_points_db: pathlib.Path,
@@ -157,13 +198,17 @@ def setup_next_search(
         queries = ["1 = 1"]
     for query in queries:
         query = query[0]
-        for result in in_db.conn.execute(f"SELECT * FROM results LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"):
+        for result in in_db.conn.execute(
+            f"SELECT * FROM results LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
+        ):
             results.add(SavedResult.from_row(result))
 
     results: List[SavedResult] = list(results)
-    results.sort(key=lambda a: in_db.starting_points[a.starting_point].cost + len(a.stream))
+    results.sort(
+        key=lambda a: in_db.starting_points[a.starting_point].cost + len(a.stream)
+    )
 
-    next_id = 0
+    next_id = -1
     things_to_add = [
         (
             StartingPoint(
@@ -184,13 +229,14 @@ def setup_next_search(
         )
         for r in results
     ]
-    out_db.conn.execute('DELETE FROM queue;')
+    out_db.conn.execute("DELETE FROM starting_points;")
+    out_db.conn.execute("DELETE FROM queue;")
     out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
     out_db.push_queue(list(map(lambda x: x[1], things_to_add)))
     out_db.commit()
 
 
-def view_results(input_results_db):
+def view_results(input_results_db, show_completion):
     db = ProcessingDatabase(input_results_db)
 
     import readline
@@ -217,26 +263,63 @@ def view_results(input_results_db):
                         if result.partial_intermediate is not None
                         else None
                     )
+                    stream = starting_point.stream + result.stream
+                    block = (
+                        PI_BLOCKS[1] if result.flipped_offset_block else PI_BLOCKS[0]
+                    )
 
                     if full_intermediate:
-                        red_pattern = red_pattern + lt.pattern(full_intermediate.rle_string)(
-                            i * 256 + full_intermediate.x + (result.full_intermediate_shift or 0) - result.flipped_offset_block,
-                            full_intermediate.y + (result.full_intermediate_shift or 0) - result.flipped_offset_block,
+                        evaluated_pattern = (single_channel_stream(stream) + block)[
+                            sum(stream) + 1024
+                        ](300 * i, 0)
+
+                        full_intermediate_pattern = lt.pattern(
+                            full_intermediate.rle_string
+                        )(
+                            i * 300
+                            + full_intermediate.x
+                            + (result.full_intermediate_shift or 0)
+                            - result.flipped_offset_block,
+                            full_intermediate.y
+                            + (result.full_intermediate_shift or 0)
+                            - result.flipped_offset_block,
                         )
+
+                        remaining_gliders = lt.pattern()
+                        for j, (lane, phase) in enumerate(
+                            full_intermediate.remaining + ((0, 0),)
+                        ):
+                            remaining_gliders = remaining_gliders + mk_glider(
+                                lane, 400 - phase
+                            )(j * 100 + i * 300, j * 100)
+
+                        if show_completion:
+                            red_pattern = red_pattern + (
+                                evaluated_pattern(150, 0)
+                                - full_intermediate_pattern(150, 0)
+                            )
+                            pattern = (
+                                pattern
+                                + full_intermediate_pattern(150, 0)
+                                + remaining_gliders(150, 0)
+                            )
+
+                        red_pattern = red_pattern + full_intermediate_pattern
                     elif partial_intermediate:
-                        red_pattern = red_pattern + lt.pattern(partial_intermediate.rle_string)(
-                            i*256 + partial_intermediate.x
+                        red_pattern = red_pattern + lt.pattern(
+                            partial_intermediate.rle_string
+                        )(
+                            i * 300
+                            + partial_intermediate.x
                             + (result.partial_intermediate_shift or 0)
                             - result.flipped_offset_block,
                             partial_intermediate.y
                             + (result.partial_intermediate_shift or 0)
                             - result.flipped_offset_block,
                         )
-                    stream = starting_point.stream + result.stream
-                    block = (
-                        PI_BLOCKS[1] if result.flipped_offset_block else PI_BLOCKS[0]
+                    pattern = pattern + (single_channel_stream(stream) + block)(
+                        i * 300, 0
                     )
-                    pattern = pattern + (single_channel_stream(stream) + block)(i * 256, 0)
                     print(SavedResult.from_row(row))
 
                 print(
@@ -248,6 +331,7 @@ def view_results(input_results_db):
                 )
             except Exception as e:
                 print(e)
+                print(traceback.format_exc())
     finally:
         db.close()
 
@@ -365,7 +449,9 @@ def score_pattern(
                 best_full_intermediate_match.remaining
             ):
                 best_full_intermediate_match = recipe
-                elbow_min_depth = min(map(lambda x: x.depth, elbow), default=float('inf'))
+                elbow_min_depth = min(
+                    map(lambda x: x.depth, elbow), default=float("inf")
+                )
                 partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
                 full_elbow_intermediate_depth_separation = (
                     elbow_min_depth - partial_match_max_depth
@@ -377,6 +463,18 @@ def score_pattern(
                         if c.depth <= partial_match_max_depth
                     ]
                 )
+                # get the digest of the full intermediate match
+                # plus the pattern elements which overlap.
+                overlapping_pattern = (
+                    sum(
+                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth]
+                    )
+                    if full_elbow_intermediate_overlapping_population
+                    else lt.pattern()
+                )
+                full_elbow_intermediate_overlapping_digest = (
+                    overlapping_pattern + partial_match
+                ).digest()
                 full_intermediate_shift = snark_offset
         else:
             # partial match!
@@ -384,15 +482,15 @@ def score_pattern(
             p = total_probability(missing)
             if p == NEGATIVE_INFINITY:
                 continue
-            p -= len(
-                recipe.remaining
-            ) * shared_args.partial_progress_factor
+            p -= len(recipe.remaining) * shared_args.partial_progress_factor
             if p > best_partial_prob:
                 best_partial_prob = p
                 best_partial_intermediate_match = recipe
                 best_partial_positive_prob = total_probability(partial_match)
 
-                elbow_min_depth = min(map(lambda x: x.depth, elbow), default=float('inf'))
+                elbow_min_depth = min(
+                    map(lambda x: x.depth, elbow), default=float("inf")
+                )
                 partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
                 partial_elbow_intermediate_depth_separation = (
                     elbow_min_depth - partial_match_max_depth
@@ -423,6 +521,7 @@ def score_pattern(
         ),
         full_intermediate_depth_separation=full_elbow_intermediate_depth_separation,
         full_intermediate_overlapping_population=full_elbow_intermediate_overlapping_population,
+        full_intermediate_overlapping_digest=full_elbow_intermediate_overlapping_digest,
         full_intermediate_shift=full_intermediate_shift,
         partial_intermediate=(
             best_partial_intermediate_match.id
@@ -486,6 +585,11 @@ def combine_score(
             if a_better
             else b.full_intermediate_overlapping_population
         ),
+        full_intermediate_overlapping_digest=(
+            a.full_intermediate_overlapping_digest
+            if a_better
+            else b.full_intermediate_overlapping_digest
+        ),
         full_intermediate_shift=(
             a.full_intermediate_shift if a_better else b.full_intermediate_shift
         ),
@@ -534,7 +638,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
     )
 
     initial_added_gens = sum(job.stream)
-    for next_possibility in gen_options:
+    for next_possibility in job.follow_ups or gen_options:
         if next_possibility > job.follow_up_gen_limit:
             break
         stream = starting_point.stream + job.stream + bytes([next_possibility])
@@ -643,7 +747,7 @@ def optimize(
     gen_options: str,
     min_offset_block_lane: int,
     partial_progress_factor: float,
-    partial_range: str
+    partial_range: str,
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -678,7 +782,7 @@ def optimize(
         min_offset_block_lane=min_offset_block_lane,
         snark_offsets=snark_offsets,
         partial_progress_factor=partial_progress_factor,
-        partial_range=partial_range
+        partial_range=partial_range,
     )
     queue_stats = output_db.queue_stats()
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -713,6 +817,25 @@ def optimize(
                 [x for x in new_jobs if x.stream[-1] not in follow_ups_to_filter]
             )
 
+
+def reprocess(input_db, output_db, queries):
+    in_db = ProcessingDatabase(input_db)
+    out_db = ProcessingDatabase(output_db)
+
+    results: Set[SavedResult] = set()
+    print(queries)
+    if not queries:
+        print("No queries given, transfering all results", file=sys.stdout)
+        queries = ["1 = 1"]
+    for query in queries:
+        query = query[0]
+        for result in in_db.conn.execute(
+            f"SELECT * FROM results LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
+        ):
+            results.add(SavedResult.from_row(result))
+
+    results: List[SavedResult] = list(results)
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -799,17 +922,17 @@ if __name__ == "__main__":
         help="Minimum offset for the offset block. (The block that will become the new elbow after the snark is created).",
     )
     parser_optimize.add_argument(
-        '-p',
-        '--partial-progress-factor',
+        "-p",
+        "--partial-progress-factor",
         type=float,
         default=0.1,
-        help="For partial intermediates, a factor affecting how much the distance of the partial from a complete snark affects its score."
+        help="For partial intermediates, a factor affecting how much the distance of the partial from a complete snark affects its score.",
     )
     parser_optimize.add_argument(
-        '--partial-range',
+        "--partial-range",
         type=str,
-        default='0-255',
-        help="The range of partial intermediates to consider, based on the number of gliders so far."
+        default="0-255",
+        help="The range of partial intermediates to consider, based on the number of gliders so far.",
     )
 
     parser_view_results = subcommand.add_parser(
@@ -821,6 +944,12 @@ if __name__ == "__main__":
         type=pathlib.Path,
         required=True,
         help="DB containing results to view",
+    )
+    parser_view_results.add_argument(
+        "--show-completion",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="If true, full_intermediate matches will show the slow zero degree gliders that would complete the pattern.",
     )
 
     parser_setup_next_search = subcommand.add_parser(
@@ -855,6 +984,45 @@ if __name__ == "__main__":
         help="If true, the starting options will all have cost 0, regardless of the result cost.",
     )
 
+    parser_combine_starting_points = subcommand.add_parser(
+        "combine-starting-points",
+        description="Takes in multiple databases that haven't started processing, and combines their starting points and queues.",
+    )
+    parser_combine_starting_points.add_argument(
+        "-i", "--input-db", type=pathlib.Path, nargs="+", action="append"
+    )
+    parser_combine_starting_points.add_argument("-o", "--output-db", type=pathlib.Path)
+    parser_combine_starting_points.add_argument(
+        "-r",
+        "--reset-costs",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="If true, the starting options will all have cost 0, regardless of the initial cost.",
+    )
+
+    parser_reprocess = subcommand.add_parser(
+        "reprocess",
+        description="Reprocesses the results from a database. Useful if you have changed the scoring criteria in the code.",
+    )
+    parser_reprocess = subcommand.add_argument(
+        "-i", "--input-db", type=pathlib.Path, help="Input database with results"
+    )
+    parser_setup_next_search.add_argument(
+        "-q",
+        "--query",
+        type=str,
+        help="SQL WHERE clause to select the relevant paths. Database query will be `SELECT * FROM results WHERE {query};`",
+        action="append",
+        nargs="*",
+    )
+    parser_optimize.add_argument(
+        "-o",
+        "--output-db",
+        help="Output sqlite database file.",
+        type=pathlib.Path,
+        required=True,
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -877,11 +1045,21 @@ if __name__ == "__main__":
                 partial_range=args.partial_range,
             )
         case "view-results":
-            view_results(input_results_db=args.input_results_db)
+            print("Show completion", args.show_completion)
+            view_results(
+                input_results_db=args.input_results_db,
+                show_completion=args.show_completion,
+            )
         case "setup-next-search":
             setup_next_search(
                 input_results_db=args.input_results_db,
                 output_starting_points_db=args.output_starting_points_db,
                 queries=args.query,
+                reset_costs=args.reset_costs,
+            )
+        case "combine-starting-points":
+            combine_starting_points(
+                input_dbs=args.input_db,
+                output_db=args.output_db,
                 reset_costs=args.reset_costs,
             )
