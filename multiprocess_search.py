@@ -167,3 +167,4 @@ class MultiprocessSearch:
             p.terminate()
         print("Committing database")
         self.db.commit()
+        print("Done.")
