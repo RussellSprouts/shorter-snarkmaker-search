@@ -137,6 +137,8 @@ class MultiprocessSearch:
         while self.pending_tracker.n_pending or self.db.n_queued:
             for r in connection.wait(self.readers):
                 id, status, result, new_jobs = r.recv()
+                if status == 'err':
+                    print(result, file=sys.stderr)
                 priority, args = self.id_to_args[id]
                 del self.id_to_args[id]
                 self.pending_tracker.mark_done(priority)

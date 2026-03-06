@@ -193,5 +193,78 @@ There are many ways to improve from here, so let's explore each of those dimensi
   -q 'length(fi.so_far) >= 26 and depth <= 0 order by full_intermediate_overlapping_population limit 30' \
   -q 'length(fi.so_far) >= 26 and depth <= 0 order by lane_width limit 30' \
   -q 'length(fi.so_far) >= 26 and depth <= 0 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
-> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree3.sqlite -l 100 -n 512
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree3.sqlite -l 100 -n 512 # (stopped early ~391)
+```
+
+At this point, I added the full_intermediate_overlapping_digest code so that I could
+better track how removing the overlapping pieces was going. I had to reprocess the
+results to include this.
+
+The results have an extra pond and block behind the full_intermediate match. I want
+to find reactions that remove this. I can group by full_intermediate_overlapping_digest
+and view the results to manually check.
+
+```rle
+x = 103, y = 111, rule = LifeHistory
+3$33.B12.2B$32.3B5.7B2A37.3B$29.7B2.8BA2BA34.4B2A$29.7B.10B2AB33.5B2A
+$28.23B22.3B6.9B$29.21B19.9B4.9B$30.18B11.2B6.12B4.9B$32.14B8.B3.2AB
+6.13B5.7B$31.18B4.3B.A2BA2B3.14B3.8B$26.B5.19B.6B2A3B2.16B2.8B$24.67B
+$15.2B6.71B$13.5B5.72B$11.B.5B4.73B$9.10B2.65BA9B$8.11B2.64BABA7B$4.
+3B.12B.46B2A15BA2BA8B$3.63BA2BA15B2A11B$4.62BA2BA28B$4.63B2A30B$6.84B
+2A8B$7.83B2A8B$9.90B$10.83BA2B$11.81BABAB$10.82BABAB$11.82BAB$12.13B.
+5B.57B$12.75BAB$13.74BAB$14.73BA2B$13.77B$12.5B.74B$7.2B2.4B4.72B2A$
+6.9B4.71BABA$6.11B2.72BA$4.25B2C59B$3.26B2C59B$2.74BA7BA5B$3.73BA6BAB
+A4B$2.74BA6BABA5B$2.18B3C61BA6B$4.86B$7.11BC5BA65B$10.8BC5BA22B2A40B$
+13.5BC5BA21BA2BA40B$10.3B.33B2A41B$10.10B3A67B2A$4.3B3.80B2A$4.2A85B$
+3.A2BA29B2A52B$3.A2BA2B2A25B2A24B2A27B$2.2B2A3B2A51B2A27B$2.88B$3.29B
+2A25BA24BA5BA$4.28B2A24BABA23BA5BAB$4.54BABA23BA5BA$6.53BA29B$7.79B3A
+$10.55B3A20B$10.B3C68B3AB$10.75B$9.C5BC69B$8.BC5BC68B$9.C5BC68B$10.
+76B$10.B3C74B$10.79B$11.77B$12.5B.24B2A17B2A23B$13.B2.26B2A17B2A23B$
+16.33BA35B$18.30BABA34B$19.29BABA35B$20.29BA36B$21.65B$22.65B$22.64B$
+22.64B$22.64B$22.66B$22.68B$23.68B$23.4B.62B$24.B3.28B2A30B$29.27B2A
+30B$30.57B$30.56B$29.58B$29.57B$29.57B$28.17B3.37B$28.16B5.3B.31B$28.
+BA14B10.29B$28.ABA10B.2B11.27B$28.ABA.9B15.27B$29.A3.B.3B19.B3.23B$
+36.B25.B.B.5B3.2B2.2B.4B$68.B13.4B$83.4B$84.4B$85.4B$86.4B$87.4B$88.
+4B$89.4B$90.4B$91.4B!
+```
+
+```bash
+> uv run snark.py reprocess -i results/zero_degree3.sqlite -o results/zero_degree3_reprocessed.sqlite -q 'length(fi.so_far) >= 26 and depth <= 0'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree3_reprocessed.sqlite -l 100 -n 0
+```
+
+Next, I used this query in view-results to see a sample of each unique
+full_intermediate_overlapping_digest. Note the use of `as label` to
+print a label to identify each output by its digest.
+
+```sql
+SELECT *, full_intermediate_overlapping_digest as label FROM (SELECT *, ROW_NUMBER() OVER ( PARTITION BY full_intermediate_overlapping_digest ORDER BY length(r.stream) + length(sp.stream)) as row_num FROM results r JOIN starting_points sp ON sp.id = starting_point JOIN recipe_intermediates fi ON fi.id = full_intermediate WHERE depth <= 0 and length(fi.so_far) >= 26) WHERE row_num = 1 ORDER BY full_intermediate_overlapping_population LIMIT 10;
+```
+
+There's one very nice group of results `7471297537555870078` -- it cleans up a lot of the tricky still lives behind the intermediate pattern, and it makes progress on the intermediate by sending the next glider.
+
+```rle
+x = 1332, y = 1326, rule = LifeHistory
+24.D$23.D.D$23.D.D$24.D2$19.2D7.2D$18.D2.D5.D2.D$19.2D7.2D2$24.D$
+23.D.D$11.3D9.D.D$24.D$9.D$9.D$9.D15$2.3D2$D5.D$D5.D$D5.D2$2.3D16$
+55.2A$55.2A2.3A$59.A$60.A31$94.A$93.2A$93.A.A22$116.3A$116.A$117.A
+24$143.2A$142.2A$144.A25$169.3A$169.A$170.A26$199.A$198.2A$198.A.A
+21$221.2A$221.A.A$221.A24$248.A$247.2A$247.A.A24$273.2A$272.2A$
+274.A27$303.A$302.2A$302.A.A24$327.3A$327.A$328.A22$351.3A$351.A$
+352.A21$374.3A$374.A$375.A32$409.2A$409.A.A$409.A36$447.2A$446.2A$
+448.A35$483.3A$483.A$484.A30$516.2A$515.2A$517.A25$543.2A$542.2A$
+544.A21$565.3A$565.A$566.A27$594.3A$594.A$595.A36$633.2A$633.A.A$
+633.A35$671.A$670.2A$670.A.A30$703.A$702.2A$702.A.A27$731.2A$730.
+2A$732.A48$782.A$781.2A$781.A.A30$814.A$813.2A$813.A.A30$846.A$
+845.2A$845.A.A28$876.A$875.2A$875.A.A26$903.2A$902.2A$904.A26$931.
+2A$931.A.A$931.A39$971.3A$971.A$972.A26$1001.A$1000.2A$1000.A.A21$
+1023.2A$1022.2A$1024.A21$1045.3A$1045.A$1046.A34$1082.2A$1082.A.A$
+1082.A30$1114.2A$1113.2A$1115.A24$1139.3A$1139.A$1140.A27$1169.2A$
+1169.A.A$1169.A32$1203.2A$1202.2A$1204.A42$1247.2A$1246.2A$1248.A
+22$1271.2A$1270.2A$1272.A57$1330.2A$1329.2A$1331.A!
+```
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree3_reprocessed.sqlite -o results/zero_degree4.sqlite -q 'full_intermediate_overlapping_digest=7471297537555870078'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree4.sqlite -l 100 -n 512
 ```

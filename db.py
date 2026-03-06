@@ -63,7 +63,7 @@ class StreamJob:
             stream=row["stream"],
             follow_up_gen_limit=row["follow_up_gen_limit"],
             max_depth=row["max_depth"],
-            follow_ups=row["follow_ups"] if "follow_ups" in keys else None
+            follow_ups=row["follow_ups"] if "follow_ups" in keys else None,
         )
 
     def __repr__(self):
@@ -97,6 +97,10 @@ class SavedResult:
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
 
+    # add `something as label` to the select
+    # in view-results to print the label next to it.
+    label: str
+
     def from_row(row: sqlite3.Row):
         keys = row.keys()
 
@@ -120,7 +124,11 @@ class SavedResult:
             full_intermediate_overlapping_population=row[
                 "full_intermediate_overlapping_population"
             ],
-            full_intermediate_overlapping_digest=if "full_intermediate_overlapping_digest" in keys else 0,
+            full_intermediate_overlapping_digest=(
+                row["full_intermediate_overlapping_digest"]
+                if "full_intermediate_overlapping_digest" in keys
+                else 0
+            ),
             full_intermediate_shift=row["full_intermediate_shift"],
             partial_intermediate=row["partial_intermediate"],
             partial_intermediate_log_prob=row["partial_intermediate_log_prob"],
@@ -134,6 +142,7 @@ class SavedResult:
                 "partial_intermediate_overlapping_population"
             ],
             partial_intermediate_shift=row["partial_intermediate_shift"],
+            label=row["label"] if "label" in keys else None
         )
 
     def __repr__(self):
@@ -390,10 +399,11 @@ class ProcessingDatabase:
         }
 
     def pop_queue(self, max_cost, max_num_results=1000) -> List[StreamJob]:
-        result = sorted([
-            StreamJob.from_row(row)
-            for row in self.conn.execute(
-                """UPDATE queue
+        result = sorted(
+            [
+                StreamJob.from_row(row)
+                for row in self.conn.execute(
+                    """UPDATE queue
                    SET in_progress = 1
                    WHERE id in (
                      SELECT id FROM queue WHERE in_progress = 0 AND cost < ?
@@ -401,9 +411,11 @@ class ProcessingDatabase:
                      LIMIT ?
                    )
                    RETURNING *""",
-                (max_cost, max_num_results),
-            )
-        ], key=lambda a:a.cost)
+                    (max_cost, max_num_results),
+                )
+            ],
+            key=lambda a: a.cost,
+        )
         return result
 
     def push_queue(self, jobs):
@@ -418,7 +430,7 @@ class ProcessingDatabase:
                     job.stream,
                     job.follow_up_gen_limit,
                     job.max_depth,
-                    job.follow_ups
+                    job.follow_ups,
                 )
                 for job in jobs
             ],

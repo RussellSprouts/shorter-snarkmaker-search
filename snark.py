@@ -208,6 +208,23 @@ def setup_next_search(
         key=lambda a: in_db.starting_points[a.starting_point].cost + len(a.stream)
     )
 
+    # de-dup by before_hit_digest, which should indicate identical results.
+    by_digest = defaultdict(list)
+    for r in results:
+        by_digest[r.before_hit_digest].append(r)
+
+    for rs in by_digest.values():
+        # sort each group by actual cost
+        rs.sort(key=lambda a: sum(in_db.starting_points[a.starting_point].stream + a.stream))
+
+    original_length = len(results)
+
+    # take the first result of each group
+    results = list(map(lambda a: a[0], by_digest.values()))
+
+    if len(results) < original_length:
+        print(f"Filtered {original_length - len(results)} duplicate results", file=sys.stderr)
+
     next_id = -1
     things_to_add = [
         (
@@ -225,10 +242,13 @@ def setup_next_search(
                 stream=b"",
                 follow_up_gen_limit=255,
                 max_depth=r.max_depth,
+                follow_ups=None,
             ),
         )
         for r in results
     ]
+    print(f"Transferred {len(results)} results as starting_points.")
+
     out_db.conn.execute("DELETE FROM starting_points;")
     out_db.conn.execute("DELETE FROM queue;")
     out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
@@ -321,6 +341,9 @@ def view_results(input_results_db, show_completion):
                         i * 300, 0
                     )
                     print(SavedResult.from_row(row))
+
+                    if result.label:
+                        red_pattern = red_pattern + write_text(str(result.label))(i*300, -200)
 
                 print(
                     write_life_history(
@@ -431,6 +454,7 @@ def score_pattern(
     best_partial_positive_prob = NEGATIVE_INFINITY
     full_elbow_intermediate_depth_separation = 0
     full_elbow_intermediate_overlapping_population = 0
+    full_elbow_intermediate_overlapping_digest = 0
     full_intermediate_shift = 0
     partial_elbow_intermediate_depth_separation = 0
     partial_elbow_intermediate_overlapping_population = 0
@@ -465,16 +489,13 @@ def score_pattern(
                 )
                 # get the digest of the full intermediate match
                 # plus the pattern elements which overlap.
-                overlapping_pattern = (
-                    sum(
-                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth]
-                    )
-                    if full_elbow_intermediate_overlapping_population
-                    else lt.pattern()
-                )
+                overlapping_pattern = sum(
+                    [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
+                    start=lt.pattern(),
+                ) + sum([c.pattern for c in partial_match], start=lt.pattern())
                 full_elbow_intermediate_overlapping_digest = (
-                    overlapping_pattern + partial_match
-                ).digest()
+                    overlapping_pattern.digest()
+                )
                 full_intermediate_shift = snark_offset
         else:
             # partial match!
@@ -723,6 +744,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                         # are a mix of odd/even
                         follow_up_gen_limit=gen_options[1],
                         max_depth=job.max_depth,
+                        follow_ups=None,
                     )
                 )
             else:
@@ -734,6 +756,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                         stream=job.stream + bytes([next_possibility]),
                         follow_up_gen_limit=min(255, max_gens - added_gens),
                         max_depth=job.max_depth,
+                        follow_ups=None,
                     )
                 )
 
@@ -834,8 +857,51 @@ def reprocess(input_db, output_db, queries):
         ):
             results.add(SavedResult.from_row(result))
 
+    print("Retrieved all results")
+
     results: List[SavedResult] = list(results)
-    
+
+    # group results by all but the last result
+    groups = defaultdict(set)
+    for r in results:
+        stream = in_db.starting_points[r.starting_point].stream + r.stream
+        max_depth = in_db.starting_points[r.starting_point].max_depth
+        groups[(stream[0:-1], max_depth)].add(r)
+
+    print(len(groups))
+
+    things_to_add = []
+    next_id = -1
+    for (stream_start, max_depth), results in groups.items():
+        things_to_add.append(
+            (
+                StartingPoint(
+                    id=(next_id := next_id + 1),
+                    cost=0,
+                    stream=stream_start,
+                    follow_up_gen_limit=255,
+                    max_depth=max_depth,
+                ),
+                StreamJob(
+                    id=None,
+                    cost=0,
+                    starting_point=next_id,
+                    stream=b"",
+                    follow_up_gen_limit=255,
+                    follow_ups=bytes(map(lambda a: a.stream[-1], results)),
+                    max_depth=max_depth,
+                ),
+            )
+        )
+
+    out_db.conn.execute("DELETE FROM starting_points;")
+    out_db.conn.execute("DELETE FROM queue;")
+    out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
+    out_db.push_queue(list(map(lambda x: x[1], things_to_add)))
+    out_db.commit()
+
+    print(f"Wrote queue to {output_db}. Run optimize with max-gens 0 to process.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -1004,10 +1070,10 @@ if __name__ == "__main__":
         "reprocess",
         description="Reprocesses the results from a database. Useful if you have changed the scoring criteria in the code.",
     )
-    parser_reprocess = subcommand.add_argument(
+    parser_reprocess.add_argument(
         "-i", "--input-db", type=pathlib.Path, help="Input database with results"
     )
-    parser_setup_next_search.add_argument(
+    parser_reprocess.add_argument(
         "-q",
         "--query",
         type=str,
@@ -1015,7 +1081,7 @@ if __name__ == "__main__":
         action="append",
         nargs="*",
     )
-    parser_optimize.add_argument(
+    parser_reprocess.add_argument(
         "-o",
         "--output-db",
         help="Output sqlite database file.",
@@ -1062,4 +1128,8 @@ if __name__ == "__main__":
                 input_dbs=args.input_db,
                 output_db=args.output_db,
                 reset_costs=args.reset_costs,
+            )
+        case "reprocess":
+            reprocess(
+                input_db=args.input_db, output_db=args.output_db, queries=args.query
             )
