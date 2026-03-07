@@ -342,7 +342,7 @@ def view_results(input_results_db, show_completion):
                     )
                     print(SavedResult.from_row(row))
 
-                    if result.label:
+                    if result.label is not None:
                         red_pattern = red_pattern + write_text(str(result.label))(i*300, -200)
 
                 print(
