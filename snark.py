@@ -215,7 +215,9 @@ def setup_next_search(
 
     for rs in by_digest.values():
         # sort each group by actual cost
-        rs.sort(key=lambda a: sum(in_db.starting_points[a.starting_point].stream + a.stream))
+        rs.sort(
+            key=lambda a: sum(in_db.starting_points[a.starting_point].stream + a.stream)
+        )
 
     original_length = len(results)
 
@@ -223,7 +225,10 @@ def setup_next_search(
     results = list(map(lambda a: a[0], by_digest.values()))
 
     if len(results) < original_length:
-        print(f"Filtered {original_length - len(results)} duplicate results", file=sys.stderr)
+        print(
+            f"Filtered {original_length - len(results)} duplicate results",
+            file=sys.stderr,
+        )
 
     next_id = -1
     things_to_add = [
@@ -256,8 +261,15 @@ def setup_next_search(
     out_db.commit()
 
 
+def row_to_string(row):
+    return f'Row({', '.join([f"{k}={row[k]}" for k in row.keys()])})'
+
+
 def view_results(input_results_db, show_completion):
     db = ProcessingDatabase(input_results_db)
+
+    [sample_row] = db.conn.execute("select * from results limit 1").fetchall()
+    expected_keys = set(sample_row.keys())
 
     import readline
 
@@ -268,9 +280,16 @@ def view_results(input_results_db, show_completion):
                 cursor = db.conn.execute(query)
                 pattern = lt.pattern()
                 red_pattern = lt.pattern()
+                is_results = True
                 for i, row in enumerate(cursor):
                     if i > 100:
                         break
+                    keys = row.keys()
+                    if not expected_keys.issubset(keys):
+                        # this isn't a result row, just print it
+                        print(row_to_string(row))
+                        is_results = False
+                        continue
                     result = SavedResult.from_row(row)
                     starting_point = db.starting_points[result.starting_point]
                     full_intermediate = (
@@ -340,18 +359,24 @@ def view_results(input_results_db, show_completion):
                     pattern = pattern + (single_channel_stream(stream) + block)(
                         i * 300, 0
                     )
-                    print(SavedResult.from_row(row))
+                    print(result)
 
                     if result.label is not None:
-                        red_pattern = red_pattern + write_text(str(result.label))(i*300, -200)
+                        red_pattern = red_pattern + write_text(str(result.label))(
+                            i * 300, -200
+                        )
 
-                print(
-                    write_life_history(
-                        green=pattern - red_pattern,
-                        red=red_pattern - pattern,
-                        white=pattern & red_pattern,
+                if is_results:
+                    red_pattern = red_pattern + write_text(
+                        input_results_db.name.replace("_", "-")
+                    )(-300, 0)
+                    print(
+                        write_life_history(
+                            green=pattern - red_pattern,
+                            red=red_pattern - pattern,
+                            white=pattern & red_pattern,
+                        )
                     )
-                )
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
@@ -469,8 +494,10 @@ def score_pattern(
         partial_match = components - elbow
         if not missing:
             # full match!
-            if not best_full_intermediate_match or len(recipe.remaining) < len(
-                best_full_intermediate_match.remaining
+            if (
+                not best_full_intermediate_match
+                or recipe.pattern.population
+                > best_full_intermediate_match.pattern.population
             ):
                 best_full_intermediate_match = recipe
                 elbow_min_depth = min(
@@ -771,6 +798,7 @@ def optimize(
     min_offset_block_lane: int,
     partial_progress_factor: float,
     partial_range: str,
+    n_processes: int,
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -813,14 +841,14 @@ def optimize(
     already_seen_results = set()
     speedo = Speedometer(interval_s=10)
     with MultiprocessSearch(
-        fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=20
+        fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=n_processes
     ) as search:
         for job, result, new_jobs in search:
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
             if speedo.tick(job.follow_up_gen_limit - gen_options[0]):
                 print(
-                    f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending() + gen_options[0]} gens ({search.pending_tracker.pending_items.get(search.pending_tracker.min_cost_pending(), [float('inf'),0])[1]} remaining), {search.db.n_queued} total queued",
+                    f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending()+gen_options[0]}-{min(search.pending_tracker.min_cost_pending()+gen_options[-1], max_gens)} gens ({search.pending_tracker.pending_items.get(search.pending_tracker.min_cost_pending(), [float('inf'),0])[1]} remaining), {search.db.n_queued} total queued",
                     file=sys.stderr,
                 )
 
@@ -981,6 +1009,12 @@ if __name__ == "__main__":
         help='Options for spacing of gliders in a stream. E.g. "74,75,78-255". Defaults to "90-255". Maximum 255.',
     )
     parser_optimize.add_argument(
+        "--n-processes",
+        default=20,
+        type=int,
+        help="Number of processes to use for processing."
+    )
+    parser_optimize.add_argument(
         "-l",
         "--min-offset-block-lane",
         type=int,
@@ -1109,6 +1143,7 @@ if __name__ == "__main__":
                 min_offset_block_lane=args.min_offset_block_lane,
                 partial_progress_factor=args.partial_progress_factor,
                 partial_range=args.partial_range,
+                n_processes=args.n_processes,
             )
         case "view-results":
             print("Show completion", args.show_completion)

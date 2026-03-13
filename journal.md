@@ -184,6 +184,8 @@ settle quickly, then you might only need to send a 90 and 91 gen follow-up.
 > uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree2.sqlite -l 100 -n 400 # (stopped early ~371)
 ```
 
+select * from results join recipe_intermediates fi on fi.id=full_intermediate where length(fi.so_far) >= 26 and depth <= 0 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 10;
+
 There are many ways to improve from here, so let's explore each of those dimensions:
 
 ```bash
@@ -238,10 +240,13 @@ full_intermediate_overlapping_digest. Note the use of `as label` to
 print a label to identify each output by its digest.
 
 ```sql
-SELECT *, full_intermediate_overlapping_digest as label FROM (SELECT *, ROW_NUMBER() OVER ( PARTITION BY full_intermediate_overlapping_digest ORDER BY length(r.stream) + length(sp.stream)) as row_num FROM results r JOIN starting_points sp ON sp.id = starting_point JOIN recipe_intermediates fi ON fi.id = full_intermediate WHERE depth <= 0 and length(fi.so_far) >= 26) WHERE row_num = 1 ORDER BY full_intermediate_overlapping_population LIMIT 10;
+SELECT *, full_intermediate_overlapping_digest as label FROM (SELECT *, ROW_NUMBER() OVER ( PARTITION BY full_intermediate_overlapping_digest ORDER BY length(r.stream) + length(sp.stream)) as row_num FROM results r JOIN starting_points sp ON sp.id = starting_point JOIN recipe_intermediates fi ON fi.id = full_intermediate WHERE depth <= 0 and length(fi.so_far) >= 26) WHERE row_num = 1 ORDER BY full_intermediate_overlapping_population LIMIT 100;
 ```
 
-There's one very nice group of results `7471297537555870078` -- it cleans up a lot of the tricky still lives behind the intermediate pattern, and it makes progress on the intermediate by sending the next glider.
+There's one very nice group of results `7471297537555870078` -- it cleans up a lot of the tricky still lives behind the intermediate pattern, and it makes progress on the intermediate by sending the next glider. In fact, the remaining
+pond could actually stay through the entire construction process without
+affecting the snark recipe. We still want to remove it, however, so we can
+monitor the depth separation.
 
 ```rle
 x = 1332, y = 1326, rule = LifeHistory
@@ -266,5 +271,193 @@ x = 1332, y = 1326, rule = LifeHistory
 
 ```bash
 > uv run snark.py setup-next-search -i results/zero_degree3_reprocessed.sqlite -o results/zero_degree4.sqlite -q 'full_intermediate_overlapping_digest=7471297537555870078'
-> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree4.sqlite -l 100 -n 512
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree4.sqlite -l 100 -n 512 # (stopped early ~372)
+```
+
+There is a group of results (`-4140205901904326681`) that turns the pond into a tub.
+
+```
+> uv run snark.py setup-next-search -i results/zero_degree4.sqlite -o results/zero_degree5.sqlite -q 'full_intermediate_overlapping_digest=-4140205901904326681 and depth <= 0'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree5.sqlite -l 100 -n 512
+```
+
+This search ran very quickly -- about 20 minutes for 104 patterns searching depth 512, where a normal 512 deep search takes hours for even one pattern. This indicates that there must be sections of the search where the pattern settles quickly and it doesn't need to branch.
+
+The results mostly wanted to expand back towards the glider stream, including results with a max depth of 106! There is a group of 72 results which remove the tub (`-2756292488817558500`), but they have depths from 0 to 102. There are 4 with depth 0, followed by depths 17+.
+
+```
+> uv run snark.py setup-next-search -i results/zero_degree5.sqlite -o results/zero_degree6.sqlite -q 'full_intermediate_overlapping_digest=-2756292488817558500 and depth <= 0'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree6.sqlite -l 100 -n 512 # (stopped early ~412)
+```
+
+Let's try different improvements. The max_depth has been 14 since the beginning, so let's relax the depth limit to 14. Otherwise, there are very few results.
+
+```
+> uv run snark.py setup-next-search -i results/zero_degree6.sqlite -o results/zero_degree7.sqlite \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by full_intermediate_depth_separation desc limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by full_intermediate_overlapping_population limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by lane_width limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree7.sqlite -l 100 -n 512 # (stopped early ~396)
+```
+
+Stats:
+
+- full_intermediate_overlapping_population: min 13
+- full_intermediate_depth_separation: max -26
+- lane_width: min 66
+- length(fi.so_far): max 30
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree7.sqlite -o results/zero_degree8.sqlite \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by full_intermediate_depth_separation desc limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by full_intermediate_overlapping_population limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by lane_width limit 30' \
+  -q 'length(fi.so_far) >= 28 and depth <= 14 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree8.sqlite -l 100 -n 512 # (stopped early ~313)
+```
+
+Stats:
+
+- full_intermediate_overlapping_population: min 8
+- full_intermediate_depth_separation: max -26
+- lane_width: min 64
+- length(fi.so_far): max 32
+
+With progress on intermediate recipe (30 so far, 32 so far):
+
+- full_intermediate_overlapping_population: min 10 (30), 29 (32)
+- full_intermediate_depth_separation: max -27 (30), -40 (32)
+- lane_width: 66 (30), 85 (32)
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree8.sqlite -o results/zero_degree9.sqlite \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by full_intermediate_overlapping_population limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by lane_width limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree9.sqlite -l 100 -n 400
+> uv run snark.py setup-next-search -i results/zero_degree9.sqlite -o results/zero_degree10.sqlite \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by full_intermediate_depth_separation desc limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by full_intermediate_overlapping_population limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by lane_width limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 14 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree10.sqlite -l 100 -n 400
+> uv run snark.py setup-next-search -i results/zero_degree10.sqlite -o results/zero_degree11.sqlite \
+  -q 'length(fi.so_far) >= 32 and depth <= 14 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 32 and depth <= 14 order by full_intermediate_depth_separation desc limit 30' \
+  -q 'length(fi.so_far) >= 32 and depth <= 14 order by full_intermediate_overlapping_population limit 30' \
+  -q 'length(fi.so_far) >= 32 and depth <= 14 order by lane_width limit 30' \
+  -q 'length(fi.so_far) >= 32 and depth <= 14 order by length(fi.so_far) desc, lane_width*full_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree11.sqlite -l 100 -n 400
+```
+
+- full_intermediate_overlapping_population: 7 (zero_degree9), 3 (zero_degree10), 3 (zero_degree11)
+- full_intermediate_depth_separation: -27 (9), -27 (10), -27 (11)
+- lane_width: 66 (9), 65 (10), 65 (11)
+
+---
+
+Gonna try to remove the last blinker. There are 23 results in zero_degree10,
+but only 1 in zero_degree11, since they have a length so_far of 30, and we set
+a cut-off of 32. I'll start with the zero_degree10 results.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree10.sqlite -o results/zero_degree_separate1.sqlite -q 'full_intermediate_overlapping_population=3 and depth <= 14'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate1.sqlite -l 100 -n 400
+```
+
+Now there are results that have 0 overlapping population. Let's increase the distance to ~30.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate1.sqlite -o results/zero_degree_separate2.sqlite -q 'length(fi.so_far) >= 30 and depth <= 40 and full_intermediate_overlapping_population = 0 order by full_intermediate_depth_separation desc limit 100'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate2.sqlite -l 100 -n 512 # (stopped early ~412)
+```
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate2.sqlite -o results/zero_degree_separate3.sqlite \
+  -q 'length(fi.so_far) >= 30 and depth <= 40 order by lane_width*full_intermediate_overlapping_population/length(fi.so_far) limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 40 order by full_intermediate_depth_separation desc limit 30' \
+  -q 'length(fi.so_far) >= 30 and depth <= 40 order by lane_width limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate3.sqlite -l 100 -n 512 # (stopped early ~406)
+```
+
+There's one result with full_intermediate_depth_separation >= 30. Let's explore that quickly to see if it's viable.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate3.sqlite -o results/zero_degree_separate4.sqlite -q 'depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation >= 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate4.sqlite -l 100 -n 270
+```
+
+This took ~10 seconds and gave ~100 stable results, many of which have items in the path of the gliders, so it looks like it's not a dead end.
+
+```bash
+> rm results/zero_degree_separate4.sqlite
+> uv run snark.py setup-next-search -i results/zero_degree_separate3.sqlite -o results/zero_degree_separate4.sqlite -q 'depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation >= 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate4.sqlite -l 100 -n 512
+```
+
+This seems to have worked well, and we have 79 results which satisfy
+`depth <= 40 and length(fi.so_far) >= 32 and full_intermediate_depth_separation > 20`. Let's try to just send zero degree gliders to continue incrementing the recipe.
+
+This script will pick the best 100 candidates and search up to 400 generations for new patterns.
+
+```bash
+> for i in 4 5 6 7 8 9 10 11 12 13 14 15 16; do
+    uv run snark.py setup-next-search -i results/zero_degree_separate${i}.sqlite -o results/zero_degree_separate$(($i + 1)).sqlite -q 'depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation > 20 order by length(fi.so_far) desc, length(stream), full_intermediate_depth_separation desc, lane_width limit 100'
+  uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate$(($i + 1)).sqlite -l 100 -n 400 || break
+done
+```
+
+select *, "progress " || (length(fi.so_far)/2) as label from results join recipe_intermediates fi on full_intermediate=fi.id where depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation > 0 order by length(fi.so_far) desc, length(stream), full_intermediate_depth_separation desc, lane_width limit 10
+
+5: 82 gliders
+6: 85 gliders
+7: 88 gliders
+8: 92 gliders
+
+In zero_degree_separate10 it failed to find the next step, due to a bug in the full_intermediate calculation. The intermediate calculation preferred patterns that have more gliders so far. However, if step 22 involves removing a piece of the pattern, then it will report a match for step 23 with an overlapping population, rather than a match for step 22 with no overlapping population. I fixed it to consider the full_intermediate pattern with the most population instead. Eventually, it would be good to have the intermediate matches in a separate table joined with the results, so we can consider multiple matches at once.
+
+select *, length(fi.so_far)/2 as label from results join recipe_intermediates fi on fi.id=full_intermediate where depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation > 20 order by length(fi.so_far) desc, length(stream), full_intermediate_depth_separation desc, lane_width limit 10;
+
+```bash
+> uv run snark.py reprocess -i results/zero_degree_separate10.sqlite -o results/zero_degree_separate10_reprocessed.sqlite -q 'full_intermediate=327 or full_intermediate=383'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate10_reprocessed.sqlite -l 100 -n 0
+```
+
+After reprocessing, we find that there's one result which makes progress on the recipe, but it has a depth separation of 15. Let's continue with that one. Since there's only one candidate, let's try a deep search to maybe get lucky with something that cleans up the depth_separation or leaps forward by multiple times. Trying depth 540 took a couple of hours, but the results were less useful since it included results from a previous run, where the starting points were mixed up. Trying again with depth 630, which will be by far the deepest I've tried.
+
+```bash
+>  uv run snark.py setup-next-search -i results/zero_degree_separate10_reprocessed.sqlite -o results/zero_degree_separate11.sqlite -q 'depth <= 40 and length(fi.so_far) >= 30 order by length(fi.so_far) desc, length(stream), full_intermediate_depth_separation desc, lane_width limit 1'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate11.sqlite -l 100 -n 630 # (stopped early ~600)
+```
+
+Searching to 600 gens took ~60 hours, and there are still >5 million jobs to search. Note that searching to 600 with a max of 630 means that many of the patterns tested have a length of up to 630 -- the stopping point says that the jobs had 510 generations so far, and we were testing follow ups with 600-630 gens.
+
+- Stable results: 14 million
+- ...with full_intermediate match: 5.6 million
+- ...with depth <= 40: 260 thousand
+- ...with full_intermediate_depth_separation > 0: 230 thousand
+- ...with full_intermediate_depth_separation > 10: 1178
+- ...with full_intermediate_depth_separation > 20: 5
+- With full_intermediate_match and depth <= 40 and lane_width < 80: 98
+- ...with lane_width < 70: 6
+
+There are definitely diminishing returns with deep searches. For example, a pattern might have an escaping glider that we can't catch, but the deep search will still explore all the follow ups to the max, in case it might turn out OK. We also have to limit the number of candidates to test.
+
+There are 1404 results that are at step 22 or 23 (and only 19 are step 23), and have full_intermediate_depth_separation > 0 and depth <= 40. Let's try all of them.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate11.sqlite -o results/zero_degree_separate12.sqlite -q 'depth <= 40 and full_intermediate_depth_separation > 0 and length(fi.so_far)/2 >= 22'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate12.sqlite -l 100 -n 400
+```
+
+```bash
+> for i in 11 12 13 14 15 16; do
+    uv run snark.py setup-next-search -i results/zero_degree_separate${i}.sqlite -o results/zero_degree_separate$(($i + 1)).sqlite -q 'depth <= 40 and length(fi.so_far) >= 30 and full_intermediate_depth_separation > 20 order by length(fi.so_far) desc, length(stream), full_intermediate_depth_separation desc, lane_width limit 100'
+  uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate$(($i + 1)).sqlite -l 100 -n 400 || break
+done
 ```

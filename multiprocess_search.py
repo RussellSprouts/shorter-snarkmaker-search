@@ -114,11 +114,15 @@ class MultiprocessSearch:
             p.start()
 
     def __iter__(self) -> Generator[tuple[StreamJob, StreamJobResult, List[StreamJob]]]:
-        def send_tasks(max_val):
+        def send_tasks():
             if self.pending_queue.empty():
-                if max_val == float('inf'):
-                    max_val = 2**63-1
-                for task in self.db.pop_queue(max_val, 10000):
+                for task in self.db.pop_queue(2**63-1, 1):
+                    self.pending_tracker.mark_pending(task.cost)
+                    self.id_to_args[self.next_id] = (task.cost, task)
+                    self.pending_queue.put((self.next_id, task))
+                    self.next_id += 1
+
+                for task in self.db.pop_queue(self.pending_tracker.min_cost_pending() + self.shared_args.gen_options[0], 10000):
                     self.pending_tracker.mark_pending(task.cost)
                     self.id_to_args[self.next_id] = (task.cost, task)
                     self.pending_queue.put((self.next_id, task))
@@ -132,7 +136,7 @@ class MultiprocessSearch:
             return
 
         # start the first tasks.
-        send_tasks(min(stats.keys()) + 1)
+        send_tasks()
 
         while self.pending_tracker.n_pending or self.db.n_queued:
             for r in connection.wait(self.readers):
@@ -146,7 +150,7 @@ class MultiprocessSearch:
                     (args, result)
                 ])
                 yield (args, result, new_jobs)
-                send_tasks(self.pending_tracker.min_cost_pending())
+                send_tasks()
 
 
     def queue(self, new_jobs):
