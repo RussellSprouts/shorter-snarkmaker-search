@@ -384,7 +384,8 @@ class ProcessingDatabase:
 
         self.reload_recipe_intermediates()
 
-        self.n_queued = sum(self.queue_stats().values())
+        self.queue_stats = self.fetch_queue_stats()
+        self.n_queued = sum(self.queue_stats.values())
 
     def reload_recipe_intermediates(self):
         self.recipe_intermediates = {
@@ -420,6 +421,8 @@ class ProcessingDatabase:
 
     def push_queue(self, jobs):
         self.n_queued += len(jobs)
+        for job in jobs:
+            self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) + 1
         self.conn.executemany(
             """INSERT INTO queue (in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth, follow_ups) VALUES (?, ?, ?, ?, ?, ?, ?)""",
             [
@@ -449,6 +452,9 @@ class ProcessingDatabase:
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
         self.n_queued -= len(results)
+        for job, result in results:
+            self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) - 1
+
         self.conn.executemany(
             """INSERT INTO results
             (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift)
@@ -492,7 +498,7 @@ class ProcessingDatabase:
     def reset_in_progress_queue(self):
         self.conn.execute("""UPDATE queue SET in_progress = 0 WHERE in_progress = 1""")
 
-    def queue_stats(self):
+    def fetch_queue_stats(self):
         return {
             k: v
             for k, v in self.conn.execute(
@@ -531,7 +537,7 @@ if __name__ == "__main__":
     filename = "new-db.sqlite"
     db = ProcessingDatabase(filename)
     print(f"Opened database {filename}")
-    queue_stats = db.queue_stats()
+    queue_stats = db.fetch_queue_stats()
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
 
     print(f"Database contains {len(db.recipe_intermediates)} recipe intermediates")

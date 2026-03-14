@@ -129,7 +129,7 @@ class MultiprocessSearch:
                     self.next_id += 1
                 self.db.commit()
 
-        stats = self.db.queue_stats()
+        stats = self.db.queue_stats
         queued_costs = list(stats.keys())
         if len(queued_costs) == 0:
             print("Warning: queue is empty, not processing.", file=sys.stderr)
