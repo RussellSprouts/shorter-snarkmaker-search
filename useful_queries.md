@@ -5,7 +5,7 @@
 Use `sqlite3 results.sqlite`.
 
 ```sql
-SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi.so_far)/2 FROM results JOIN recipe_intermediates fi ON fi.id = full_intermediate GROUP BY full_intermediate;
+SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2 FROM r GROUP BY full_intermediate;
 ```
 
 

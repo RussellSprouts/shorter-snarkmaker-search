@@ -378,6 +378,63 @@ class ProcessingDatabase:
             """
         )
 
+        # Create a view with all the relevant joins for ease of
+        # querying.
+        self.conn.execute(
+            """
+            CREATE VIEW IF NOT EXISTS r AS
+            SELECT
+                r.stream as stream,
+                r.starting_point as starting_point,
+                r.digest as digest,
+                r.before_hit_digest as before_hit_digest,
+                r.x as x,
+                r.y as y,
+                r.offset_block_lane as offset_block_lane,
+                r.lane_width as lane_width,
+                r.max_depth as max_depth,
+                r.depth as depth,
+                r.population as population,
+                r.flipped_offset_block as flipped_offset_block,
+                r.full_intermediate as full_intermediate,
+                r.full_intermediate_depth_separation as full_intermediate_depth_separation,
+                r.full_intermediate_overlapping_population as full_intermediate_overlapping_population,
+                r.full_intermediate_overlapping_digest as full_intermediate_overlapping_digest,
+                r.full_intermediate_shift as full_intermediate_shift,
+                r.partial_intermediate as partial_intermediate,
+                r.partial_intermediate_log_prob as partial_intermediate_log_prob,
+                r.partial_intermediate_positive_log_prob as partial_intermediate_positive_log_prob,
+                r.partial_intermediate_depth_separation as partial_intermediate_depth_separation,
+                r.partial_intermediate_overlapping_population as partial_intermediate_overlapping_population,
+                r.partial_intermediate_shift as partial_intermediate_shift,
+
+                fi.so_far as fi_so_far,
+                fi.remaining as fi_remaining,
+                fi.digest as fi_digest,
+                fi.rle_string as fi_rle_string,
+                fi.x as fi_x,
+                fi.y as fi_y,
+
+                pi.so_far as pi_so_far,
+                pi.remaining as pi_remaining,
+                pi.digest as pi_digest,
+                pi.rle_string as pi_rle_string,
+                pi.x as pi_x,
+                pi.y as pi_y,
+
+                sp.cost as sp_cost,
+                sp.stream as sp_stream,
+                sp.follow_up_gen_limit as sp_follow_up_gen_limit,
+                sp.max_depth as max_depth,
+
+                CAST(sp.stream || r.stream AS BLOB) as full_stream
+            FROM results r
+            LEFT OUTER JOIN recipe_intermediates fi ON fi.id = full_intermediate
+            LEFT OUTER JOIN recipe_intermediates pi on pi.id = partial_intermediate
+            JOIN starting_points sp on sp.id = starting_point
+            """
+        )
+
         self.reset_in_progress_queue()
 
         self.reload_starting_points()
