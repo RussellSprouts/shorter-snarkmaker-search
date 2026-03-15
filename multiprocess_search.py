@@ -156,6 +156,21 @@ class MultiprocessSearch:
     def queue(self, new_jobs):
         self.db.push_queue(new_jobs)
 
+    def n_streams_queued(self):
+        total = 0
+        gen_options = self.shared_args.gen_options
+        for gens, n in self.db.queue_stats.items():
+            start = gens + gen_options[0]
+            end = min(
+                gens + gen_options[-1],
+                self.shared_args.max_gens
+            )
+            streams_per_job = end - start + 1
+            total += n * streams_per_job
+
+        return total
+
+
     def __enter__(self):
         return self
 

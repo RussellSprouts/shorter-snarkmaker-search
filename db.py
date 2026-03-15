@@ -509,7 +509,7 @@ class ProcessingDatabase:
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
         self.n_queued -= len(results)
-        for job, result in results:
+        for job, _ in results:
             self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) - 1
 
         self.conn.executemany(

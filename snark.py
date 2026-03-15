@@ -846,9 +846,19 @@ def optimize(
         for job, result, new_jobs in search:
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
-            if speedo.tick(job.follow_up_gen_limit - gen_options[0] + 1):
+            streams_in_job = job.follow_up_gen_limit - gen_options[0] + 1
+            if speedo.tick(streams_in_job):
+                current_per_s = speedo.get_current_speed_and_reset()
+                avg_per_s = speedo.overall_speed()
+                done = speedo.n_finished
+                gens = (
+                    search.pending_tracker.min_cost_pending()+gen_options[0],
+                    min(search.pending_tracker.min_cost_pending()+gen_options[-1], max_gens)
+                )
+                remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
+                total = search.n_streams_queued()
                 print(
-                    f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending()+gen_options[0]}-{min(search.pending_tracker.min_cost_pending()+gen_options[-1], max_gens)} gens ({search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)} remaining), {search.db.n_queued} total queued",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens (~{remaining:,} remaining), ~{total:,} total queued",
                     file=sys.stderr,
                 )
 
