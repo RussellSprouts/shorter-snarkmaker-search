@@ -846,7 +846,7 @@ def optimize(
         for job, result, new_jobs in search:
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
-            if speedo.tick(job.follow_up_gen_limit - gen_options[0]):
+            if speedo.tick(job.follow_up_gen_limit - gen_options[0] + 1):
                 print(
                     f"{speedo.get_current_speed_and_reset():.2f}/s, {speedo.overall_speed():.2f} avg/s, {speedo.n_finished} done, {search.pending_tracker.n_pending} queued, {search.pending_tracker.min_cost_pending()+gen_options[0]}-{min(search.pending_tracker.min_cost_pending()+gen_options[-1], max_gens)} gens ({search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)} remaining), {search.db.n_queued} total queued",
                     file=sys.stderr,
