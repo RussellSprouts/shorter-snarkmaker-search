@@ -425,7 +425,7 @@ class ProcessingDatabase:
                 sp.cost as sp_cost,
                 sp.stream as sp_stream,
                 sp.follow_up_gen_limit as sp_follow_up_gen_limit,
-                sp.max_depth as max_depth,
+                sp.max_depth as sp_max_depth,
 
                 CAST(sp.stream || r.stream AS BLOB) as full_stream
             FROM results r

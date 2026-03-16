@@ -198,9 +198,9 @@ def setup_next_search(
         queries = ["1 = 1"]
     for query in queries:
         query = query[0]
-        for result in in_db.conn.execute(
-            f"SELECT * FROM results LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
-        ):
+        if not query.lower().startswith('select '):
+            query = f"SELECT * FROM r LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
+        for result in in_db.conn.execute(query):
             results.add(SavedResult.from_row(result))
 
     results: List[SavedResult] = list(results)
@@ -858,7 +858,7 @@ def optimize(
                 remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens (~{remaining:,} remaining), ~{total:,} total queued",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens (<{remaining:,} remaining), <{total:,} total queued",
                     file=sys.stderr,
                 )
 
