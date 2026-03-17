@@ -89,9 +89,10 @@ class ComponentSearch:
         recipe to set of components that are overlapping"""
         result = defaultdict(set)
         for c in components:
-            recipes = self.component_to_recipe.get(c, set())
-            for r in recipes:
-                result[r].add(c)
+            recipes = self.component_to_recipe.get(c, None)
+            if recipes:
+                for r in recipes:
+                    result[r].add(c)
         return result
 
     def recipe_components(self, recipe: Recipe) -> Set[PatternRef]:

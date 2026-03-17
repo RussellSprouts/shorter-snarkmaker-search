@@ -1,10 +1,11 @@
 import multiprocessing
 import heapq
 from typing import Callable, Generator, List
-from multiprocessing import connection
+from multiprocessing import connection, current_process
 import sys
 import signal
 from queue import Empty
+import cProfile
 
 from component_search import ComponentSearch, PatternCache
 from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
@@ -19,7 +20,8 @@ def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
     pattern_cache = PatternCache()
     shared_args.component_search = ComponentSearch(pattern_cache)
     for recipe in shared_args.recipe_intermediates.values():
-        shared_args.component_search.add_recipe(recipe)
+        if len(recipe.so_far) in shared_args.partial_range:
+            shared_args.component_search.add_recipe(recipe)
 
     while True:
         id = None

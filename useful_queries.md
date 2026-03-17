@@ -2,12 +2,11 @@
 
 ## See the breakdown of full_intermediates in the results
 
-Use `sqlite3 results.sqlite`.
-
 ```sql
-SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2 FROM r GROUP BY full_intermediate;
+SELECT full_intermediate, COUNT(distinct before_hit_digest) as count, LENGTH(fi_so_far)/2 as progress FROM r GROUP BY full_intermediate ORDER BY progress desc, count desc;
 ```
 
+## See the unique patterns of the zero degree elbow which overlap the depth range of the full_intermediate
 
 ```sql
 SELECT * FROM (

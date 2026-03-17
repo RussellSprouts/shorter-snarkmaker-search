@@ -446,3 +446,29 @@ There were a lot of duplicate results by before_hit_digest, so I used the partit
 > uv run snark.py setup-next-search -i results/zero_degree_separate12.sqlite -o results/zero_degree_separate13.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far)/2, length(full_stream), lane_width*population limit 1500'
 > uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate13.sqlite -l 100 -n 350
 ```
+
+Calculating to 350 only took a couple of hours, but we ended up with only 38 results which reach step 24 and stay in bounds, and only 900 which reach step 24 at all. Let's try again with depth 400.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate12.sqlite -o results/zero_degree_separate13_depth400.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far)/2, length(full_stream), lane_width*population limit 1500'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate13_depth400.sqlite -l 100 -n 400
+```
+
+Let's check on our pace, using the zero-degree separate results:
+
+SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2 as step, min(length(full_stream)) as gliders FROM r WHERE depth <= 40 and full_intermediate_depth_separation > 0 GROUP BY full_intermediate order by step desc, gliders asc;
+
+- zero_degree_separate1: step 15, 68 gliders
+- zero_degree_separate2: step 16, 71 gliders
+- zero_degree_separate3: step 16, 73 gliders
+- zero_degree_separate4: step 16, 79 gliders
+- zero_degree_separate5: step 17, 81 gliders (+1/+2)
+- zero_degree_separate6: step 18, 84 gliders (+1/+3)
+- zero_degree_separate7: step 19, 87 gliders (+1/+3)
+- zero_degree_separate8: step 20, 90 gliders (+1/+3)
+- zero_degree_separate9: step 21, 93 gliders (+1/+3)
+- zero_degree_separate10_reprocessed: step 21, 94 gliders (+0/+1)
+- zero_degree_separate11: step 23: 100 gliders (+2/+6)
+- zero_degree_separate12: step 24: 103 gliders (+1/+3)
+
+If this holds, we could reach step 73 in the 250-275 glider range, and then we just need to clean up. We could be on track to finish in less than 300 gliders.

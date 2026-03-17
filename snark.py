@@ -403,7 +403,6 @@ def abs_lane(x):
         return -x + 1
     return x
 
-
 def score_pattern(
     job: StreamJob,
     follow_up: int,
@@ -413,7 +412,8 @@ def score_pattern(
     recursed=False,
 ):
     lanes = []
-    for c in end_pattern.components():
+    comps = end_pattern.components()
+    for c in comps:
         (x, y, w, h) = c.getrect()
         is_pi_equivalent = c.digest() in offset_elbows
         lanes.append(
@@ -486,8 +486,6 @@ def score_pattern(
     partial_intermediate_shift = 0
 
     for recipe in overlapping_recipes:
-        if len(recipe.so_far) not in shared_args.partial_range:
-            continue
         recipe_components = shared_args.component_search.recipe_components(recipe)
         missing = recipe_components - components
         elbow = components - recipe_components

@@ -3,7 +3,9 @@ name = "snark-maker"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
+    "gprof2dot>=2025.4.14",
+    "nuitka>=4.0.5",
     "python-lifelib>=2.5.6",
 ]
