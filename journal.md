@@ -458,6 +458,9 @@ Let's check on our pace, using the zero-degree separate results:
 
 SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2 as step, min(length(full_stream)) as gliders FROM r WHERE depth <= 40 and full_intermediate_depth_separation > 0 GROUP BY full_intermediate order by step desc, gliders asc;
 
+SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2 as step, min(length(full_stream)) as gliders FROM r GROUP BY full_intermediate order by step desc, gliders asc;
+
+
 - zero_degree_separate1: step 15, 68 gliders
 - zero_degree_separate2: step 16, 71 gliders
 - zero_degree_separate3: step 16, 73 gliders
@@ -472,3 +475,35 @@ SELECT full_intermediate, COUNT(distinct before_hit_digest), LENGTH(fi_so_far)/2
 - zero_degree_separate12: step 24: 103 gliders (+1/+3)
 
 If this holds, we could reach step 73 in the 250-275 glider range, and then we just need to clean up. We could be on track to finish in less than 300 gliders.
+
+The 400 deep search gave us 84+123 gliders which reach step 24 in-bounds, and over a million that reach step 23 in-bounds.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate13_depth400.sqlite -o results/zero_degree_separate14.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far)/2, lane_width*population, length(full_stream) limit 1500'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate14.sqlite -l 100 -n 400 # (stopped early ~389-400)
+```
+
+There are now more results that make it to step 24.
+Let's try continuing with the results we've found.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate14.sqlite -o results/zero_degree_separate15.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far)/2, lane_width*population, length(full_stream) limit 1500'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate15.sqlite -l 100 -n 400
+```
+
+Finally, this finds one result which reaches step 25.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate15.sqlite -o results/zero_degree_separate16.sqlite -q 'select * from r where length(fi_so_far) = 50'
+# remove the last 2 gliders from the stream and search from there.
+> sqlite3 results/zero_degree_separate16.sqlite 'update starting_points set stream = cast(substr(stream, 1, length(stream)-2) as blob)'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate16.sqlite -l 100 -n 450
+```
+
+This expanded the results, but I also realized that my last few days of searches were flawed -- I forgot to use `desc` in `ORDER BY length(fi_so_far)`,
+so I was ignoring the furthest candidates at each stage. Time to redo the searches starting at zero_degree_separate13!
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate12.sqlite -o results/zero_degree_separate13_redo.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate13_redo.sqlite -l 100 -n 375
+```

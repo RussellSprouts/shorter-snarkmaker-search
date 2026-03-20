@@ -838,12 +838,22 @@ def optimize(
 
     already_seen_results = set()
     speedo = Speedometer(interval_s=10)
+    best_full_intermediate = 0
+    n_best = 0
     with MultiprocessSearch(
         fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=n_processes
     ) as search:
         for job, result, new_jobs in search:
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
+            for r in result.valid_children:
+                if r.full_intermediate is not None:
+                    progress = len(output_db.recipe_intermediates[r.full_intermediate].so_far)
+                    if progress == best_full_intermediate:
+                        n_best += 1
+                    elif progress > best_full_intermediate:
+                        n_best = 1
+                        best_full_intermediate = progress
             streams_in_job = job.follow_up_gen_limit - gen_options[0] + 1
             if speedo.tick(streams_in_job):
                 current_per_s = speedo.get_current_speed_and_reset()
@@ -856,7 +866,7 @@ def optimize(
                 remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens (<{remaining:,} remaining), <{total:,} total queued",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}",
                     file=sys.stderr,
                 )
 
