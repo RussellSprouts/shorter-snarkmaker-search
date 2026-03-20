@@ -22,6 +22,8 @@ See [journal.md](journal.md) for a log of my search so far and sample commands.
 
 See [useful_queries.md](useful_queries.md) for some useful queries in the SQL databases. Use `uv run snark.py view-results ...` to run queries. It will automatically print rle patterns for results.
 
+Searches using the `optimize` command can take hours or days depending on the number of starting points and search depth. However, results and the queue of pending streams to check are stored in a sqlite database, so the command can be interrupted and resumed at any time. In `journal.md` you'll see many searches are stopped early.
+
 ## Finding an offset elbow
 
 ![Diagram showing offset block schematic](images/diagram1.svg)
