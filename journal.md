@@ -1,23 +1,29 @@
 # Search log
 
-First, push the block back a bit to give us more free space to work with.
+First, we need to generate the recipe intermediates database. This takes in the zero-degree slow glider snark recipe and does a search to find intermediate states with different permutations of the gliders.
+
+```bash
+> uv run snark.py recipe-intermediates -i snark.rle -o snark.sqlite
+```
+
+To start off the search, push the block back a bit to give us more free space to work with.
 
 ```bash
 > uv run snark.py optimize -r results/snark.sqlite -o results/push-first.sqlite -l 0 -n 450
+> uv run snark.py setup-next-search -i results/push-first.sqlite -o results/push-first2.sqlite -q '1=1 ORDER BY depth LIMIT 200'
 ```
 
 Push some more
 
 ```bash
-> uv run snark.py setup-next-search -i results/push-first.sqlite -o results/push-first2.sqlite -q '1=1 ORDER BY depth LIMIT 200'
 > uv run snark.py optimize -r results/snark.sqlite -o results/push-first2.sqlite -l 0 -n 450 # (stopped early ~419)
+> uv run snark.py setup-next-search -i results/push-first2.sqlite -o results/push-first3.sqlite -q '1=1 ORDER BY depth LIMIT 200'
 ```
 
 Search for offset block that will become the target after the snark is
 complete.
 
 ```bash
-> uv run snark.py setup-next-search -i results/push-first2.sqlite -o results/push-first3.sqlite -q '1=1 ORDER BY depth LIMIT 200'
 > uv run snark.py optimize -r results/snark.sqlite -o results/push-first3.sqlite -l 0 -n 450 # (stopped early ~423)
 ```
 

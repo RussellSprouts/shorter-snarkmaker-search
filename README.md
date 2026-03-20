@@ -1,7 +1,6 @@
 # Search scripts to optimize the Snarkmaker recipe
 
-The [Snarkmaker](https://conwaylife.com/wiki/Snarkmaker) is a recipe
-which uses ~2400 gliders on a single lange track to construct a
+The [Snarkmaker](https://conwaylife.com/wiki/Snarkmaker) is a recipe in Conway's Game of Life which uses ~2400 gliders on a single lange track to construct a
 snark on the lane to reflect the gliders.
 
 The original Snarkmaker recipe is compiled from a library of composable
@@ -14,6 +13,14 @@ This search program searches for an optimized recipe which builds up the
 snark step by step, not returning to any particular configuration
 inbetween. For this we need to have a score for how close we are to
 guide the search.
+
+## Usage
+
+I use `uv` to handle Python package management. Simply `uv run snark.py --help`
+
+See [journal.md](journal.md) for a log of my search so far and sample commands.
+
+See [useful_queries.md](useful_queries.md) for some useful queries in the SQL databases. Use `uv run snark.py view-results ...` to run queries. It will automatically print rle patterns for results.
 
 ## Finding an offset elbow
 
@@ -49,8 +56,8 @@ go directly from one arbitrary ash cloud to another.
 
 The diagram shows the criteria we will use to guide the search.
 
-- Offset elbow: The offset elbow fixes one or two locations for the snark --
-  the output gliders need to hit the elbow in the right location.
+- Offset elbow: The offset elbow fixes one location for the snark --
+  the output gliders need to hit the elbow in the right location to create the standard pi-explosion.
 - Max depth: as before, decreasing the max depth makes it easier to chain
   our new snarkmaker recipe.
 - Zero-degree elbow ash cloud: as before, a smaller ash cloud is more manageable
@@ -133,7 +140,7 @@ The actual results are stored in a Sqlite database file. There is a SQL VIEW nam
 
 - **partial_intermediate**: Based on the position of the offset block, we calculate where the snark must be located. For each offset block, there is only one possible position due to glider color. If the final ash contains some component of one of the intermediate steps of the snark recipe, then this is set to the ID of that intermediate. If there are multiple recipe intermediates that match, this is the one with the best log_prob.
 
-- **partial_intermediate_log_prob**: A very rough approximation of how rare the missing pieces of the recipe are -- how likely is it that we will be able to find the rest of them through random search. Calculated as the sum of the log of the probability of each component, based on the occurence statistics in https://conwaylife.com/wiki/Most_common_objects_on_Catagolue. This means each log prob is a negative number, with higher numbers better. We only include the most common objects, so pieces like the heart of the snark have a log prob of -Infinity. Depending on the `--partial-progress-factor` parameter, intermediates which are closer to the finish get a bonus.
+- **partial_intermediate_log_prob**: A very rough approximation of how rare the missing pieces of the recipe are -- how likely is it that we will be able to find the rest of them through random search. Calculated as the sum of the log of the probability of each component, based on the occurence statistics in <https://conwaylife.com/wiki/Most_common_objects_on_Catagolue>. This means each log prob is a negative number, with higher numbers better. We only include the most common objects, so pieces like the heart of the snark have a log prob of -Infinity. Depending on the `--partial-progress-factor` parameter, intermediates which are closer to the finish get a bonus.
 
 - **partial_intermediate_positive_log_prob**: A very rough approximation of how rare the matching pieces of the recipe are -- how lucky we are that we've made it this far. Calculated the same way as partial_intermediate_log_prob, but with no bonus for `--partial-progress-factor`. For this, a more negative value is better.
 
