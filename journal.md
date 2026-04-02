@@ -510,6 +510,363 @@ This expanded the results, but I also realized that my last few days of searches
 so I was ignoring the furthest candidates at each stage. Time to redo the searches starting at zero_degree_separate13!
 
 ```bash
-> uv run snark.py setup-next-search -i results/zero_degree_separate12.sqlite -o results/zero_degree_separate13_redo.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500'
+> uv run snark.py setup-next-search -i results/zero_degree_separate12.sqlite -o results/zero_degree_separate13_redo.sqlite -q 'select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500'
 > uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate13_redo.sqlite -l 100 -n 375
+```
+
+This time, things worked as expected. zero_degree_separate12 had 4 distinct streams that reached 24 while staying in-bounds, and over 29k that reached step 23. zero_degree_separate13_redo has 5 that reached step 25, and 16k that reached step 24.
+
+Now let's redo 14, 15, and 16. The 375 depth takes about ~12 hours, vs ~24 for depth 400, so if I continue to get good results that should save a lot of time.
+
+```bash
+for i in 13 14 15; do
+  uv run snark.py setup-next-search -i "results/zero_degree_separate${i}_redo.sqlite" -o results/zero_degree_separate$(($i + 1))_redo.sqlite -q "select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500"
+  uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate$(($i + 1))_redo.sqlite -l 100 -n 375 || break
+done
+```
+
+select *, "progress " || cast(length(fi_so_far)/2 as text) || " gliders " || cast(length(full_stream) as text) as label from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far) DESC, lane_width*population, length(full_stream) limit 1500
+
+
+select hex(stream), row_number() over (order by length(fi_so_far) DESC, length(full_stream)) as row from (select
+*, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0) where row_number = 1 order by row limit 1500
+
+```bash
+> uv run snark.py setup-next-search -i "results/zero_degree_separate15_redo.sqlite" -o results/zero_degree_separate16_redo.sqlite -q "select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate16_redo.sqlite -l 100 -n 375
+```
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate16_redo_redo.sqlite -o results/zero_degree_separate17.sqlite -q "select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream), lane_width*population limit 1500"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate17.sqlite -l 100 -n 410
+```
+
+
+select "progress " || cast(length(fi_so_far)/2 as text) || " gliders " || cast(length(full_stream) as text) as label from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 23) where row_number = 1 order by length(fi_so_far) DESC, length(full_stream) limit 10
+
+
+- zero_degree_separate1: step 15, 68 gliders
+- zero_degree_separate2: step 16, 71 gliders
+- zero_degree_separate3: step 16, 73 gliders
+- zero_degree_separate4: step 16, 79 gliders
+- zero_degree_separate5: step 17, 81 gliders (+1/+2)
+- zero_degree_separate6: step 18, 84 gliders (+1/+3)
+- zero_degree_separate7: step 19, 87 gliders (+1/+3)
+- zero_degree_separate8: step 20, 90 gliders (+1/+3)
+- zero_degree_separate9: step 21, 93 gliders (+1/+3)
+- zero_degree_separate10_reprocessed: step 21, 94 gliders (+0/+1)
+- zero_degree_separate11: step 23: 100 gliders (+2/+6)
+- zero_degree_separate12: step 24: 103 gliders (+1/+3)
+
+- zero_degree_separate13_redo: 5 candidates step 25, 106 gliders, 15k candidates step 24, 104 gliders
+- zero_degree_separate14_redo: 1 candidate step 26, 110 gliders, 7k candidates step 25, 106 gliders
+- zero_degree_separate15_redo: 700 candidates step 26, 110 gliders, 600k candidates to step 25, 107 gliders
+- zero_degree_separate16_redo_redo: 400 candidates step 27, 113 gliders, 450k candidates step 26, 110 gliders
+- zero_degree_separate17: 10 candidates step 28, 117 gliders, 520k candidates step 27, 113 gliders
+
+step 44, 162 gliders
+
+I want to find more candidates at step 28, so I'll run a wide shallow search:
+
+```bash
+> uv run snark.py setup-next-search -i "results/zero_degree_separate17.sqlite" -o results/zero_degree_separate18.sqlite -q "select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where (depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 27) or length(fi_so_far)/2 == 28) where row_number = 1"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate18.sqlite -l 100 -n 255
+```
+
+And in parallel run a search from zero_degree_separate16_redo_redo on the remaining candidates that reached 25.
+
+```bash
+> uv run snark.py setup-next-search -i "results/zero_degree_separate17.sqlite" -o results/zero_degree_separate18.sqlite -q "select * from (select *, row_number() over (partition by before_hit_digest order by length(full_stream), sp_cost) as row_number from r where (depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 >= 27) or length(fi_so_far)/2 == 28) where row_number = 1"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate18.sqlite -l 100 -n 255
+```
+
+I stopped the search early after 73 million streams were evaluated, with 13 million remaining to try every single glider follow-up to the 500k results.
+
+Combined with the results from 17, I now have 173 more candidates at step 28.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate18.sqlite -o results/zero_degree_separate19.1.sqlite -q "depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 == 28"
+> uv run snark.py setup-next-search -i results/zero_degree_separate17.sqlite -o results/zero_degree_separate19.2.sqlite -q "depth <= 40 and full_intermediate_depth_separation > 0 and length(fi_so_far)/2 == 28"
+> uv run snark.py combine-starting-points -i results/zero_degree_separate19.1.sqlite -i results/zero_degree_separate19.2.sqlite -o results/zero_degree_separate19.sqlite
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate19.sqlite -l 100 -n 450 # (stopped early 400)
+```
+
+Now we have 183 starting points.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate19.sqlite -o results/zero_degree_separate20.sqlite -q "depth <= 40 and length(fi_so_far)/2 == 29"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate20.sqlite -l 100 -n 450 # (stopped early ~363)
+```
+
+There was one lucky result which goes straight from 29-32. It may not be viable -- there's a trough all the way through to the target. Let's explore it.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate20.sqlite -o results/zero_degree_separate21.sqlite -q "length(fi_so_far)/2 == 32"
+# Rewind two gliders to explore related streams as well.
+> sqlite3 results/zero_degree_separate21.sqlite 'update starting_points set stream = cast(substr(stream, 1, length(stream)-2) as blob)'
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate21.sqlite -l 100 -n 512
+```
+
+This found 12 unique results at step 33 with depth <= 40, though there is a modest overlap. The depth 512 search finished with only 15 million total processed -- many branches were pruned early.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate21.sqlite -o results/zero_degree_separate22.sqlite -q "length(fi_so_far)/2 == 33 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate22.sqlite -l 100 -n 512
+``` 
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate22.sqlite -o results/zero_degree_separate23.sqlite -q "length(fi_so_far)/2 == 34 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate23.sqlite -l 100 -n 450 # (stopped early 328)
+```
+
+This found two results at step 36 and 8 at step 35, though they are pretty messy. There are also 800k+ results at step 34.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate23.sqlite -o results/zero_degree_separate24.sqlite -q "length(fi_so_far)/2 >= 35" -q "length(fi_so_far)/2 = 34 and depth <= 40 and full_intermediate_depth_separation > 0 order by full_intermediate_depth_separation desc limit 10" -q "length(fi_so_far)/2 = 34 and depth <= 40 and full_intermediate_depth_separation > 0 order by lane_width limit 10"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate24.sqlite -l 100 -n 450 # (stopped early 413)
+```
+
+This found 3 results at step 37. Let's try them out.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate24.sqlite -o results/zero_degree_separate25.sqlite -q "length(fi_so_far)/2 = 37"
+> uv run snark.py optimize -r results/snark.sqlite -o results/zero_degree_separate25.sqlite -l 100 -n 512 # (stopped early ~352)
+```
+
+There is one result with a good depth that reaches step 38.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate25.sqlite -o results/sprint1.sqlite -q "length(fi_so_far)/2 = 38 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint1.sqlite -l 100 -n 512
+```
+
+That search didn't find anything at 39, so let's try to find more 38 candidates by resuming the search in zero_degree_separate25.sqlite. Stopping at 433, we have 19 results now.
+
+```bash
+> uv run snark.py setup-next-search -i results/zero_degree_separate25.sqlite -o results/sprint2.sqlite -q "length(fi_so_far)/2 = 38 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint2.sqlite -l 100 -n 512 # (stopped early ~388)
+```
+
+Even with hundreds of thousands at step 38, we have none at step 39. However, we did find lots of results which clean up area. Let's search from those.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint2.sqlite -o results/sprint3.sqlite -q "length(fi_so_far)/2 = 38 and depth <= 40 and full_intermediate_overlapping_population <= 6"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint3.sqlite -l 100 -n 450 # (stopped early ~400)
+```
+
+There are 44 results on step 39 with depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint3.sqlite -o results/sprint4.sqlite -q "length(fi_so_far)/2 = 39 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint4.sqlite -l 100 -n 450 # (stopped early 279)
+```
+
+There's one result on step 40 with depth <= 40. Let's try it quickly:
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint4.sqlite -o results/sprint5.sqlite -q "length(fi_so_far)/2 = 40 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint5.sqlite -l 100 -n 450
+```
+
+That finished with only one result at 41, and it has a depth of 45, so let's continue searching in sprint4.sqlite.
+
+Continuing to 380, we find 39 results at step 40 with depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint4.sqlite -o results/sprint6.sqlite -q "length(fi_so_far)/2 = 40 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint6.sqlite -l 100 -n 450 # (stopped early 302)
+```
+
+We found 1 with a good depth pretty quickly, let's try it.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint6.sqlite -o results/sprint7.sqlite -q "length(fi_so_far)/2 = 41 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint7.sqlite -l 100 -n 512 # (stopped early 418)
+```
+
+This found some candidates at step 44 (really 43, the 44 candidate is very messy).
+None of them activated the LOM reaction.
+
+Trying some more, we find another candidate with depth 31. Let's try that.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint6.sqlite -o results/sprint8.sqlite -q "length(fi_so_far)/2 = 41 and depth = 31"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint8.sqlite -l 100 -n 512
+```
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint7.sqlite -o results/sprint9.1.sqlite -q "length(fi_so_far)/2 > 41 and depth <= 40"
+> uv run snark.py setup-next-search -i results/sprint8.sqlite -o results/sprint9.2.sqlite -q "length(fi_so_far)/2 > 41 and depth <= 40"
+> uv run snark.py combine-starting-points -i results/sprint9.1.sqlite -i results/sprint9.2.sqlite -o results/sprint9.sqlite
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint9.sqlite -l 100 -n 375 # (stopped early ~192)
+```
+
+There is one result which does the first big reaction towards making the snark heart. It's on step 44.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint9.sqlite -o results/sprint10.sqlite -q "full_intermediate=311"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint10.sqlite -l 100 -n 450
+```
+
+No great results from this right away, went back to sprint9 and let it run overnight, stopping at 275 gens. It found 43 results which made it to step 44 and had depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint9.sqlite -o results/sprint11.sqlite -q "length(fi_so_far)/2 = 44 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint11.sqlite -l 100 -n 450 # (stopped early ~314)
+```
+
+There is one result which has very good separation at step 45, and it has already done the LOM reaction to create the first part of the snark heart. Let's try exploring this.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint11.sqlite -o results/sprint12.sqlite -q 'full_intermediate=302'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint12.sqlite -l 100 -n 450 # (stopped early 349)
+```
+
+This found 167 results at step 46.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint12.sqlite -o results/sprint13.sqlite -q 'length(fi_so_far)/2 = 46 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint13.sqlite -l 100 -n 450 # (stopped early ~285)
+```
+
+There are 32 results at step 47.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint13.sqlite -o results/sprint14.sqlite -q 'length(fi_so_far)/2 = 47 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint14.sqlite -l 100 -n 450 # (stopped early 375)
+```
+
+There are 723 results at depth 48, but many of them have an interesting pattern which puts a ship at lane width 90, opposite the offset block.
+
+```
+x = 138, y = 145, rule = LifeHistory
+4$48.B12.2B$47.3B5.9B37.3B$44.7B2.12B9.B24.4B2A$44.7B.13B7.4B22.5B2A$
+43.23B5.8B7.B.3B6.9B$44.21B6.9B.12B4.9B$45.19B7.23B4.9B$47.18B4.26B5.
+7B$46.19B3.29B.8B$41.B5.19B.30B.8B$39.67B$30.2B6.71B$28.5B5.72B$26.B.
+5B4.73B$24.10B2.75B$23.11B2.74B$19.3B.12B.75B$18.95B$19.94B$19.95B$
+21.84B2A8B$22.83B2A8B$24.90B$25.83BA2B$26.81BABAB$25.76B3A3BABAB$26.
+82BAB$27.13B.5B.52BA5BA$27.72BA5BAB$28.38B2A31BA5BA$29.37B2A39B$28.
+67B3A3B3A5B$27.5B.77B$22.2B2.4B4.65BA10B$21.9B4.64BABA7B$21.11B2.64BA
+BA7B$19.80BA5B.B$18.88B$17.25B2C19B2A41B$18.23BC2BC7B2C9B2A40B$17.25B
+2C7BC2BC51B$17.18B3C14B2C52B$19.28BC44B2A11B$21.25BCBC42BA2BA10B$20.
+12B2C12BCBC43B2A12B$19.5B.6BC2BC12BC58B$18.6B.6BC2BC3B2C66B$17.15B2C
+3BC2BC2B2C22B3A30B2A5B$16.21BC2BC2BC56B2A5B$17.21B2C4B3C60B$17.30BC
+57B$18.26B3C59B$17.26BC62B$17.26B4C60B$18.23B2C3BC61B$19.21BC2B3C62B$
+19.21B2CBC64B$21.22BC66B$22.21B2C65B$25.85B$25.90B$23.94B$22.35BA60B$
+22.34BABA49BA8B2A$24.32BABA48BABA7B2A$25.32BA3B2A44BABA10B$25.35BA2BA
+44BA12B$25.36B2A51B2A5B$24.90B2A3BAB$23.95BABAB$22.96BABAB$21.4B2.92B
+A4B$20.4B4.98B$19.4B6.97B$18.4B8.69B2A25B$17.4B10.8B2A58B2A25B$16.4B
+11.7BA2BA83B$15.4B13.7B2A85B$14.7B13.93B$14.8B13.91B$13.10B11.92B$10.
+13B9.93B$9.16B6.78BA10B2.3B$8.17B5.78BABA8B4.B$8.17B4.25B2A52BABA5B.B
+$7.17B4.26B2A53BA6B$7.10B2A5B3.88B$6.11B2A5B2.4B.73B2A7B2AB$5.18B4.2B
+4.70BA2BA5BA2BAB$6.23B5.26BA43B2A7B2AB$6.21B7.17B3A5BABA52B$7.20B9.
+24B2A47BA2B$7.19B11.71BABAB$7.20B11.70BABA$7.22B9.34B2A35BAB$6.2A24B
+2.2B.B.4B3A25BA2BA35B$5.BABA63B2A31B.2B$6.B2A32BA5BA57B$8.13B.19BA5BA
+4B2A22B2A26B$8.12B2.19BA5BA3BA2BA21B2A26B$9.2B.9B2.28BA2BA49B$10.11B
+9.4B.8B3A6B2A50B$9.13B9.4B4.B.53B3A8B$9.13B10.4B5.7B2.51B.4B$10.13B
+10.4B3.8B.52B2.4B$10.14B10.4B2.7B2.2BA49B3.4B$11.13B11.4B.6B4.BA10BA
+37B5.4B$11.13B12.4B2.2A2B4.BA9BABA35B7.4B$11.13B13.4BABAB6.10BABA29B
+14.4B$12.11B15.3B2AB7.11BA29B16.4B$39.B13.40B16.4B$52.9BA31B17.4B$53.
+7BABA30B18.4B$53.7B2A31B19.4B$53.40B20.4B$52.35B.4B22.4B$52.8B2A26B2.
+B24.4B$52.8B2A26B28.4B$52.25B.11B28.4B$52.24B2.11B29.4B$53.22B4.B.8B
+30.4B$55.20B6.7B32.4B$56.18B7.6B34.4B$57.17B7.5B36.4B$59.15B8.3B38.4B
+$59.15B50.4B$59.15B51.4B$59.15B52.4B$59.13B55.4B$60.13B55.4B$62.10B
+57.4B$64.8B58.4B$65.6B60.4B$66.6B60.4B$66.5B62.4B$66.5B63.4B$67.3B65.
+3B$68.B67.2B$137.B!
+```
+
+Filtering these out, we only have 231, which should be easier to search.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint14.sqlite -o results/sprint16.sqlite -q 'length(fi_so_far)/2 = 48 and depth <= 40 and lane_width < 90'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint16.sqlite -l 100 -n 450 # (stopped early 302)
+```
+
+So far there's one result with a good depth at step 49. I also tried to search for anything that finished the snark heart with possible missing pieces, with no luck. I think the next stage might be good for this, though.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint16.sqlite -o results/sprint17.sqlite -q 'length(fi_so_far)/2 = 49 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint17.sqlite -l 100 -n 450 # (stopped early ~360)
+```
+
+There are 31 results with step 50 and depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint17.sqlite -o results/sprint18.sqlite -q 'length(fi_so_far)/2 = 50 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint18.sqlite -l 100 -n 375 # (stopped early 300)
+```
+
+There are 12 results with step 51 and depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint18.sqlite -o results/sprint19.sqlite -q 'length(fi_so_far)/2 = 51 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint19.sqlite -l 100 -n 512 #( stopped early 375)
+```
+
+This search didn't pan out well, so going back to sprint18.sqlite and letting it finish.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint18.sqlite -o results/sprint20.sqlite -q 'length(fi_so_far)/2 = 51 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint20.sqlite -l 100 -n 450 # (stopped early 400)
+```
+
+There was one result which made it to step 52 with depth <= 40.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint20.sqlite -o results/sprint21.sqlite -q 'length(fi_so_far)/2 = 52 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/sprint21.sqlite -l 100 -n 450 
+```
+
+This completed in a few minutes and found no interesting results. I will go all the way back to sprint16, since we branched from there with just one result. Letting it run overnight, stopping at 387, we find 58 results with a good depth.
+
+```bash
+> uv run snark.py setup-next-search -i results/sprint16.sqlite -o results/heart1.sqlite -q 'length(fi_so_far)/2 = 49 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart1.sqlite -l 100 -n 450 # (stopped early 357)
+```
+
+This found 4 results which finish the snark heart! They don't count as full_intermediates, since they are missing the pieces which will become the eaters and block in the slow salvo recipe. Hopefully with some searching we can just make those from random pieces.
+
+If that doesn't pan out, we also found a lot of results that make it to step 50, so we can continue following the slow salvo recipe from here.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart1.sqlite -o results/heart2.sqlite -q 'partial_intermediate=420'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart2.sqlite -l 100 -n 630 --partial-range=73 # (stopped early 412)
+```
+
+Searching to 412-577, this only finds 1 stream which places the block, not to mention the eaters which are ~2000x rarer and less symmetrical. So, I will try again with partial range increased to cover the whole range of intermediates which contain the snark heart.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart1.sqlite -o results/heart3.sqlite -q 'partial_intermediate=420'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart3.sqlite -l 100 -n 630 --partial-range=53-73
+```
+
+I stopped this early at 493-630, which took about 48 hours. After that time, there were over 2 billion streams in the queue and rising. I have 17 million results, about 9 million of which preserve the snark heart.
+
+The most promising candidates are the 4 which place a boat in the right place for a partial at step 64 and have depth <= 40, just missing a beehive and a blinker.
+
+There might be even better matches, but the results only including the "best" partial match limits us. It would be good to implement saving all of the partial matches in a table we can join with the results.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart3.sqlite -o results/heart4.sqlite -q 'length(pi_remaining)/2=9 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart4.sqlite -l 100 -n 450 --partial-range=64-73
+```
+
+This finished without any better partial matches, so let's take patterns that improve in other ways and search further:
+
+```bash
+> uv run snark.py setup-next-search -i results/heart4.sqlite -o results/heart5.sqlite \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40 order by lane_width*partial_intermediate_overlapping_population limit 30' \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40 order by partial_intermediate_depth_separation desc limit 30' \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40 order by partial_intermediate_overlapping_population limit 30' \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40 order by lane_width limit 30' \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40 order by length(pi_remaining), lane_width*partial_intermediate_overlapping_population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart5.sqlite -l 100 -n 450 --partial-range=64-73
+```
+
+Even at 416 gens, this didn't have any useful results. Let's go back to heart4 and see if any of the 230k results can be improved with a short follow-up.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart4.sqlite -o results/heart6.sqlite \
+  -q 'length(pi_remaining)/2 <= 9 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart6.sqlite -l 100 -n 255 --partial-range=64-73
 ```

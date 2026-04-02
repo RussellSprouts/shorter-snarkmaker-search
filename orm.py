@@ -1,19 +1,20 @@
-
-import inspect
 from typing import NewType, get_origin, get_args
 from dataclasses import dataclass
+from annotationlib import ForwardRef, get_annotations, Format
 
-Digest = NewType('Digest', int)
+# Digests are 64 bit ints. In Python they are unsigned, but
+# sqlite only supports signed 64 bit, so we must convert.
+Digest = NewType("Digest", int)
+PrimaryKey = NewType("PrimaryKey", int)
 
-def converted_column():
-    pass
+
+def assert_can_be_foreign_key(cls):
+    if not hasattr(cls, "orm_metadata"):
+        raise TypeError(f"Type {cls.__tablename__} is not a sqlite table")
+
 
 def type_to_column(column_name, type):
     if type == int:
-        if column_name == 'id':
-            return f"{column_name} INTEGER PRIMARY KEY"
-        return f"{column_name} INTEGER"
-    elif type == Digest:
         return f"{column_name} INTEGER"
     elif type == str:
         return f"{column_name} TEXT"
@@ -21,45 +22,96 @@ def type_to_column(column_name, type):
         return f"{column_name} BLOB"
     elif type == float:
         return f"{column_name} REAL"
+    elif type == PrimaryKey:
+        return f"{column_name} INTEGER PRIMARY KEY"
+    elif type == Digest:
+        return f"{column_name} INTEGER"
+    elif isinstance(type, ForwardRef):
+        print("Found a forwardref!", type)
+        return "TODO"
     elif get_origin(type) == tuple:
-        print(get_args(type), get_args(type) == (MyClass2, Ellipsis))
-        return "TUPLE UNKNOWN"
+        # TODO the other table should reference this by id.
+        item_type, ellipsis = get_args(type)
+        if ellipsis != Ellipsis:
+            raise TypeError("Tuples must be of a single type.")
+        assert_can_be_foreign_key(item_type)
+        return f"{column_name} INTEGER REFERENCES {item_type.__tablename__}(id)"
     elif get_origin(type) == list:
+        # TODO the other table should reference this by id.
         (item_type,) = get_args(type)
-        if not item_type.is_sqlite_table:
-            raise TypeError(f"Type {item_type.__name__} is not a sqlite table.")
-        return f"{column_name} INTEGER REFERENCES {item_type.__name__}(id)"
+        assert_can_be_foreign_key(item_type)
+        return f"{column_name} INTEGER REFERENCES {item_type.__tablename__}(id)"
     else:
-        return f"{column_name} INTEGER REFERENCES {type.__name__}(id)"
+        assert_can_be_foreign_key(type)
+        return f"{column_name} INTEGER REFERENCES {type.__tablename__}(id)"
 
-def table(cls):
-    print(cls.__name__)
-    print(cls.__dict__)
-    print(inspect.get_annotations(cls))
+
+@dataclass
+class OrmMetadata:
+    in_memory: bool
+    create_statement: str
+
+
+def table(cls=None, *, in_memory=False):
+    if not cls:
+
+        def annotation(cls):
+            return table(cls, in_memory=in_memory)
+
+        return annotation
 
     fields = [
         type_to_column(name, type)
-        for name, type in inspect.get_annotations(cls).items()
+        for name, type in get_annotations(cls, format=Format.FORWARDREF).items()
     ]
 
-    setattr(cls, 'create_statement', f"CREATE TABLE IF NOT EXISTS {cls.__name__} ({', '.join(fields)});")
-    setattr(cls, 'is_sqlite_table', True)
+    setattr(
+        cls,
+        "orm_metadata",
+        OrmMetadata(
+            in_memory=in_memory,
+            create_statement=f"CREATE TABLE IF NOT EXISTS {cls.__tablename__} ({', '.join(fields)});",
+        ),
+    )
 
-    print(cls.create_statement)
+    print(cls.orm_metadata.create_statement)
 
     return cls
 
+
 @table
 @dataclass
-class MyClass2:
+class StartingPoint:
+    __tablename__ = "starting_points"
+
     id: int
+    stream: bytes
+
+@table(in_memory=True)
+@dataclass
+class RecipeIntermediate:
+    id: PrimaryKey
+    so_far: bytes
+    remaining: bytes
+    rle_string: str
+
+
+@table
+@dataclass
+class IntermediateMatch:
+    __tablename__ = "intermediate_matches"
+
+    percent: float
+    result: Result
+
+
+@table
+@dataclass
+class Result:
+    __tablename__ = "results"
+
+    id: PrimaryKey
     a: int
     b: Digest
-
-@table
-@dataclass
-class MyClass:
-    a: list[MyClass2]
-    b: tuple[MyClass2, ...]
-
-print(MyClass.__annotations__['a'].__args__)
+    starting_point: StartingPoint
+    intermediate_matches: list[IntermediateMatch]

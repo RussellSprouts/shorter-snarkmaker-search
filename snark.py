@@ -17,7 +17,7 @@ from speedometer import Speedometer
 from font import write_text
 from lifetree import lt
 from optimized_stream_simulation import optimized_stream_simulation
-from recipe_intermediates import recipe_intermediates
+from recipe_intermediates import RecipeGraph, recipe_intermediates
 from db import (
     ProcessingDatabase,
     SavedResult,
@@ -32,6 +32,7 @@ from gliders import (
     mk_glider,
     PI_BLOCKS,
     offset_based_on_glider,
+    reconstruct,
     single_channel_stream,
 )
 from component_search import ComponentSearch
@@ -172,6 +173,7 @@ def combine_starting_points(input_dbs, output_db, reset_costs):
                 stream=b"",
                 follow_up_gen_limit=255,
                 max_depth=s.max_depth,
+                follow_ups=None
             )
             for s in out_db.starting_points.values()
         ]
@@ -840,6 +842,8 @@ def optimize(
     speedo = Speedometer(interval_s=10)
     best_full_intermediate = 0
     n_best = 0
+    best_log_prob = float('-inf')
+    n_best_p = 0
     with MultiprocessSearch(
         fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=n_processes
     ) as search:
@@ -847,6 +851,12 @@ def optimize(
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
             for r in result.valid_children:
+                if r.partial_intermediate_log_prob is not None:
+                    if r.partial_intermediate_log_prob > best_log_prob:
+                        best_log_prob = r.partial_intermediate_log_prob
+                        n_best_p = 1
+                    elif r.partial_intermediate_log_prob == best_log_prob:
+                        n_best_p += 1
                 if r.full_intermediate is not None:
                     progress = len(output_db.recipe_intermediates[r.full_intermediate].so_far)
                     if progress == best_full_intermediate:
@@ -866,7 +876,7 @@ def optimize(
                 remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}",
                     file=sys.stderr,
                 )
 
@@ -947,6 +957,26 @@ def reprocess(input_db, output_db, queries):
     out_db.commit()
 
     print(f"Wrote queue to {output_db}. Run optimize with max-gens 0 to process.")
+
+def recipe_tree(recipe_intermediates_db, start):
+    recipes_db = ProcessingDatabase(recipe_intermediates_db)
+    intermediates = recipes_db.recipe_intermediates
+    start_int = intermediates[start]
+    zero_int = next(i for i in intermediates.values() if len(i.so_far) == 0)
+    starting_block = lt.pattern(zero_int.rle_string)(zero_int.x, zero_int.y)
+
+    recipe = start_int.so_far + start_int.remaining
+    end_target = reconstruct(recipe, starting_block, 100)[len(recipe) * 512]
+    recipe_graph = RecipeGraph(end_target)
+    
+    def recurse(intermediate, depth=2):
+        next_possibilities = recipe_graph.explore(intermediate, depth=1, width=73)
+        if depth > 0:
+            for n in next_possibilities:
+                recurse(n, depth-1)
+
+    recurse(start_int, 4)
+    print(recipe_graph.stamp_collection(include_glider=True).rle_string())
 
 
 if __name__ == "__main__":
@@ -1141,6 +1171,30 @@ if __name__ == "__main__":
         required=True,
     )
 
+    parser_recipe_tree = subcommand.add_parser(
+        "recipe-tree",
+        description="Prints the tree of possible next steps after the given recipe intermediate"
+    )
+    parser_recipe_tree.add_argument(
+        "-r",
+        "--recipe-intermediates-db",
+        type=pathlib.Path,
+        help="DB containing recipe intermediates",
+        required=True
+    )
+    parser_recipe_tree.add_argument(
+        "--start",
+        help="The recipe intermediate ID to start with",
+        type=int,
+        required=True
+    )
+    parser_recipe_tree.add_argument(
+        "--end",
+        help="The recipe intermediate ID to end with",
+        type=int,
+        default = None
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -1185,4 +1239,9 @@ if __name__ == "__main__":
         case "reprocess":
             reprocess(
                 input_db=args.input_db, output_db=args.output_db, queries=args.query
+            )
+        case "recipe-tree":
+            recipe_tree(
+                recipe_intermediates_db=args.recipe_intermediates_db,
+                start=args.start
             )

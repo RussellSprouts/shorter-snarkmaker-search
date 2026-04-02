@@ -21,7 +21,7 @@ def write_life_history(
         lht.pattern(red.rle_string().replace('A', 'D'))(*(red.getrect() or (0, 0))[0:2]),
         lht.pattern(white.rle_string().replace('A', 'C'))(*(white.getrect() or (0, 0))[0:2]),
         lht.pattern(blue.rle_string().replace('A', 'B'))(*(blue.getrect() or (0, 0))[0:2]),
-        lht.pattern(green.rle_string())(*green.getrect()[0:2]),
+        lht.pattern(green.rle_string())(*(green.getrect() or (0, 0))[0:2]),
     ]
 
     p = sum(patterns, start=lht.pattern())
