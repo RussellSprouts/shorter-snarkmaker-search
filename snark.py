@@ -878,7 +878,7 @@ def optimize(
                     if r.full_intermediate_overlapping_population < best_overlapping_population:
                         best_overlapping_population = r.full_intermediate_overlapping_population
                         n_best_overlapping_population = 1
-                    elif r.full_intermediate_overapping_population == best_overlapping_population:
+                    elif r.full_intermediate_overlapping_population == best_overlapping_population:
                         n_best_overlapping_population += 1
 
                     progress = len(output_db.recipe_intermediates[r.full_intermediate].so_far)
