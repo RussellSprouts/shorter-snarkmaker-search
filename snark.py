@@ -844,6 +844,13 @@ def optimize(
     n_best = 0
     best_log_prob = float('-inf')
     n_best_p = 0
+    best_area = float('inf')
+    best_area_str = 'infxinf A'
+    n_best_area = 0
+
+    best_overlapping_population = float('inf')
+    n_best_overlapping_population = 0
+
     with MultiprocessSearch(
         fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=n_processes
     ) as search:
@@ -858,6 +865,22 @@ def optimize(
                     elif r.partial_intermediate_log_prob == best_log_prob:
                         n_best_p += 1
                 if r.full_intermediate is not None:
+                    width = r.lane_width
+                    depth = r.depth - r.full_intermediate_depth_separation
+
+                    if width*depth < best_area:
+                        best_area = width*depth
+                        best_area_str = f"{width}x{depth} A"
+                        n_best_area = 1
+                    elif width*depth == best_area:
+                        n_best_area += 1
+
+                    if r.full_intermediate_overlapping_population < best_overlapping_population:
+                        best_overlapping_population = r.full_intermediate_overlapping_population
+                        n_best_overlapping_population = 1
+                    elif r.full_intermediate_overapping_population == best_overlapping_population:
+                        n_best_overlapping_population += 1
+
                     progress = len(output_db.recipe_intermediates[r.full_intermediate].so_far)
                     if progress == best_full_intermediate:
                         n_best += 1
@@ -876,7 +899,7 @@ def optimize(
                 remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_overlapping_population} overlap ({n_best_overlapping_population})",
                     file=sys.stderr,
                 )
 
