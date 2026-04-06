@@ -173,7 +173,7 @@ def combine_starting_points(input_dbs, output_db, reset_costs):
                 stream=b"",
                 follow_up_gen_limit=255,
                 max_depth=s.max_depth,
-                follow_ups=None
+                follow_ups=None,
             )
             for s in out_db.starting_points.values()
         ]
@@ -189,6 +189,7 @@ def setup_next_search(
     output_starting_points_db: pathlib.Path,
     queries: List[str],
     reset_costs: bool,
+    truncate_n_gliders: int,
 ):
     in_db = ProcessingDatabase(input_results_db)
     out_db = ProcessingDatabase(output_starting_points_db)
@@ -200,7 +201,7 @@ def setup_next_search(
         queries = ["1 = 1"]
     for query in queries:
         query = query[0]
-        if not query.lower().startswith('select '):
+        if not query.lower().startswith("select "):
             query = f"SELECT * FROM r LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
         for result in in_db.conn.execute(query):
             results.add(SavedResult.from_row(result))
@@ -226,6 +227,15 @@ def setup_next_search(
     # take the first result of each group
     results = list(map(lambda a: a[0], by_digest.values()))
 
+    # truncate the end gliders, if requested
+    if truncate_n_gliders > 0:
+        by_stream = defaultdict(list)
+        for r in results:
+            new_stream = r.stream[0:-truncate_n_gliders]
+            by_stream[new_stream].append(r)
+
+        results = list(map(lambda a: a[0], by_stream.values()))
+
     if len(results) < original_length:
         print(
             f"Filtered {original_length - len(results)} duplicate results",
@@ -238,7 +248,12 @@ def setup_next_search(
             StartingPoint(
                 id=(next_id := next_id + 1),
                 cost=0 if reset_costs else r.cost,
-                stream=in_db.starting_points[r.starting_point].stream + r.stream,
+                stream=in_db.starting_points[r.starting_point].stream
+                + (
+                    r.stream[0:-truncate_n_gliders]
+                    if truncate_n_gliders > 0
+                    else r.stream
+                ),
                 follow_up_gen_limit=255,
                 max_depth=r.max_depth,
             ),
@@ -405,6 +420,7 @@ def abs_lane(x):
         return -x + 1
     return x
 
+
 def score_pattern(
     job: StreamJob,
     follow_up: int,
@@ -416,7 +432,7 @@ def score_pattern(
     lanes = []
     comps = end_pattern.components()
     for c in comps:
-        (x, y, w, h) = c.getrect()
+        x, y, w, h = c.getrect()
         is_pi_equivalent = c.digest() in offset_elbows
         lanes.append(
             (
@@ -460,7 +476,7 @@ def score_pattern(
         )
 
     # max depth of all components including the offset block
-    (end_pattern_x, end_pattern_y, _, _) = end_pattern.getrect()
+    end_pattern_x, end_pattern_y, _, _ = end_pattern.getrect()
 
     original_components = set(
         shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
@@ -699,7 +715,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
             # a shorter glider sequence. No need to explore further.
             break
 
-        (before_hit_x, before_hit_y, _, _) = before_hit.getrect() or (0, 0, 0, 0)
+        before_hit_x, before_hit_y, _, _ = before_hit.getrect() or (0, 0, 0, 0)
         result.before_hit_digests[next_possibility] = (
             before_hit_digest,
             before_hit_x,
@@ -842,17 +858,20 @@ def optimize(
     speedo = Speedometer(interval_s=10)
     best_full_intermediate = 0
     n_best = 0
-    best_log_prob = float('-inf')
+    best_log_prob = float("-inf")
     n_best_p = 0
-    best_area = float('inf')
-    best_area_str = 'infxinf A'
+    best_area = float("inf")
+    best_area_str = "infxinf A"
     n_best_area = 0
 
-    best_overlapping_population = float('inf')
+    best_overlapping_population = float("inf")
     n_best_overlapping_population = 0
 
     with MultiprocessSearch(
-        fn=find_p2_output, shared_args=shared_args, db=output_db, n_processes=n_processes
+        fn=find_p2_output,
+        shared_args=shared_args,
+        db=output_db,
+        n_processes=n_processes,
     ) as search:
         for job, result, new_jobs in search:
             if isinstance(result, Exception):
@@ -868,20 +887,30 @@ def optimize(
                     width = r.lane_width
                     depth = r.depth - r.full_intermediate_depth_separation
 
-                    if width*depth < best_area:
-                        best_area = width*depth
+                    if width * depth < best_area:
+                        best_area = width * depth
                         best_area_str = f"{width}x{depth} A"
                         n_best_area = 1
-                    elif width*depth == best_area:
+                    elif width * depth == best_area:
                         n_best_area += 1
 
-                    if r.full_intermediate_overlapping_population < best_overlapping_population:
-                        best_overlapping_population = r.full_intermediate_overlapping_population
+                    if (
+                        r.full_intermediate_overlapping_population
+                        < best_overlapping_population
+                    ):
+                        best_overlapping_population = (
+                            r.full_intermediate_overlapping_population
+                        )
                         n_best_overlapping_population = 1
-                    elif r.full_intermediate_overlapping_population == best_overlapping_population:
+                    elif (
+                        r.full_intermediate_overlapping_population
+                        == best_overlapping_population
+                    ):
                         n_best_overlapping_population += 1
 
-                    progress = len(output_db.recipe_intermediates[r.full_intermediate].so_far)
+                    progress = len(
+                        output_db.recipe_intermediates[r.full_intermediate].so_far
+                    )
                     if progress == best_full_intermediate:
                         n_best += 1
                     elif progress > best_full_intermediate:
@@ -893,10 +922,15 @@ def optimize(
                 avg_per_s = speedo.overall_speed()
                 done = speedo.n_finished
                 gens = (
-                    search.pending_tracker.min_cost_pending()+gen_options[0],
-                    min(search.pending_tracker.min_cost_pending()+gen_options[-1], max_gens)
+                    search.pending_tracker.min_cost_pending() + gen_options[0],
+                    min(
+                        search.pending_tracker.min_cost_pending() + gen_options[-1],
+                        max_gens,
+                    ),
                 )
-                remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(search.pending_tracker.min_cost_pending(), 0)
+                remaining = (gens[1] - gens[0] + 1) * search.db.queue_stats.get(
+                    search.pending_tracker.min_cost_pending(), 0
+                )
                 total = search.n_streams_queued()
                 print(
                     f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_overlapping_population} overlap ({n_best_overlapping_population})",
@@ -981,6 +1015,7 @@ def reprocess(input_db, output_db, queries):
 
     print(f"Wrote queue to {output_db}. Run optimize with max-gens 0 to process.")
 
+
 def recipe_tree(recipe_intermediates_db, start):
     recipes_db = ProcessingDatabase(recipe_intermediates_db)
     intermediates = recipes_db.recipe_intermediates
@@ -991,12 +1026,12 @@ def recipe_tree(recipe_intermediates_db, start):
     recipe = start_int.so_far + start_int.remaining
     end_target = reconstruct(recipe, starting_block, 100)[len(recipe) * 512]
     recipe_graph = RecipeGraph(end_target)
-    
+
     def recurse(intermediate, depth=2):
         next_possibilities = recipe_graph.explore(intermediate, depth=1, width=73)
         if depth > 0:
             for n in next_possibilities:
-                recurse(n, depth-1)
+                recurse(n, depth - 1)
 
     recurse(start_int, 4)
     print(recipe_graph.stamp_collection(include_glider=True).rle_string())
@@ -1083,7 +1118,7 @@ if __name__ == "__main__":
         "--n-processes",
         default=20,
         type=int,
-        help="Number of processes to use for processing."
+        help="Number of processes to use for processing.",
     )
     parser_optimize.add_argument(
         "-l",
@@ -1154,6 +1189,13 @@ if __name__ == "__main__":
         default=True,
         help="If true, the starting options will all have cost 0, regardless of the result cost.",
     )
+    parser_setup_next_search.add_argument(
+        "-t",
+        "--truncate-n-gliders",
+        type=int,
+        default=0,
+        help="Remove the last n gliders from each starting point.",
+    )
 
     parser_combine_starting_points = subcommand.add_parser(
         "combine-starting-points",
@@ -1196,26 +1238,23 @@ if __name__ == "__main__":
 
     parser_recipe_tree = subcommand.add_parser(
         "recipe-tree",
-        description="Prints the tree of possible next steps after the given recipe intermediate"
+        description="Prints the tree of possible next steps after the given recipe intermediate",
     )
     parser_recipe_tree.add_argument(
         "-r",
         "--recipe-intermediates-db",
         type=pathlib.Path,
         help="DB containing recipe intermediates",
-        required=True
+        required=True,
     )
     parser_recipe_tree.add_argument(
         "--start",
         help="The recipe intermediate ID to start with",
         type=int,
-        required=True
+        required=True,
     )
     parser_recipe_tree.add_argument(
-        "--end",
-        help="The recipe intermediate ID to end with",
-        type=int,
-        default = None
+        "--end", help="The recipe intermediate ID to end with", type=int, default=None
     )
 
     args = parser.parse_args()
@@ -1252,6 +1291,7 @@ if __name__ == "__main__":
                 output_starting_points_db=args.output_starting_points_db,
                 queries=args.query,
                 reset_costs=args.reset_costs,
+                truncate_n_gliders=args.truncate_n_gliders,
             )
         case "combine-starting-points":
             combine_starting_points(
@@ -1265,6 +1305,5 @@ if __name__ == "__main__":
             )
         case "recipe-tree":
             recipe_tree(
-                recipe_intermediates_db=args.recipe_intermediates_db,
-                start=args.start
+                recipe_intermediates_db=args.recipe_intermediates_db, start=args.start
             )
