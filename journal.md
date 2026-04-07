@@ -870,3 +870,394 @@ Even at 416 gens, this didn't have any useful results. Let's go back to heart4 a
   -q 'length(pi_remaining)/2 <= 9 and depth <= 40'
 > uv run snark.py optimize -r results/snark.sqlite -o results/heart6.sqlite -l 100 -n 255 --partial-range=64-73
 ```
+
+Stopping at 184 gens, this found 22 results with good depth which keep the boat and add another matching still life. Let's explore all of those:
+
+```bash
+> uv run snark.py setup-next-search -i results/heart6.sqlite -o results/heart7.sqlite \
+  -q 'partial_intermediate_log_prob > -3.9 and depth <= 40'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart7.sqlite -l 100 -n 450 --partial-range=64-73
+```
+
+Stopping early at 374, we have a couple of options. There are 7 results which are full matches for step 64, and there are thousands of results which are only missing two blinkers for step 66. Both seem about equally good -- adding a blinker seems like a similar difficulty to finding a zero-degree glider, especially since the full match results are very messy with lots of overlapping areas.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart7.sqlite -o results/heart8.sqlite \
+  -q 'length(pi_remaining)/2=6 and partial_intermediate_log_prob > -4 and depth <= 40 order by partial_intermediate_overlapping_population*-partial_intermediate_depth_separation*lane_width limit 512'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart8.sqlite -l 100 -n 450 --partial-range=66-73
+```
+
+Stopping early at 279, there are three results which place one of the blinkers. Let's try exploring those really quick.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart8.sqlite -o results/heart9.sqlite \
+  -q 'partial_intermediate_log_prob > -2'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart9.sqlite -l 100 -n 450 --partial-range=66-73
+```
+
+This finished without finding any improvements. Letting heart8 continue overnight, I stopped it early at 366 gens (still 150 million queued streams), and found 87 results which improved on the partial match, including one which found a traffic light which is a partial match for a pattern with 5 gliders left and one blinker missing.
+
+Let's start with that one, then continue with the rest later if needed.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart8.sqlite -o results/heart10.sqlite \
+  -q 'partial_intermediate_log_prob > -1.8'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart10.sqlite -l 100 -n 450 --partial-range=67-73
+```
+
+That didn't find any full matches, but let's continue anyway with patterns that make improvements in other areas.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart10.sqlite -o results/heart11.sqlite \
+  -q 'partial_intermediate_log_prob > -1.8 and depth <= 40 order by lane_width*partial_intermediate_overlapping_population limit 30' \
+  -q 'partial_intermediate_log_prob > -1.8 and depth <= 40 order by partial_intermediate_depth_separation desc limit 30' \
+  -q 'partial_intermediate_log_prob > -1.8 and depth <= 40 order by partial_intermediate_overlapping_population limit 30' \
+  -q 'partial_intermediate_log_prob > -1.8 and depth <= 40 order by lane_width limit 30' \
+  -q 'partial_intermediate_log_prob > -1.8 and depth <= 40 order by population limit 30'
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart11.sqlite -l 100 -n 450 --partial-range=67-73
+```
+
+Stopping early at 282, there are 9 results which are at 4 gliders from finishing, just missing one blinker (still)
+
+```bash
+> uv run snark.py setup-next-search -i results/heart11.sqlite -o results/heart12.sqlite -q "partial_intermediate_log_prob > -1.7 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart12.sqlite -l 100 -n 450 --partial-range=68-73
+```
+
+This finished with 772 results which are only 3 gliders from finishing, still missing the blinker.
+
+```
+> uv run snark.py setup-next-search -i results/heart12.sqlite -o results/heart13.sqlite -q "partial_intermediate_log_prob > -1.6 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart13.sqlite -l 100 -n 375 --partial-range=70-73
+```
+
+This finished with 55 results which are two gliders away from finishing, but still no blinker. We've now run out of other options -- we need to find the blinker to make progress, though we could do some cleanup as well.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart13.sqlite -o results/heart14.sqlite -q "partial_intermediate_log_prob > -1.5 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart14.sqlite -l 100 -n 512 --partial-range=71-73
+```
+
+Stopping early at 398, there's one result with a good depth and complete match for step 71! Let's try it.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart14.sqlite -o results/heart15.sqlite -q "depth <= 40 and full_intermediate is not null"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart15.sqlite -l 100 -n 512 --partial-range=71-73
+```
+
+Stopping at 386, this tended to explode in depth -- less than 1% of results which kept the full match at step 71 had a depth <= 40. Going back to heart14 for more results.
+
+Stopping heart14 at 439, we haven't found a single extra result that completes the intermediate.
+
+Let's take the 923 results which don't explode in depth from heart15 and continue with those.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart15.sqlite -o results/heart16.sqlite -q "depth <= 40 and full_intermediate is not null"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart16.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+Stopping early at 218, there's a result which clears up the rest of the traffic light. It seems likely to get us to step 72.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart16.sqlite -o results/heart17.sqlite -q "full_intermediate_overlapping_digest = -6527835380348743352 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart17.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+Stopping early at 384, there's one result with depth 41, let's explore it just to say we found the snark.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart17.sqlite -o results/heart18.sqlite -q "length(fi_so_far)/2=72 and depth <= 41"
+> uv run snark.py optimize -r results/snark.sqlite -o results/heart18.sqlite -l 100 -n 450 --partial-range=72-73
+```
+
+This pretty easily finds one!
+
+But let's go back all the way to heart7 and finish the search there, then try the branch with a full match instead of a partial match -- finding the blinkers was hard and created a lot of debris to clean up. We might get better results just sending zero-degree gliders.
+
+After that finished, there are 33 full matches for step 64 with 192 or 193 gliders.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart7.sqlite -o results/finish1.sqlite -q "length(fi_so_far)/2=64 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish1.sqlite -l 100 -n 450 --partial-range=64-73
+```
+
+Stopping at 233, this already found one result for step 65. However, the expected length from here would be about 220 as well -- just as much as the other path. Instead, let's continue with heart11 which stopped at 282 gens before.
+
+Stopping heart11 at 360 gens, we have 94 results at step 69 with a missing blinker, and 1 result at step 68. Let's try the full result.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart11.sqlite -o results/finish2.sqlite -q "full_intermediate is not null"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish2.sqlite -l 100 -n 450 --partial-range=68-73
+```
+
+This finished with 7 results at step 69.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish2.sqlite -o results/finish3.sqlite -q "length(fi_so_far)/2=69 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish3.sqlite -l 100 -n 450 --partial-range=69-73
+```
+
+This finished with no results at step 70, so let's use it to clean up a bit. Grouping by full_intermediate_overlapping_digest, we find the one with the smallest value also cleans up the partial traffic light in front of the snark pattern. There are 4 results there.
+
+The beehive and ship behind the ship-boat constellation that will become one of the eaters prevents the reaction, so those will need to be cleaned up somehow.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish3.sqlite -o results/finish4.sqlite -q "length(fi_so_far)/2=69 and full_intermediate_overlapping_digest=-2826165780866903392 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish4.sqlite -l 100 -n 450 --partial-range=69-73
+```
+
+This found 42 results at step 70.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish4.sqlite -o results/finish5.sqlite -q "length(fi_so_far)/2=70 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish5.sqlite -l 100 -n 450 --partial-range=70-73
+```
+
+Stopping early at 369, there are 85 results at step 71.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish5.sqlite -o results/finish6.sqlite -q "length(fi_so_far)/2=71 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish6.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+But they are immediate dead ends -- the 450 depth search ends in 30 seconds. Let's try continuing finish5 just in-case.
+
+Letting finish5 finish at 450, there are now 300 unique results at step 71. Let's try those.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish5.sqlite -o results/finish7.sqlite -q "length(fi_so_far)/2=71 and depth <= 40"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish7.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+This time we found 106 results which make it to step 72.
+There's also some results which change the beehive and ship for other patterns:
+
+-4452943268195082795
+-1843599893608182778
+
+Let's try these first, to see if that unblocks the final glider.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish7.sqlite -o results/finish8.sqlite -q "length(fi_so_far)/2>=71 and depth <= 40 and full_intermediate_overlapping_digest in (-4452943268195082795, -1843599893608182778)"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish8.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+This finished without finding any way to clean up behind the boat and ship, and the lengths are 221 or 222. The previous branch was better, so let's finish the search at heart16.
+
+Stopped heart16 at 366 after running overnight, with 100 million items still queued.
+
+These are some of the full_intermediate_overlapping_digests which clear the area for the last two gliders:
+
+- 1643698079398279217
+- 5263946418873762400
+- -6527835380348743352
+
+I sorted the unique overlapping digests by full_intermediate_overlapping_population, and these are some of the first, so they should also help us with cleanup.
+
+This gives us 113 starting points.
+
+```bash
+> uv run snark.py setup-next-search -i results/heart16.sqlite -o results/finish9.sqlite -q "length(fi_so_far)/2>=71 and depth <= 40 and full_intermediate_overlapping_digest in (1643698079398279217, 5263946418873762400, -6527835380348743352)"
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish9.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+Stopping early at 383, there is one result which makes it to 73, but has a depth of 49. There are 7 that make it to step 72, and thousands that are at step 71.
+
+Let's take:
+
+- The one that makes it to step 73, but remove the last two gliders to see if a related pattern will avoid the depth issue.
+- The 7 that make it to step 72 with good depth.
+- The 135 at step 71 with only 217 gliders so far.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish9.sqlite -o /tmp/finish10.1.sqlite -q 'length(fi_so_far)/2 = 73'
+>  sqlite3 /tmp/finish10.1.sqlite 'update starting_points set stream = cast(substr(stream, 1, length(stream)-2) as blob)'
+> uv run snark.py setup-next-search -i results/finish9.sqlite -o /tmp/finish10.2.sqlite \
+  -q 'length(fi_so_far)/2 = 72 and depth <= 40' \
+  -q 'length(fi_so_far)/2 = 71 and depth <= 40 and length(full_stream)=217'
+> uv run snark.py combine-starting-points -i /tmp/finish10.1.sqlite -i /tmp/finish10.2.sqlite -o results/finish10.sqlite
+> uv run snark.py optimize -r results/snark.sqlite -o results/finish10.sqlite -l 100 -n 450 --partial-range=71-73
+```
+
+Stopping early at 414, we find 6 results with finished snarks and good depth. There's also two more with a depth of 42 we can include.
+
+```bash
+> uv run snark.py setup-next-search -i results/finish10.sqlite -o results/cleanup1.sqlite -q 'length(fi_so_far)/2=73 and depth <= 42'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup1.sqlite -l 100 -n 450 --partial-range=73
+```
+
+This ran to completion.
+
+- There aren't any results that meaningfully increase the full_intermediate_depth_separation -- there's a reaction that turns the far blinker into a somewhat closer block, but those are equally easy to remove with a glider.
+- There aren't any results that meaninfully decrease the lane_width either
+- The full_intermediate_overlapping population of the initial candidates was 42, and we can get as low as 24. Let's set a threshold of 28, which gives a few more results.
+- The overlapping digests 7330672971558783818 and -5813752341754367267 remove the blinker in the SW.
+
+Let's also try removing the last glider from each starting point so that we can explore more variants that didn't stabilize but might be better.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup1.sqlite -o results/cleanup2.sqlite \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_digest in (7330672971558783818, -5813752341754367267)' \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_population <= 28' \
+  --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup2.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+Stopping early at 446, I manually checked the first ~800 unique overlapping digests (ordered by overlapping population) as well as the top few for other sorts, and found many interesting ones:
+
+- Cleans up blinker with a LWSS for extra style points: -193538454103534806
+
+- NW side only 3 objects: 7080715839506110744, -8922247175969426314
+
+- Cleans up the whole SW side
+
+  - 2711815672287932577
+  - 5788682425296831354
+
+- Cleans up half the SW side
+
+  - 5893732646151755446
+  - 4050500890404537443
+  - -3408235280866999927
+  - 1304690945056674708
+  - 3359459027557450862
+  - -8623849582041254641
+  - -7643252376437056406
+  - 2490448728136782260
+  - 8637930417447167883
+  - 1562405922136898573
+  - 1844611965056140523
+  - 8455680543190117296
+  - 7223024944539302272
+  - 6869679154518934195
+  - 7969757290436604118
+  - -9139039429075897654
+  - -7361550325341088326
+  - -2764620812118996950
+  - 1818424822155382147
+  - 5723234143359291499
+  - -8766779118075164848
+  - -6371525127987798017
+  - -5880551631504239654
+  - 124897356654445334
+  - 5941407449638303984
+  - 8495978029819361907
+  - 8983533862950547820
+  - -9172692098597985830
+
+Taking the four best for cleaning up the overlap, we get 70 unique results.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup2.sqlite -o results/cleanup3.sqlite \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_digest in (7080715839506110744, -8922247175969426314, 5788682425296831354, 2711815672287932577)' \
+  --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup3.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+Stopping early at 335, here are interesting overlapping digests:
+
+- One object SW, 3 objects NE (22 pop): 697238926407951390, 6389572532358325233
+- 1.5 objects SW, 3 objects NE (21 pop): 5535626920864532644, 6137094073080243635
+- The 14 and 15 overlapping population options have 3 objects SW, 1 object NE.
+
+This is 25 unique results.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup3.sqlite -o results/cleanup4.sqlite \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_digest in (697238926407951390, 6389572532358325233, 5535626920864532644, 6137094073080243635)' \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_population <= 15'\
+  --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup4.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+Stopping early at 336, there's one result with an overlap of 6. It leaves the far SW blinker and the close NE blinker. The NE blinker is placed so that it can be removed with a single glider.
+
+Let's try that candidate for a bit.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup4.sqlite -o results/cleanup5.sqlite \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_population=6' \
+  --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup5.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+Stopping at 411 we didn't find anything with a better overlapping population. Going back to cleanup4.
+
+Stopping cleanup4 at 377 this time, we've found another result with overlapping_population of 6.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup4.sqlite -o results/cleanup6.sqlite \
+  -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_digest=4501616169387995746' \
+  --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup6.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+Stopping early at 411, I didn't find any improvements on the overlapping population of 6. The far blinker is tough to clean up. I will go back to cleanup2 and try just the patterns that clean up the entire SW side. This is only 9 starting points, so we can search deeper more effectively.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup2.sqlite -o results/cleanup7.sqlite -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_digest in (2711815672287932577, 5788682425296831354)' --truncate-n-gliders=1
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup7.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=40
+```
+
+This ran to completion overnight.
+
+The unique overlapping digests up to population 26 all preserve the removal of the SW side, but that totals to 4284 candidates. Let's take a subset of those, as well as the 2 candidates which increased the full_intermediate_depth_separation.
+
+I won't use the truncate gliders feature this time, since it requires deeper searches to find good results.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup7.sqlite -o results/cleanup8.sqlite -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_population <= 26 order by full_intermediate_overlapping_population limit 30' \
+-q 'full_intermediate is not null and depth <= 40 and full_intermediate_depth_separation > -42'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup8.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+This ran to completion, and find a result with an overlap of only 4! It also uses a snark reflected glider to help with the cleanup which is very cool. The final block is also coincidentally in just the right spot to be cleaned up by a follow-up glider.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup8.sqlite -o results/cleanup9.sqlite -q 'full_intermediate is not null and depth <= 40 and full_intermediate_overlapping_population <= 4'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup9.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+Stopped early at 375. There are many results which clean up the block. It seems that every follow up from 156 to 255 works. After the two gliders pass through the snark, there's a glider which crosses the path of the incoming gliders which can be used to recover from the empty lane.
+
+For 156, a follow-up of 209+ will collide with the crossing glider, but you can delay the 156 glider and shorten the 209 glider to get essentially the same pattern. This adds a lot of search space with little benefit. Let's just pick the 156 glider.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup9.sqlite -o results/cleanup10.sqlite -q 'hex(stream)="9C"'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup10.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+It was a bit difficult to recover a usable elbow, but we found ~800 results which have zero overlap and depth <= 40. That's probably because the useful results probably only start with a glider of 209+, then there's only a limited set of things to consider to fit in 450 gens.
+
+There are two results which improve the lane_width with a well-placed 90 degree glider. Let's take those and the top 10 with lowest final population.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup10.sqlite -o results/cleanup11.sqlite -q 'depth <= 40 and full_intermediate_depth_separation > 0 and full_intermediate is not null and lane_width < 79' \
+  -q 'depth <= 40 and full_intermediate_depth_separation > 0 and full_intermediate is not null order by population limit 10'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup11.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+Stopping early at 322, there's a result which reduces the lane width to 59. Let's try that for a bit. The cleanup reaction takes a while, so hopefully we can actually keep it going without interfering with our follow-up gliders.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup11.sqlite -o results/cleanup12.sqlite -q 'depth <= 40 and full_intermediate_depth_separation > 0 and full_intermediate is not null and lane_width < 60'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup12.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+This ran to completion without finding an improvement in depth separation or lane width. Unfortunately there are 4 blocks right around the depth separation of 3, so increasing the depth separation requires cleaning all of those up at once. I will manually check the digests, ordered by population, to find patterns that clean those up.
+
+These 3 clean up the 4th block (in the NE): 2733760994371880776, -4492787098070468790, 5697137463405988850
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup12.sqlite -o results/cleanup13.sqlite -q 'depth <= 40 and full_intermediate_depth_separation > 0 and full_intermediate is not null and lane_width < 60 and r.digest in (2733760994371880776, -4492787098070468790, 5697137463405988850)'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup13.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+This ran to completion. There was one result with a lane_width of 59 but it had an overlapping population of 14.
+
+Let's just use a generic combination of all the parameters to optimize:
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup13.sqlite -o results/cleanup14.sqlite -q 'depth <= 40 and full_intermediate_depth_separation >= 3 and full_intermediate is not null order by (depth-full_intermediate_depth_separation)*lane_width*lane_width*population limit 100'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup14.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```

@@ -40,7 +40,7 @@ from probability import total_probability, NEGATIVE_INFINITY
 from life_history import write_life_history
 from arg_parser import range_str_to_list
 from multiprocess_search import MultiprocessSearch
-
+from components import pattern_components
 
 def interrupt_handler(_a, _b):
     print("Gracefully exiting...")
@@ -430,7 +430,7 @@ def score_pattern(
     recursed=False,
 ):
     lanes = []
-    comps = end_pattern.components()
+    comps = pattern_components(end_pattern)
     for c in comps:
         x, y, w, h = c.getrect()
         is_pi_equivalent = c.digest() in offset_elbows
@@ -774,6 +774,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                         stream=job.stream + bytes([next_possibility]),
                         follow_up_gen_limit=gen_options[0],
                         max_depth=job.max_depth,
+                        follow_ups=None,
                     )
                 )
             elif just_after_hit == just_after_hit2:
@@ -815,6 +816,7 @@ def optimize(
     partial_progress_factor: float,
     partial_range: str,
     n_processes: int,
+    live_view_depth: float
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -877,45 +879,46 @@ def optimize(
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
             for r in result.valid_children:
-                if r.partial_intermediate_log_prob is not None:
-                    if r.partial_intermediate_log_prob > best_log_prob:
-                        best_log_prob = r.partial_intermediate_log_prob
-                        n_best_p = 1
-                    elif r.partial_intermediate_log_prob == best_log_prob:
-                        n_best_p += 1
-                if r.full_intermediate is not None:
-                    width = r.lane_width
-                    depth = r.depth - r.full_intermediate_depth_separation
+                if r.depth <= live_view_depth:
+                    if r.partial_intermediate_log_prob is not None:
+                        if r.partial_intermediate_log_prob > best_log_prob:
+                            best_log_prob = r.partial_intermediate_log_prob
+                            n_best_p = 1
+                        elif r.partial_intermediate_log_prob == best_log_prob:
+                            n_best_p += 1
+                    if r.full_intermediate is not None and r.depth <= 40:
+                        width = r.lane_width
+                        depth = r.depth - r.full_intermediate_depth_separation
 
-                    if width * depth < best_area:
-                        best_area = width * depth
-                        best_area_str = f"{width}x{depth} A"
-                        n_best_area = 1
-                    elif width * depth == best_area:
-                        n_best_area += 1
+                        if width < best_area:
+                            best_area = width
+                            best_area_str = f"{width}x{depth} A"
+                            n_best_area = 1
+                        elif width == best_area:
+                            n_best_area += 1
 
-                    if (
-                        r.full_intermediate_overlapping_population
-                        < best_overlapping_population
-                    ):
-                        best_overlapping_population = (
+                        if (
                             r.full_intermediate_overlapping_population
-                        )
-                        n_best_overlapping_population = 1
-                    elif (
-                        r.full_intermediate_overlapping_population
-                        == best_overlapping_population
-                    ):
-                        n_best_overlapping_population += 1
+                            < best_overlapping_population
+                        ):
+                            best_overlapping_population = (
+                                r.full_intermediate_overlapping_population
+                            )
+                            n_best_overlapping_population = 1
+                        elif (
+                            r.full_intermediate_overlapping_population
+                            == best_overlapping_population
+                        ):
+                            n_best_overlapping_population += 1
 
-                    progress = len(
-                        output_db.recipe_intermediates[r.full_intermediate].so_far
-                    )
-                    if progress == best_full_intermediate:
-                        n_best += 1
-                    elif progress > best_full_intermediate:
-                        n_best = 1
-                        best_full_intermediate = progress
+                        progress = len(
+                            output_db.recipe_intermediates[r.full_intermediate].so_far
+                        )
+                        if progress == best_full_intermediate:
+                            n_best += 1
+                        elif progress > best_full_intermediate:
+                            n_best = 1
+                            best_full_intermediate = progress
             streams_in_job = job.follow_up_gen_limit - gen_options[0] + 1
             if speedo.tick(streams_in_job):
                 current_per_s = speedo.get_current_speed_and_reset()
@@ -1140,6 +1143,12 @@ if __name__ == "__main__":
         default="0-255",
         help="The range of partial intermediates to consider, based on the number of gliders so far.",
     )
+    parser_optimize.add_argument(
+        "--live-view-depth",
+        type=int,
+        default=float('inf'),
+        help="The max depth result to consider for results in the live view."
+    )
 
     parser_view_results = subcommand.add_parser(
         "view-results", description="Explore and view results"
@@ -1278,6 +1287,7 @@ if __name__ == "__main__":
                 partial_progress_factor=args.partial_progress_factor,
                 partial_range=args.partial_range,
                 n_processes=args.n_processes,
+                live_view_depth=args.live_view_depth,
             )
         case "view-results":
             print("Show completion", args.show_completion)
