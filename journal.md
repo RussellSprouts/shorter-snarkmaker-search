@@ -1261,3 +1261,97 @@ Let's just use a generic combination of all the parameters to optimize:
 > uv run snark.py setup-next-search -i results/cleanup13.sqlite -o results/cleanup14.sqlite -q 'depth <= 40 and full_intermediate_depth_separation >= 3 and full_intermediate is not null order by (depth-full_intermediate_depth_separation)*lane_width*lane_width*population limit 100'
 > uv run snark.py optimize -r results/snark.sqlite -o results/cleanup14.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
 ```
+
+Stopped early at 407. There are 4 candidates which increase the full_intermediate_depth_separation to 5, 7, and 10 and keep a lane_width within 60.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup14.sqlite -o results/cleanup15.sqlite -q 'depth <= 40 and full_intermediate_depth_separation >= 5 and full_intermediate is not null and lane_width < 60'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup15.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+This ran to completion.
+
+```bash
+> uv run snark.py setup-next-search -i results/cleanup15.sqlite -o results/cleanup16.sqlite -q 'full_intermediate is not null and full_intermediate_depth_separation > 0 and depth <= 40 order by 1.0*population*lane_width*lane_width*population/full_intermediate_depth_separation limit 10' \
+  -q 'full_intermediate is not null and full_intermediate_depth_separation > 0 and depth <= 40 and lane_width=48'
+> uv run snark.py optimize -r results/snark.sqlite -o results/cleanup16.sqlite -l 100 -n 450 --partial-range=73 --live-view-depth=40
+```
+
+I've been making progress, but there's probably a better strategy. I will go back to cleanup11, and pick some in each of these categories:
+
+- Lowest population
+- Highest depth separation
+- Lowest lane width
+- Lowest depth - depth separation
+- Each combination of each of these
+- The top n of each of these as well as a sample of the top n digests
+
+```bash
+> shrink() {
+  infile=$1
+  outfile=$2
+  n=$3
+
+  cond="full_intermediate is not null and depth <= 50 and full_intermediate_depth_separation > 0"
+
+  a="population"
+  b="(1.0/full_intermediate_depth_separation)"
+  c="(lane_width*lane_width)"
+  d="(depth - full_intermediate_depth_separation)"
+  tiebreak="($a * $b * $c * $d)"
+
+  uv run snark.py optimize -r results/snark.sqlite -o "$infile" -l 100 -n 400 --partial-range=73 --live-view-depth=40
+  if [ ! -f "$outfile" ]; then
+    uv run snark.py setup-next-search -i "$infile" -o "$outfile" \
+        -q "$cond order by $a, $tiebreak limit $n" \
+        -q "$cond order by $b, $tiebreak limit $n" \
+        -q "$cond order by $c, $tiebreak limit $n" \
+        -q "$cond order by $d, $tiebreak limit $n" \
+        \
+        -q "$cond order by $a * $b, $tiebreak limit $n" \
+        -q "$cond order by $a * $c, $tiebreak limit $n" \
+        -q "$cond order by $a * $d, $tiebreak limit $n" \
+        \
+        -q "$cond order by $b * $c, $tiebreak limit $n" \
+        -q "$cond order by $b * $d, $tiebreak limit $n" \
+        \
+        -q "$cond order by $c * $d, $tiebreak limit $n" \
+        \
+        -q "$cond order by $a * $b * $c, $tiebreak limit $n"
+        -q "$cond order by $a * $b * $d, $tiebreak limit $n"
+        -q "$cond order by $a * $c * $d, $tiebreak limit $n"
+        -q "$cond order by $b * $c * $d, $tiebreak limit $n"
+        \
+        -q "$cond order by $tiebreak limit $n"
+        \    
+        -q "$cond group by r.digest order by $a, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $b, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $c, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $d, $tiebreak limit $n" \
+        \
+        -q "$cond group by r.digest order by $a * $b, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $a * $c, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $a * $d, $tiebreak limit $n" \
+        \
+        -q "$cond group by r.digest order by $b * $c, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $b * $d, $tiebreak limit $n" \
+        \
+        -q "$cond group by r.digest order by $c * $d, $tiebreak limit $n" \
+        \
+        -q "$cond group by r.digest order by $a * $b * $c, $tiebreak limit $n"
+        -q "$cond group by r.digest order by $a * $b * $d, $tiebreak limit $n"
+        -q "$cond group by r.digest order by $a * $c * $d, $tiebreak limit $n"
+        -q "$cond group by r.digest order by $b * $c * $d, $tiebreak limit $n"
+        \
+        -q "$cond group by r.digest order by $tiebreak limit $n"
+  fi
+}
+> shrink results/cleanup11.sqlite results/autoshrink1.sqlite 32
+> for i in 1 2 3 4 5 6 7 8 9 10; do
+    shrink "results/autoshrink$i.sqlite" "results/autoshrink$(($i + 1)).sqlite" 32
+  done
+```
+
+Autoshrink7 got us our first result!
+
+00875D696B735B69667665605C8A9793816C5B749A958072CA8080786E71A2735A5B927F677687B07CB4606CDA5B5A6F6F6368CAAE876FD6745EB65B5DBE676A5F60755B7A6E93755B785C69956C77666A7E7C6A80968284865AC563845BA192646C91618A6465A75BB78C5A5E635D64696699695C795C5A636061745BC15E5B7564677A795A6DCD5A696E5DE86C645D91766A5A659786718D605B7B5B6F5A665F695D6B7AA25A72605C727F6D7E62875F8D72627C6694815B5C886BF9B55D8D6A6D62715F806CFA69626D6460AA5E5F6665CE6264AA6F98A9618DBA64655E605F6E5F866F62735B5B6066626265AF9CEE6463AC747AD492608A9865686062838A7F675E81607893628E86
