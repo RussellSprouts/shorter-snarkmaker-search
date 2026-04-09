@@ -1296,11 +1296,11 @@ I've been making progress, but there's probably a better strategy. I will go bac
 
   a="population"
   b="(1.0/full_intermediate_depth_separation)"
-  c="(lane_width*lane_width)"
+  c="(lane_width*sqrt(lane_width))"
   d="(depth - full_intermediate_depth_separation)"
   tiebreak="($a * $b * $c * $d)"
 
-  uv run snark.py optimize -r results/snark.sqlite -o "$infile" -l 100 -n 400 --partial-range=73 --live-view-depth=40
+  uv run snark.py optimize -r results/snark.sqlite -o "$infile" -l 100 -n 400 --partial-range=73 --live-view-depth=50 || exit 1
   if [ ! -f "$outfile" ]; then
     uv run snark.py setup-next-search -i "$infile" -o "$outfile" \
         -q "$cond order by $a, $tiebreak limit $n" \
@@ -1317,13 +1317,13 @@ I've been making progress, but there's probably a better strategy. I will go bac
         \
         -q "$cond order by $c * $d, $tiebreak limit $n" \
         \
-        -q "$cond order by $a * $b * $c, $tiebreak limit $n"
-        -q "$cond order by $a * $b * $d, $tiebreak limit $n"
-        -q "$cond order by $a * $c * $d, $tiebreak limit $n"
-        -q "$cond order by $b * $c * $d, $tiebreak limit $n"
+        -q "$cond order by $a * $b * $c, $tiebreak limit $n" \
+        -q "$cond order by $a * $b * $d, $tiebreak limit $n" \
+        -q "$cond order by $a * $c * $d, $tiebreak limit $n" \
+        -q "$cond order by $b * $c * $d, $tiebreak limit $n" \
         \
-        -q "$cond order by $tiebreak limit $n"
-        \    
+        -q "$cond order by $tiebreak limit $n" \
+        \
         -q "$cond group by r.digest order by $a, $tiebreak limit $n" \
         -q "$cond group by r.digest order by $b, $tiebreak limit $n" \
         -q "$cond group by r.digest order by $c, $tiebreak limit $n" \
@@ -1338,14 +1338,15 @@ I've been making progress, but there's probably a better strategy. I will go bac
         \
         -q "$cond group by r.digest order by $c * $d, $tiebreak limit $n" \
         \
-        -q "$cond group by r.digest order by $a * $b * $c, $tiebreak limit $n"
-        -q "$cond group by r.digest order by $a * $b * $d, $tiebreak limit $n"
-        -q "$cond group by r.digest order by $a * $c * $d, $tiebreak limit $n"
-        -q "$cond group by r.digest order by $b * $c * $d, $tiebreak limit $n"
+        -q "$cond group by r.digest order by $a * $b * $c, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $a * $b * $d, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $a * $c * $d, $tiebreak limit $n" \
+        -q "$cond group by r.digest order by $b * $c * $d, $tiebreak limit $n" \
         \
         -q "$cond group by r.digest order by $tiebreak limit $n"
   fi
 }
+
 > shrink results/cleanup11.sqlite results/autoshrink1.sqlite 32
 > for i in 1 2 3 4 5 6 7 8 9 10; do
     shrink "results/autoshrink$i.sqlite" "results/autoshrink$(($i + 1)).sqlite" 32
@@ -1355,3 +1356,43 @@ I've been making progress, but there's probably a better strategy. I will go bac
 Autoshrink7 got us our first result!
 
 00875D696B735B69667665605C8A9793816C5B749A958072CA8080786E71A2735A5B927F677687B07CB4606CDA5B5A6F6F6368CAAE876FD6745EB65B5DBE676A5F60755B7A6E93755B785C69956C77666A7E7C6A80968284865AC563845BA192646C91618A6465A75BB78C5A5E635D64696699695C795C5A636061745BC15E5B7564677A795A6DCD5A696E5DE86C645D91766A5A659786718D605B7B5B6F5A665F695D6B7AA25A72605C727F6D7E62875F8D72627C6694815B5C886BF9B55D8D6A6D62715F806CFA69626D6460AA5E5F6665CE6264AA6F98A9618DBA64655E605F6E5F866F62735B5B6066626265AF9CEE6463AC747AD492608A9865686062838A7F675E81607893628E86
+
+0, 135, 93, 105, 107, 115, 91, 105, 102, 118, 101, 96, 92, 138, 151, 147, 129, 108, 91, 116, 154, 149, 128, 114, 202, 128, 128, 120, 110, 113, 162, 115, 90, 91, 146, 127, 103, 118, 135, 176, 124, 180, 96, 108, 218, 91, 90, 111, 111, 99, 104, 202, 174, 135, 111, 214, 116, 94, 182, 91, 93, 190, 103, 106, 95, 96, 117, 91, 122, 110, 147, 117, 91, 120, 92, 105, 149, 108, 119, 102, 106, 126, 124, 106, 128, 150, 130, 132, 134, 90, 197, 99, 132, 91, 161, 146, 100, 108, 145, 97, 138, 100, 101, 167, 91, 183, 140, 90, 94, 99, 93, 100, 105, 102, 153, 105, 92, 121, 92, 90, 99, 96, 97, 116, 91, 193, 94, 91, 117, 100, 103, 122, 121, 90, 109, 205, 90, 105, 110, 93, 232, 108, 100, 93, 145, 118, 106, 90, 101, 151, 134, 113, 141, 96, 91, 123, 91, 111, 90, 102, 95, 105, 93, 107, 122, 162, 90, 114, 96, 92, 114, 127, 109, 126, 98, 135, 95, 141, 114, 98, 124, 102, 148, 129, 91, 92, 136, 107, 249, 181, 93, 141, 106, 109, 98, 113, 95, 128, 108, 250, 105, 98, 109, 100, 96, 170, 94, 95, 102, 101, 206, 98, 100, 170, 111, 152, 169, 97, 141, 186, 100, 101, 94, 96, 95, 110, 95, 134, 111, 98, 115, 91, 91, 96, 102, 98, 98, 101, 175, 156, 238, 100, 99, 172, 116, 122, 212, 146, 96, 138, 152, 101, 104, 96, 98, 131, 138, 127, 103, 94, 129, 96, 120, 147, 98, 142, 128, (156)
+
+We still need to find one which leaves an elbow before the snark, though. Let's see if any of these results work.
+
+```bash
+> uv run snark.py setup-next-search -i results/autoshrink7.sqlite -o results/last-elbow.sqlite -q 'full_intermediate is not null and population < 65'
+> uv run snark.py optimize -r results/snark.sqlite -o results/last-elbow.sqlite -l 100 -n 512 --partial-range=73 --live-view-depth=50
+```
+
+After a short while (stopping at 277), we see that there are 2 digests that look like pi explosions in the results, but they are due to a different reaction, not an elbow being formed.
+
+5572399308306247052 7033401698931445928
+
+Let's let autoshrink7 run to completion then try checking again.
+
+```bash
+> uv run snark.py optimize -r results/snark.sqlite -o results/autoshrink7.sqlite -l 100 -n 400 --partial-range=73 --live-view-depth=50
+```
+
+Continued running autoshrink until autoshrink8 finished. It found a lot of blocks near the lane. Let's try them to see if any are the pi explosion block.
+
+The snark + offset elbow has a population of 53, so we want to view results with at least 57 population. If the elbow is correct, then we'll see a population of 108 for the pi explosion remanent + snark + block.
+
+```bash
+> uv run snark.py setup-next-search -i results/autoshrink8.sqlite -o results/done1.sqlite -q 'full_intermediate is not null and population > 56 and population <= 60'
+> uv run snark.py optimize -r results/snark.sqlite -o results/done1.sqlite -l 100 -n 255 --partial-range=73 --live-view-depth=40
+```
+
+Let's do the search with more candidates, since we may have the correct block + a still life that can be deleted with an extra glider.
+
+```bash
+> uv run snark.py setup-next-search -i results/autoshrink8.sqlite -o results/done2.sqlite -q 'full_intermediate is not null and population > 56 and population <= 64'
+> uv run snark.py optimize -r results/snark.sqlite -o results/done2.sqlite -l 100 -n 300 --partial-range=73 --live-view-depth=40
+```
+
+Recovering a block: 271 gliders
+00875D696B735B69667665605C8A9793816C5B749A958072CA8080786E71A2735A5B927F677687B07CB4606CDA5B5A6F6F6368CAAE876FD6745EB65B5DBE676A5F60755B7A6E93755B785C69956C77666A7E7C6A80968284865AC563845BA192646C91618A6465A75BB78C5A5E635D64696699695C795C5A636061745BC15E5B7564677A795A6DCD5A696E5DE86C645D91766A5A659786718D605B7B5B6F5A665F695D6B7AA25A72605C727F6D7E62875F8D72627C6694815B5C886BF9B55D8D6A6D62715F806CFA69626D6460AA5E5F6665CE6264AA6F98A9618DBA64655E605F6E5F866F62735B5B6066626265AF9CEE6463AC747AD492608A9865686062838A7F675E816078905B6E5A6064E8
+
+0,135,93,105,107,115,91,105,102,118,101,96,92,138,151,147,129,108,91,116,154,149,128,114,202,128,128,120,110,113,162,115,90,91,146,127,103,118,135,176,124,180,96,108,218,91,90,111,111,99,104,202,174,135,111,214,116,94,182,91,93,190,103,106,95,96,117,91,122,110,147,117,91,120,92,105,149,108,119,102,106,126,124,106,128,150,130,132,134,90,197,99,132,91,161,146,100,108,145,97,138,100,101,167,91,183,140,90,94,99,93,100,105,102,153,105,92,121,92,90,99,96,97,116,91,193,94,91,117,100,103,122,121,90,109,205,90,105,110,93,232,108,100,93,145,118,106,90,101,151,134,113,141,96,91,123,91,111,90,102,95,105,93,107,122,162,90,114,96,92,114,127,109,126,98,135,95,141,114,98,124,102,148,129,91,92,136,107,249,181,93,141,106,109,98,113,95,128,108,250,105,98,109,100,96,170,94,95,102,101,206,98,100,170,111,152,169,97,141,186,100,101,94,96,95,110,95,134,111,98,115,91,91,96,102,98,98,101,175,156,238,100,99,172,116,122,212,146,96,138,152,101,104,96,98,131,138,127,103,94,129,96,120,144,91,110,90,96,100,232,(90)
