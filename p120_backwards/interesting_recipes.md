@@ -101,7 +101,7 @@ uv run oncoming.py --print-rle="1,92,90,219,(179)2000+3,219,229,127,(298)600+1,1
 Blocks the stream with a boat-bit reaction, so you don't have to keep sending
 gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sending 2, 240, 240, 240, 240,... (90)
 
-(cap) 3,174,138, (uncap) 657+240n,104,(90)
+(cap) 3,174,138, (uncap) 657+240*n,104,(90)
 
 ## LWSS
 
