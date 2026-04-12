@@ -123,26 +123,45 @@ def recipe_stream_to_delays(stream):
             result.append(g)
     return result
 
-if args.find_minimum_repeat:
+if args.find_minimum_follow:
     expected_incoming_gliders = pattern_components(fake_gun[120 * args.n_gun_gliders])
-    recipes = args.find_minimum_repeat.split(';')
+    recipes = args.find_minimum_follow.split(';')
     for i, r in enumerate(recipes):
         if not r.strip():
             continue
         delays = recipe_stream_to_delays(r)
         total = sum(delays)
-        for i in range(args.toolkit.min_spacing, args.toolkit.min_spacing + 1000):
-            p = fake_gun + single_channel_stream(delays)
-            p = p[120 * args.n_gun_gliders]
 
-            escaping_gliders = []
-            for c in pattern_components(p):
-                for i, e in enumerate(expected_incoming_gliders):
-                    if c == e:
-                        # this is one of the escaping gliders
-                        escaping_gliders.append(i)
-            n_escaping = max(escaping_gliders)
-            follow_up_glider = mk_glider(total + i)
+        p = fake_gun + single_channel_stream(delays)
+        p = p[120 * args.n_gun_gliders]
+
+        escaping_gliders = []
+        for c in pattern_components(p):
+            for i, e in enumerate(expected_incoming_gliders):
+                if c == e:
+                    # this is one of the escaping gliders
+                    escaping_gliders.append(i)
+        n_escaping = max(escaping_gliders) + 1
+
+        # now we know which gliders participate. Remove the rest.
+        envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
+
+        for i in range(args.toolkit.min_spacing, args.toolkit.min_spacing + 1000):
+            p = mk_fake_gun(args.n_gun_gliders - n_escaping) + single_channel_stream(delays)
+            follow_up_glider = mk_glider(0, total + i)
+            glider_envelope = lt.pattern()
+            for _ in range(0, 120 * args.n_gun_gliders + i):
+                follow_up_glider = follow_up_glider[1]
+                p = p[1]
+                glider_envelope += follow_up_glider.convolve(envelope)
+                if (p & glider_envelope).nonempty():
+                    break
+            else:
+                # the envelope doesn't overlap with the reaction!
+                print(','.join(map(str,delays)) + f',({i})')
+                break
+
+    sys.exit(0)
 
 
 
