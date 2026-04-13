@@ -52,6 +52,12 @@ argparser.add_argument(
     default=10,
     help="How many gun gliders to simulate"
 )
+argparser.add_argument(
+    '--simulate-gens',
+    type=int,
+    default=None,
+    help="How many generations to simulate"
+)
 class SubtreeDef:
     options: tuple[tuple[int]]
 
@@ -84,8 +90,14 @@ argparser.add_argument(
     type=str,
     help="Finds the minimum follow distance for the given recipes"
 )
+argparser.add_argument(
+    '--use-gun-rle',
+    type=str,
+    help="Uses the rle as the gun"
+)
 
 args = argparser.parse_args()
+simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 
 simkin_gun =lt.pattern("""x = 37, y = 26, rule = B3/S23
 3$11bo$11b3o$14bo$13b2o5$2b2o5b2o$2b2o5b2o2$6b2o$6b2o4$29b2o$16bo12b2o
@@ -100,6 +112,13 @@ def mk_fake_gun(n):
     return fake_gun
 
 fake_gun = mk_fake_gun(args.n_gun_gliders)
+expected_incoming_gliders = pattern_components(fake_gun[simulate_gens])
+
+# phase 0 gliders
+canonical_se = mk_glider(0, 0)('rot180').centre()
+canonical_nw = mk_glider(0, 0).centre()
+canonical_ne = mk_glider(0, 0)('rot270').centre()
+canonical_sw = mk_glider(0, 0)('rot90').centre()
 
 def recipe_stream_to_delays(stream):
     gliders = stream.split(',')
@@ -124,7 +143,7 @@ def recipe_stream_to_delays(stream):
     return result
 
 if args.find_minimum_follow:
-    expected_incoming_gliders = pattern_components(fake_gun[120 * args.n_gun_gliders])
+    expected_incoming_gliders = pattern_components(fake_gun[simulate_gens])
     recipes = args.find_minimum_follow.split(';')
     for i, r in enumerate(recipes):
         if not r.strip():
@@ -133,7 +152,7 @@ if args.find_minimum_follow:
         total = sum(delays)
 
         p = fake_gun + single_channel_stream(delays)
-        p = p[120 * args.n_gun_gliders]
+        p = p[simulate_gens]
 
         escaping_gliders = []
         for c in pattern_components(p):
@@ -150,7 +169,7 @@ if args.find_minimum_follow:
             p = mk_fake_gun(args.n_gun_gliders - n_escaping) + single_channel_stream(delays)
             follow_up_glider = mk_glider(0, total + i)
             glider_envelope = lt.pattern()
-            for _ in range(0, 120 * args.n_gun_gliders + i):
+            for _ in range(0, simulate_gens + i):
                 follow_up_glider = follow_up_glider[1]
                 p = p[1]
                 glider_envelope += follow_up_glider.convolve(envelope)
@@ -163,6 +182,48 @@ if args.find_minimum_follow:
 
     sys.exit(0)
 
+if args.use_gun_rle:
+    def remove_gliders(p):
+        p = p + lt.pattern() # copy
+        for c in pattern_components(p):
+            cc = c.centre()
+            if cc == canonical_se.centre() or cc == canonical_se[1].centre() or cc == canonical_se[2].centre() or cc == canonical_se[3].centre():
+                p -= c
+        return p
+
+    gun = lt.pattern(args.use_gun_rle.strip())
+    gun_without_gliders = remove_gliders(gun)
+
+    glider_appears = gun
+    # now, let's fast forward the gun until we see an output glider.
+    for i in range(0, args.toolkit.period):
+        if remove_gliders(glider_appears) != glider_appears:
+            # there's a glider
+            break
+        glider_appears = glider_appears[1]
+
+    # let the glider advance a bit further away for clearance
+    glider_appears = glider_appears[args.toolkit.period // 2]
+    glider_appears = glider_appears[(args.n_gun_gliders - 1) * args.toolkit.period]
+
+    # and make the gliders canonical
+    rect = (-float('inf'), 0, 0, 0)
+    for i in range(0, 4):
+        found = False
+        for c in pattern_components(glider_appears):
+            if c.centre() == canonical_se.centre():
+                rect = max(rect, tuple(c.getrect()))
+                found = True
+        if found:
+            break
+        glider_appears = glider_appears[1]
+    else:
+        raise Exception("Couldn't find gliders?")
+
+    # shift the gun so that it lines up with the fake gun.
+    (fx, fy, _, _) = mk_fake_gun(1).getrect()
+    (x, y, _, _) = rect
+    fake_gun = glider_appears(fx - x, fy - y)
 
 
 if args.print_rle:
@@ -189,8 +250,8 @@ if args.check_for_shutoff:
         original = fake_gun + single_channel_stream(gliders_int)
         extended = mk_fake_gun(args.n_gun_gliders + 120) + single_channel_stream(gliders_int)
 
-        original = original[120 * args.n_gun_gliders]
-        extended = extended[120 * args.n_gun_gliders + 120 * 120 * 4]
+        original = original[simulate_gens]
+        extended = extended[simulate_gens + 120 * 120 * 4]
 
         if original == extended:
             print("Confirmed shutoff!")
@@ -246,14 +307,6 @@ if __name__ == "__main__":
     # Those are useful for pushing upstream, but won't act as elbows.
     valid_first_gliders = (1, 3, 5, 7)
 
-    expected_incoming_gliders = pattern_components(fake_gun[120 * args.n_gun_gliders])
-
-    # phase 0 gliders
-    canonical_se = mk_glider(0, 0)('rot180').centre()
-    canonical_nw = mk_glider(0, 0).centre()
-    canonical_ne = mk_glider(0, 0)('rot270').centre()
-    canonical_sw = mk_glider(0, 0)('rot90').centre()
-
     def component_info(c, alt = False):
         if c == c[120]:
             # still life or oscillator
@@ -304,12 +357,16 @@ if __name__ == "__main__":
 
             if c.centre() == canonical:
                 phase = 0
+                phase_mod2 = '⓪'
             elif c[1].centre() == canonical:
                 phase = 1
+                phase_mod2 = '①'
             elif c[2].centre() == canonical:
                 phase = 2
+                phase_mod2 = '⓪'
             elif c[3].centre() == canonical:
                 phase = 3
+                phase_mod2 = '①'
 
             (lx, ly, lw, lh) = c[phase].getrect()
             lane = lx - ly
@@ -329,7 +386,7 @@ if __name__ == "__main__":
                     location = f'l{lane}'
                     color = '♗♝'[lane % 2]
 
-            return f'{name}({location})(ph{phase})({color}{direction})'
+            return f'{name}({location})(ph{phase})({color}{direction}{phase_mod2})'
         else:
             # not an object
             return None
@@ -354,7 +411,7 @@ if __name__ == "__main__":
     def recurse(s, depth=0):
         patt = fake_gun + single_channel_stream(s)
 
-        patt_n = patt[120 * args.n_gun_gliders]
+        patt_n = patt[simulate_gens]
 
         evaluate(s, patt_n)
 

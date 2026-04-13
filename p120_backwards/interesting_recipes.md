@@ -1,73 +1,111 @@
 # Interesting recipes
 
+This is a collection of interesting recipes for sc90b5p120 -- aka, a stream of gliders with minimum spacing 90 crashing head-on into the stream of a p120 glider gun with a 5 lane offset.
+
+There are 8 unique collisions that happen depending on the timing of the recipe glider. I've chosen to label them with this numbering:
+
+- 0: both gliders deleted
+- 1: block created, on the side with the gun glider's lane
+- 2: backwards kickback -- 0 degree glider towards the gun gliders
+- 3: pond on gun side
+- 4: delete
+- 5: pond on recipe side
+- 6: forwards kickback -- 180 degree glider towards the recipe gliders
+- 7: block on recipe side
+
+The recipes start with a number showing the mod 8 timing they start on.
+
+The kickback gliders will delete the next glider on that lane. This gives the very useful `2, (90)` recipe, which deletes two gun gliders, allowing you to push forward large amounts with just one glider.
+
 ## Best gliders NE
 
-(3, 102, 90) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d-5)(ph2)(♝⬀)']
-(3, 212, 96) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d21)(ph1)(♝⬀)']
-(3, 93, 197, 188) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d9)(ph2)(♝⬀)']
-(3, 104, 129, 97) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d21)(ph3)(♝⬀)']
-(3, 104, 129, 250) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d19)(ph0)(♝⬀)']
-(3, 105, 233) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-3)(ph3)(♝⬀)']
-(3, 159, 122, 95) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d12)(ph1)(♗⬀)']
-(3, 201) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-10)(ph2)(♗⬀)']
---> 3, 201, (167)
-(3, 217, 129, 93) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d8)(ph3)(♗⬀)']
---> 3, 217, 129, 93, (90)
-(3, 219, 113, 107) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d12)(ph0)(♗⬀)']
-(5, 144, 148, 93) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d9)(ph1)(♝⬀)']
-(5, 144, 157, 115) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d18)(ph0)(♗⬀)']
-(7, 132, 126, 156) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d20)(ph0)(♗⬀)']
-(7, 148, 106) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d6)(ph2)(♗⬀)']
-(7, 158, 144) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d11)(ph2)(♝⬀)']
-(7, 164, 101, 98) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d8)(ph2)(♗⬀)']
-(7, 164, 182, 133) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d40)(ph3)(♗⬀)']
-(7, 170, 94, 92) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d7)(ph3)(♝⬀)']
-(7, 180, 96, 93) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d5)(ph1)(♝⬀)']
-(7, 188, 102, 150) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d13)(ph2)(♝⬀)']
-(7, 212, 170, 100) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d26)(ph1)(♗⬀)']
+Key:
+
+- ♝♗ - on the black/white squares of the chessboard. Equivalent to depth mod 2
+- ⓪① - whether the phase of the glider is even or odd.
+- ⬀⬃⬁⬂ - the direction of the glider. ⬃ is the recipe side 90 degree, ⬀ is the gun side 90 degree, ⬁ is 0 degree towards the gun, ⬂ is 180 degree towards the recipe.
+
+### Black even
+
++ 3, 102, 90, (90) {total: 282} - glider(d-5)(ph2)(♝⬀⓪)
++ 7, 158, 144, (162) {total: 464} - glider(d11)(ph2)(♝⬀⓪)
++ 7, 188, 102, 150, (90) {total: 530} - glider(d13)(ph2)(♝⬀⓪)
++ 3, 93, 197, 188, (90) {total: 568} - glider(d9)(ph2)(♝⬀⓪)
++ 3, 104, 129, 250, (90) {total: 573} - glider(d19)(ph0)(♝⬀⓪)
+
+### Black odd
+
++ 3, 212, 96, (104) {total: 412} - glider(d21)(ph1)(♝⬀①)
++ 3, 104, 129, 97, (90) {total: 420} - glider(d21)(ph3)(♝⬀①)
++ 3, 105, 233, (90) {total: 428} - glider(d-3)(ph3)(♝⬀①)
++ 7, 170, 94, 92, (90) {total: 446} - glider(d7)(ph3)(♝⬀①)
++ 7, 180, 96, 93, (90) {total: 459} - glider(d5)(ph1)(♝⬀①)
++ 5, 144, 148, 93, (90) {total: 475} - glider(d9)(ph1)(♝⬀①)
+
+### White even
+
++ 7, 148, 106, (90) {total: 344} - glider(d6)(ph2)(♗⬀⓪)
++ 3, 201, (167) {total: 368} - glider(d-10)(ph2)(♗⬀⓪)
++ 7, 164, 101, 98, (90) {total: 453} - glider(d8)(ph2)(♗⬀⓪)
++ 7, 132, 126, 156, (90) {total: 504} - glider(d20)(ph0)(♗⬀⓪)
++ 5, 144, 157, 115, (90) {total: 506} - glider(d18)(ph0)(♗⬀⓪)
++ 3, 219, 113, 107, (90) {total: 529} - glider(d12)(ph0)(♗⬀⓪)
+
+### White odd
+
++ 3, 159, 122, 95, (90) {total: 466} - glider(d12)(ph1)(♗⬀①)
++ 3, 217, 129, 93, (90) {total: 529} - glider(d8)(ph3)(♗⬀①)
++ 7, 164, 182, 133, (90) {total: 569} - glider(d40)(ph3)(♗⬀①)
++ 7, 212, 170, 100, (90) {total: 572} - glider(d26)(ph1)(♗⬀①)
 
 ## Best gliders SW
 
-(1, 92, 134) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d-12)(ph1)(♗⬃)']
-(1, 92, 163) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-5)(ph3)(♝⬃)']
-(1, 100, 137, 115) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-7)(ph0)(♝⬃)']
-(3, 93, 169, 148) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d3)(ph3)(♝⬃)']
-(3, 93, 197, 168) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d14)(ph2)(♗⬃)']
-(3, 96, 92, 147) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-15)(ph3)(♝⬃)']
-(3, 96, 143, 130) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-16)(ph2)(♗⬃)']
-(3, 104, 129, 164) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d20)(ph3)(♗⬃)']
-(3, 105, 164, 161) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-3)(ph2)(♝⬃)']
-(5, 138, 125) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d-1)(ph1)(♝⬃)']
-(3, 165, 101, 120) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-16)(ph1)(♗⬃)']
-(3, 185, 129) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-6)(ph0)(♗⬃)']
-(3, 196, 128) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-10)(ph0)(♗⬃)']
-(3, 198, 97, 90) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d10)(ph0)(♗⬃)']
-(3, 208, 186) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d-5)(ph0)(♝⬃)']
-(3, 215, 90, 161) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d5)(ph3)(♝⬃)']
-(5, 144, 132, 107) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d3)(ph2)(♝⬃)']
-(7, 132, 96, 177) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d8)(ph0)(♗⬃)']
-(7, 132, 114, 133) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d21)(ph3)(♝⬃)']
-(7, 132, 220, 90) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d2)(ph1)(♗⬃)']
-(7, 156, 105, 157) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d12)(ph0)(♗⬃)']
-(7, 156, 198, 151) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d16)(ph3)(♗⬃)']
-(7, 162, 110, 195) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d27)(ph2)(♝⬃)']
-(7, 164, 105, 157) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d14)(ph0)(♗⬃)']
-(7, 164, 198, 105) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d22)(ph0)(♗⬃)']
-(7, 170, 96, 148) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d1)(ph0)(♝⬃)']
+### Black even
+
+(1, 100, 137, 115) - glider(d-7)(ph0)(♝⬃⓪)
+(3, 105, 164, 161) - glider(d-3)(ph2)(♝⬃⓪)
+(3, 208, 186) - glider(d-5)(ph0)(♝⬃⓪)
+(5, 144, 132, 107) - glider(d3)(ph2)(♝⬃⓪)
+(7, 162, 110, 195) - glider(d27)(ph2)(♝⬃⓪)
+(7, 170, 96, 148) - glider(d1)(ph0)(♝⬃⓪)
+
+### Black odd
+
+(1, 92, 163) - glider(d-5)(ph3)(♝⬃①)
+(3, 93, 169, 148) - glider(d3)(ph3)(♝⬃①)
+(3, 96, 92, 147) - glider(d-15)(ph3)(♝⬃①)
+(3, 215, 90, 161) - glider(d5)(ph3)(♝⬃①)
+(7, 132, 114, 133) - glider(d21)(ph3)(♝⬃①)
+(5, 138, 125) - glider(d-1)(ph1)(♝⬃①)
+
+### White even
+
+(3, 93, 197, 168) - glider(d14)(ph2)(♗⬃⓪)
+(3, 96, 143, 130) - glider(d-16)(ph2)(♗⬃⓪)
+(3, 185, 129) - glider(d-6)(ph0)(♗⬃⓪)
+(3, 196, 128) - glider(d-10)(ph0)(♗⬃⓪)
+(3, 198, 97, 90) - glider(d10)(ph0)(♗⬃⓪)
+(7, 132, 96, 177) - glider(d8)(ph0)(♗⬃⓪)
+(7, 156, 105, 157) - glider(d12)(ph0)(♗⬃⓪)
+(7, 164, 105, 157) - glider(d14)(ph0)(♗⬃⓪)
+(7, 164, 198, 105) - glider(d22)(ph0)(♗⬃⓪)
+
+### White odd
+
+(1, 92, 134) - glider(d-12)(ph1)(♗⬃①)
+(3, 104, 129, 164) - glider(d20)(ph3)(♗⬃①)
+(3, 165, 101, 120) - glider(d-16)(ph1)(♗⬃①)
+(7, 132, 220, 90) - glider(d2)(ph1)(♗⬃①)
+(7, 156, 198, 151) - glider(d16)(ph3)(♗⬃①)
+
 
 ## Offset blocks NE
 
-(3, 205, 248, 174) ['block(l32,d10)', 'g0', 'g1', 'g2', 'g3']
-(3, 208, 125, 174) ['block(l32,d10)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(3, 208, 125, 176) ['block(l32,d10)', 'g0', 'g1']
-(3, 210, 123, 174) ['block(l32,d10)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(3, 210, 123, 176) ['block(l32,d10)', 'g0', 'g1']
-(3, 211, 122, 174) ['block(l32,d10)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(3, 211, 122, 176) ['block(l32,d10)', 'g0', 'g1']
-(3, 225, 137, 148) ['block(l37,d3)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(5, 185, 180, 115) ['block(l33,d-15)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(5, 196, 169, 115) ['block(l33,d-15)', 'g0', 'g1', 'g2', 'g3', 'g4']
-(7, 166, 233, 134) ['block(l32,d34)', 'g0', 'g1', 'g2']
++ 3, 211, 122, 174, (90) {total: 507} - block(l32,d10)
++ 5, 185, 180, 115, (90) {total: 570} - block(l33,d-15)
++ 5, 196, 169, 115, (90) {total: 570} - block(l33,d-15)
++ 3, 225, 137, 148, (90) {total: 600} - block(l37,d3)
++ 7, 166, 233, 134, (231) {total: 764} - block(l32,d34)
 
 ## Offset blocks SW
 
@@ -85,11 +123,11 @@
 
 To have the glider+lwss collide into a beehive, you need to add 1400+A delay to let the stream advance before sending the zero degree glider, then A delay again to let the stream advance before sending the LWSS to intercept it.
 
-i.e.: The delay should look like:
+i.e.: The entire recipe should look like:
 1,92,90,219,(179){A+1400}+3,219,229,127,(298){A}+1,104,93,129
 where A >= 0, in increments of 8.
 
-When you increase A by 8 gens, the beehive will be 2 full diagonals further away.
+The distance to the offset beehive increases at c/4, so for each 8 gen increase in A, it will be 2 full diagonals further away. The limit depends on the length of the construction arm.
 
 E.g.,
 ```bash
@@ -99,15 +137,19 @@ uv run oncoming.py --print-rle="1,92,90,219,(179)2000+3,219,229,127,(298)600+1,1
 ## Cap/uncap stream
 
 Blocks the stream with a boat-bit reaction, so you don't have to keep sending
-gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sending 2, 240, 240, 240, 240,... (90)
+gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sending 2, 240, 240, 240, 240,... (90) to keep the stream in the same place.
 
 (cap) 3,174,138, (uncap) 657+240*n,104,(90)
 
 ## LWSS
 
-(1, 104, 93, 129) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'lwss(-9,-499)(0,-2)']
-(3, 219, 108, 132) ['g0', 'g1', 'g2', 'g3', 'lwss(275,-7)(2,0)', 'tub(l13,d13)']
--> completed (3, 219, 108, 132, 183, 93) ['g0', 'g1', 'g2', 'g3', 'lwss(275,-7)(2,0)']
+### Clean
+
+- 1, 104, 93, 129 (90) - lwss(-9,-499)(0,-2)
+- 3, 219, 108, 132, 183, 93, (90) - lwss(275,-7)(2,0)
+
+### Partials
+
 (7, 156, 97, 160) ['beehive(l-11,d22)', 'blinker(l-2,d-4)', 'blinker(l-4,d-4)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'lwss(388,-6)(2,0)']
 (7, 188, 96, 153) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'loaf(l-3,d19)', 'lwss(391,-5)(2,0)']
 (3, 134, 134, 128) ['beehive(l-12,d-21)', 'blinker(l15,d-27)', 'blinker(l17,d-27)', 'block(l-23,d-29)', 'block(l17,d11)', 'g0', 'g1', 'g2', 'g3', 'g4', 'lwss(-403,2)(-2,0)']
@@ -118,7 +160,12 @@ gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sen
 
 ## MWSS
 
-(3, 184, 131, 239) ['g0', 'g1', 'xq4_27dee6(443,0)(2,0)']
+### Clean
+
+- 3, 184, 131, 239, (201) - mwss(443,0)(2,0)
+
+### Partials
+
 (3, 225, 194, 140) ['beehive(l-10,d19)', 'g0', 'g1', 'xq4_27dee6(2,-236)(0,-2)']
 (7, 188, 90, 175) ['beehive(l-21,d48)', 'blinker(l-18,d28)', 'blinker(l-20,d28)', 'block(l-24,d12)', 'g0', 'g1', 'g2', 'g3', 'g4', 'xq4_27dee6(9,441)(0,2)']
 (5, 169, 214, 153) ['beehive(l24,d-25)', 'blinker(l22,d-20)', 'blinker(l24,d-20)', 'block(l-23,d1)', 'g0', 'g1', 'g2', 'loaf(l-23,d-15)', 'xq4_27dee6(-256,-15)(-2,0)']
@@ -126,83 +173,110 @@ gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sen
 
 ## HWSS
 
+### Partials
+
 (3, 91, 220, 180) ['beehive(l-6,d-11)', 'blinker(l-37,d25)', 'blinker(l-39,d25)', 'g0', 'g1', 'g2', 'xq4_27deee6(354,8)(2,0)']
 
 ## Glider pairs
 
-(1, 92, 203) ['g0', 'glider(d-5)(ph3)(♝⬃)', 'glider(d-7)(ph2)(♝⬃)']
-(1, 96, 224, 96) ['g0', 'g1', 'g2', 'g3', 'glider(d-16)(ph1)(♗⬃)', 'glider(d-6)(ph1)(♗⬃)']
-(1, 96, 240, 96) ['g0', 'g1', 'g2', 'g3', 'glider(d-12)(ph1)(♗⬃)', 'glider(d-6)(ph1)(♗⬃)']
-(3, 102, 136, 123) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬀)', 'glider(d-5)(ph2)(♝⬀)']
-(3, 105, 217, 182) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-2)(ph0)(♗⬃)', 'glider(d12)(ph0)(♗⬃)']
-(3, 160, 100, 118) ['g0', 'glider(d-17)(ph0)(♝⬃)', 'glider(d-20)(ph1)(♗⬃)']
-(3, 163, 250, 226) ['g0', 'glider(d5)(ph3)(♝⬀)', 'glider(d7)(ph2)(♝⬀)']
-(3, 165, 101, 103) ['g0', 'g1', 'glider(d-16)(ph1)(♗⬃)', 'glider(d12)(ph0)(♗⬃)']
-(3, 196, 136, 211) ['g0', 'g1', 'g2', 'glider(d-10)(ph0)(♗⬃)', 'glider(d-17)(ph0)(♝⬃)']
-(3, 196, 146, 130) ['g0', 'g1', 'g2', 'g3', 'glider(d-10)(ph0)(♗⬃)', 'glider(d3)(ph2)(♝⬃)']
-(3, 196, 147, 147) ['g0', 'g1', 'g2', 'glider(d-10)(ph0)(♗⬃)', 'glider(d-8)(ph1)(♗⬃)']
-(3, 196, 152, 108) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-10)(ph0)(♗⬃)', 'glider(d-3)(ph1)(♝⬃)']
-(3, 196, 171, 212) ['g0', 'g1', 'g2', 'g3', 'glider(d-10)(ph0)(♗⬃)', 'glider(d7)(ph2)(♝⬃)']
-(3, 201, 95, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-26)(ph2)(♗⬀)']
-(3, 201, 103, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-24)(ph2)(♗⬀)']
-(3, 201, 111, 201) ['g0', 'g1', 'g2', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-22)(ph2)(♗⬀)']
-(3, 201, 141, 111) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-9)(ph2)(♝⬀)']
-(3, 201, 167, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-38)(ph2)(♗⬀)']
-(3, 201, 175, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-36)(ph2)(♗⬀)']
-(3, 201, 183, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-34)(ph2)(♗⬀)']
-(3, 201, 191, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-32)(ph2)(♗⬀)']
-(3, 201, 199, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-30)(ph2)(♗⬀)']
-(3, 201, 207, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-28)(ph2)(♗⬀)']
-(3, 201, 215, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-26)(ph2)(♗⬀)']
-(3, 201, 239, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-20)(ph2)(♗⬀)']
-(3, 201, 247, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-18)(ph2)(♗⬀)']
-(3, 201, 255, 201) ['g0', 'g1', 'glider(d-10)(ph2)(♗⬀)', 'glider(d-16)(ph2)(♗⬀)']
-(3, 219, 220, 221) ['g0', 'g1', 'g2', 'glider(d-4)(ph1)(♗⬀)', 'glider(d-5)(ph0)(♝⬀)']
-(3, 219, 220, 231) ['g0', 'g1', 'g2', 'g3', 'glider(d-4)(ph1)(♗⬀)', 'glider(d-5)(ph0)(♝⬀)']
-(5, 138, 119, 163) ['g0', 'g1', 'g2', 'glider(d-1)(ph1)(♝⬃)', 'glider(d-10)(ph1)(♗⬃)']
-(5, 138, 121, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d-3)(ph0)(♝⬃)']
-(5, 138, 121, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d-2)(ph2)(♗⬃)']
-(5, 138, 129, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph0)(♝⬃)', 'glider(d-1)(ph1)(♝⬃)']
-(5, 138, 129, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d0)(ph2)(♗⬃)']
-(5, 138, 137, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d1)(ph0)(♝⬃)']
-(5, 138, 137, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d2)(ph2)(♗⬃)']
-(5, 138, 145, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d3)(ph0)(♝⬃)']
-(5, 138, 145, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d4)(ph2)(♗⬃)']
-(5, 138, 153, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d5)(ph0)(♝⬃)']
-(5, 138, 153, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d6)(ph2)(♗⬃)']
-(5, 138, 161, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d7)(ph0)(♝⬃)']
-(5, 138, 161, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d8)(ph2)(♗⬃)']
-(5, 138, 169, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d9)(ph0)(♝⬃)']
-(5, 138, 169, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d10)(ph2)(♗⬃)']
-(5, 138, 177, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d11)(ph0)(♝⬃)']
-(5, 138, 177, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d12)(ph2)(♗⬃)']
-(5, 138, 185, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d13)(ph0)(♝⬃)']
-(5, 138, 185, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d14)(ph2)(♗⬃)']
-(5, 138, 193, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d15)(ph0)(♝⬃)']
-(5, 138, 193, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d16)(ph2)(♗⬃)']
-(5, 138, 201, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d17)(ph0)(♝⬃)']
-(5, 138, 201, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d18)(ph2)(♗⬃)']
-(5, 138, 209, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d19)(ph0)(♝⬃)']
-(5, 138, 209, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d20)(ph2)(♗⬃)']
-(5, 138, 217, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d21)(ph0)(♝⬃)']
-(5, 138, 217, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d22)(ph2)(♗⬃)']
-(5, 138, 225, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d23)(ph0)(♝⬃)']
-(5, 138, 225, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d24)(ph2)(♗⬃)']
-(5, 138, 233, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d25)(ph0)(♝⬃)']
-(5, 138, 233, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d26)(ph2)(♗⬃)']
-(5, 138, 241, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d27)(ph0)(♝⬃)']
-(5, 138, 241, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d28)(ph2)(♗⬃)']
-(5, 138, 249, 219) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d29)(ph0)(♝⬃)']
-(5, 138, 249, 221) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-1)(ph1)(♝⬃)', 'glider(d30)(ph2)(♗⬃)']
-(5, 153, 196, 108) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d32)(ph3)(♗⬀)', 'glider(d7)(ph2)(♝⬀)']
-(7, 140, 206, 126) ['g0', 'g1', 'g2', 'g3', 'glider(d6)(ph1)(♗⬃)', 'glider(d7)(ph2)(♝⬃)']
-(7, 156, 222, 113) ['g0', 'g1', 'glider(d-1)(ph1)(♝⬀)', 'glider(d16)(ph0)(♗⬀)']
-(7, 196, 196, 155) ['g0', 'g1', 'glider(d10)(ph0)(♗⬃)', 'glider(d3)(ph2)(♝⬃)']
-(7, 196, 213, 103) ['g0', 'g1', 'g2', 'g3', 'g4', 'glider(d-2)(ph0)(♗⬃)', 'glider(d15)(ph2)(♝⬃)']
-(7, 228, 160, 100) ['g0', 'g1', 'g2', 'glider(d11)(ph0)(♝⬃)', 'glider(d8)(ph1)(♗⬃)']
-(7, 244, 160, 100) ['g0', 'g1', 'g2', 'glider(d12)(ph1)(♗⬃)', 'glider(d15)(ph0)(♝⬃)']
+These recipes send a pair of gliders. If the separation matches, you might be able to save time by using them.
+
+3, 196, 146, 130;3, 196, 147, 147;3, 196, 152, 108;3, 196, 171, 212;3, 201, 95, 201;3, 201, 103, 201;3, 201, 111, 201
+
+1, 92, 203, (617) glider(d-5)(ph0)(♝⬃①), glider(d-7)(ph2)(♝⬃⓪)
+1, 96, 224, 96, (150) - glider(d-16)(ph0)(♗⬃①), glider(d-6)(ph0)(♗⬃①)
+1, 96, 240, 96, (150) - glider(d-12)(ph0)(♗⬃①), glider(d-6)(ph0)(♗⬃①)
+3, 102, 136, 123, (162) - glider(d-1)(ph0)(♝⬀①), glider(d-5)(ph2)(♝⬀⓪)
+3, 105, 217, 182, (90) - glider(d-2)(ph0)(♗⬃⓪), glider(d12)(ph0)(♗⬃⓪)
+3, 160, 100, 118, (650) - glider(d-17)(ph0)(♝⬃⓪), glider(d-20)(ph0)(♗⬃①)
+3, 163, 250, 226, (413) - glider(d5)(ph0)(♝⬀①), glider(d7)(ph2)(♝⬀⓪)
+3, 165, 101, 103, (526) - glider(d-16)(ph0)(♗⬃①), glider(d12)(ph0)(♗⬃⓪)
+3, 196, 136, 211, (190) - glider(d-10)(ph0)(♗⬃⓪), glider(d-17)(ph0)(♝⬃⓪)
+3, 196, 146, 130, (178) - glider(d-10)(ph0)(♗⬃⓪), glider(d3)(ph2)(♝⬃⓪)
+3, 196, 147, 147, (171) - glider(d-10)(ph0)(♗⬃⓪), glider(d-8)(ph0)(♗⬃①)
+3, 196, 152, 108, (90) - glider(d-10)(ph0)(♗⬃⓪), glider(d-3)(ph0)(♝⬃①)
+3, 196, 171, 212, (90) - glider(d-10)(ph0)(♗⬃⓪), glider(d7)(ph2)(♝⬃⓪)
+3, 201, 95, 201, (351) - glider(d-10)(ph2)(♗⬀⓪), glider(d-26)(ph2)(♗⬀⓪)
+3, 201, 103, 201, (343) - glider(d-10)(ph2)(♗⬀⓪), glider(d-24)(ph2)(♗⬀⓪)
+3, 201, 111, 201, (167) - glider(d-10)(ph2)(♗⬀⓪), glider(d-22)(ph2)(♗⬀⓪)
+3, 201, 141, 111 - glider(d-10)(ph2)(♗⬀⓪), glider(d-9)(ph2)(♝⬀⓪)
+3, 201, 167, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-38)(ph2)(♗⬀⓪)
+3, 201, 175, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-36)(ph2)(♗⬀⓪)
+3, 201, 183, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-34)(ph2)(♗⬀⓪)
+3, 201, 191, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-32)(ph2)(♗⬀⓪)
+3, 201, 199, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-30)(ph2)(♗⬀⓪)
+3, 201, 207, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-28)(ph2)(♗⬀⓪)
+3, 201, 215, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-26)(ph2)(♗⬀⓪)
+3, 201, 239, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-20)(ph2)(♗⬀⓪)
+3, 201, 247, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-18)(ph2)(♗⬀⓪)
+3, 201, 255, 201 - glider(d-10)(ph2)(♗⬀⓪), glider(d-16)(ph2)(♗⬀⓪)
+3, 219, 220, 221 - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
+3, 219, 220, 231 - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
+5, 138, 119, 163, (336) - glider(d-1)(ph0)(♝⬃①), glider(d-10)(ph0)(♗⬃①)
+5, 138, 121, 219, (90)  - glider(d-1)(ph0)(♝⬃①), glider(d-3)(ph0)(♝⬃⓪)
+5, 138, 121, 221, (90) - glider(d-1)(ph0)(♝⬃①), glider(d-2)(ph2)(♗⬃⓪)
+5, 138, 129, 219, (90) - glider(d-1)(ph0)(♝⬃⓪), glider(d-1)(ph0)(♝⬃①)
+5, 138, 129, 221, (90) - glider(d-1)(ph0)(♝⬃①), glider(d0)(ph2)(♗⬃⓪)
+5, 138, 137, 219, (90) - glider(d-1)(ph0)(♝⬃①), glider(d1)(ph0)(♝⬃⓪)
+5, 138, 137, 221 - glider(d-1)(ph0)(♝⬃①), glider(d2)(ph2)(♗⬃⓪)
+5, 138, 145, 219 - glider(d-1)(ph0)(♝⬃①), glider(d3)(ph0)(♝⬃⓪)
+5, 138, 145, 221 - glider(d-1)(ph0)(♝⬃①), glider(d4)(ph2)(♗⬃⓪)
+5, 138, 153, 219 - glider(d-1)(ph0)(♝⬃①), glider(d5)(ph0)(♝⬃⓪)
+5, 138, 153, 221 - glider(d-1)(ph0)(♝⬃①), glider(d6)(ph2)(♗⬃⓪)
+5, 138, 161, 219 - glider(d-1)(ph0)(♝⬃①), glider(d7)(ph0)(♝⬃⓪)
+5, 138, 161, 221 - glider(d-1)(ph0)(♝⬃①), glider(d8)(ph2)(♗⬃⓪)
+5, 138, 169, 219 - glider(d-1)(ph0)(♝⬃①), glider(d9)(ph0)(♝⬃⓪)
+5, 138, 169, 221 - glider(d-1)(ph0)(♝⬃①), glider(d10)(ph2)(♗⬃⓪)
+5, 138, 177, 219 - glider(d-1)(ph0)(♝⬃①), glider(d11)(ph0)(♝⬃⓪)
+5, 138, 177, 221 - glider(d-1)(ph0)(♝⬃①), glider(d12)(ph2)(♗⬃⓪)
+5, 138, 185, 219 - glider(d-1)(ph0)(♝⬃①), glider(d13)(ph0)(♝⬃⓪)
+5, 138, 185, 221 - glider(d-1)(ph0)(♝⬃①), glider(d14)(ph2)(♗⬃⓪)
+5, 138, 193, 219 - glider(d-1)(ph0)(♝⬃①), glider(d15)(ph0)(♝⬃⓪)
+5, 138, 193, 221 - glider(d-1)(ph0)(♝⬃①), glider(d16)(ph2)(♗⬃⓪)
+5, 138, 201, 219 - glider(d-1)(ph0)(♝⬃①), glider(d17)(ph0)(♝⬃⓪)
+5, 138, 201, 221 - glider(d-1)(ph0)(♝⬃①), glider(d18)(ph2)(♗⬃⓪)
+5, 138, 209, 219 - glider(d-1)(ph0)(♝⬃①), glider(d19)(ph0)(♝⬃⓪)
+5, 138, 209, 221 - glider(d-1)(ph0)(♝⬃①), glider(d20)(ph2)(♗⬃⓪)
+5, 138, 217, 219 - glider(d-1)(ph0)(♝⬃①), glider(d21)(ph0)(♝⬃⓪)
+5, 138, 217, 221 - glider(d-1)(ph0)(♝⬃①), glider(d22)(ph2)(♗⬃⓪)
+5, 138, 225, 219 - glider(d-1)(ph0)(♝⬃①), glider(d23)(ph0)(♝⬃⓪)
+5, 138, 225, 221 - glider(d-1)(ph0)(♝⬃①), glider(d24)(ph2)(♗⬃⓪)
+5, 138, 233, 219 - glider(d-1)(ph0)(♝⬃①), glider(d25)(ph0)(♝⬃⓪)
+5, 138, 233, 221 - glider(d-1)(ph0)(♝⬃①), glider(d26)(ph2)(♗⬃⓪)
+5, 138, 241, 219 - glider(d-1)(ph0)(♝⬃①), glider(d27)(ph0)(♝⬃⓪)
+5, 138, 241, 221 - glider(d-1)(ph0)(♝⬃①), glider(d28)(ph2)(♗⬃⓪)
+5, 138, 249, 219 - glider(d-1)(ph0)(♝⬃①), glider(d29)(ph0)(♝⬃⓪)
+5, 138, 249, 221 - glider(d-1)(ph0)(♝⬃①), glider(d30)(ph2)(♗⬃⓪)
+
+5, 153, 196, 108 - glider(d32)(ph0)(♗⬀①), glider(d7)(ph2)(♝⬀⓪)
+7, 140, 206, 126 - glider(d6)(ph0)(♗⬃①), glider(d7)(ph2)(♝⬃⓪)
+7, 156, 222, 113 - glider(d-1)(ph0)(♝⬀①), glider(d16)(ph0)(♗⬀⓪)
+7, 196, 196, 155 - glider(d10)(ph0)(♗⬃⓪), glider(d3)(ph2)(♝⬃⓪)
+7, 196, 213, 103 - glider(d-2)(ph0)(♗⬃⓪), glider(d15)(ph2)(♝⬃⓪)
+7, 228, 160, 100 - glider(d11)(ph0)(♝⬃⓪), glider(d8)(ph0)(♗⬃①)
+7, 244, 160, 100 - glider(d12)(ph0)(♗⬃①), glider(d15)(ph0)(♝⬃⓪)
+
+## Teardown gun
+
++ 58, 96, 96, 109, 133, 99 -- destroy construction arm, leaving nothing behind.
+
+Note that 58 is just an arbitary label for the mod 120 phase of the glider gun. Here's what this looks like:
+
+```
+x = 185, y = 194, rule = LifeHistory
+9.A$9.3A$12.A$11.2A5$2A5.2A$2A5.2A$18.3A$4.2A12.A4.A$4.2A13.A3.2A$
+24.2A$21.A2.A$22.2A$27.2A$27.2A2$24.2A5.2A$24.2A5.2A11$28.A$29.A$
+27.3A11$34.3D.3D5.3D.3D5.3D.3D6.D2.3D.3D6.D2.3D.3D5.3D.3D$34.D3.D.
+D5.D.D.D7.D.D.D7.2D2.D.D.D.D5.2D4.D3.D5.D.D.D.D$34.3D.3D5.3D.3D5.
+3D.3D6.D2.D.D.3D6.D2.3D.3D5.3D.3D$36.D.D.D7.D.D.D7.D.D.D6.D2.D.D3.
+D6.D4.D3.D7.D3.D$34.2D2.3D5.3D.3D5.3D.3D5.3D.3D.3D5.3D.3D.3D5.3D.
+3D10$49.2A$49.A.A$49.A22$73.2A$73.A.A$73.A22$97.2A$97.A.A$97.A25$
+125.A$124.2A$124.A.A32$157.3A$157.A$158.A22$183.A$182.2A$182.A.A!
+```
 
 ## Faraway items
+
+Single items placed at least 20 hd from the lane.
 
 (1, 104, 99, 131) ['g0', 'g1', 'g2', 'g3', 'g4', 'loaf(l-20,d-14)']
 (3, 101, 198, 105) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'pond(l-20,d16)']
