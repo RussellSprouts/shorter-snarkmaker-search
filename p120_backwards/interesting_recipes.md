@@ -23,7 +23,7 @@ The `oncoming.py` file implements many useful tools for working with this toolki
 
 ```bash
 # Print a demo of a recipe. Automatically adjusts the mod 8 timing when you have multiple recipes with minimum follow-ups.
-# Use ; to separate multiple recipes.
+# Use ; to show multiple streams side-by-side.
 uv run oncoming.py --print-rle="3, 102, 90, (90) 48 + 7, 158, 144" --n-gun-gliders=10
 
 # Search a different toolkit instead of sc90b5p120
