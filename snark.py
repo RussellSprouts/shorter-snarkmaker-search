@@ -500,6 +500,8 @@ def score_pattern(
     partial_elbow_intermediate_depth_separation = 0
     partial_elbow_intermediate_overlapping_population = 0
     partial_intermediate_shift = 0
+    partial_intermediate_digest = 0
+    partial_intermediate_overlapping_digest = 0
 
     for pattern_offset in depths_to_search:
             
@@ -575,6 +577,15 @@ def score_pattern(
                             if c.depth <= partial_match_max_depth
                         ]
                     )
+                    partial_intermediate_pattern = sum([c.pattern for c in partial_match], start=lt.pattern())
+                    partial_intermediate_digest = partial_intermediate_pattern.digest()
+                    overlapping_pattern = sum(
+                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
+                        start=lt.pattern(),
+                    ) + partial_intermediate_pattern
+                    partial_intermediate_overlapping_digest = (
+                        overlapping_pattern.digest()
+                    )
                     partial_intermediate_shift = pattern_offset
 
     return StreamResult(
@@ -606,6 +617,8 @@ def score_pattern(
         partial_intermediate_depth_separation=partial_elbow_intermediate_depth_separation,
         partial_intermediate_overlapping_population=partial_elbow_intermediate_overlapping_population,
         partial_intermediate_shift=partial_intermediate_shift,
+        partial_intermediate_digest=partial_intermediate_digest,
+        partial_intermediate_overlapping_digest=partial_intermediate_overlapping_digest,
     )
 
 
@@ -694,6 +707,16 @@ def combine_score(
             if a_partial_better
             else b.partial_intermediate_shift
         ),
+        partial_intermediate_digest=(
+            a.partial_intermediate_digest
+            if a_partial_better
+            else b.partial_intermediate_digest
+        ),
+        partial_intermediate_overlapping_digest=(
+            a.partial_intermediate_overlapping_digest
+            if a_partial_better
+            else b.partial_intermediate_overlapping_digest
+        )
     )
 
 

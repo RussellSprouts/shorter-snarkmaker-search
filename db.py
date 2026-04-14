@@ -96,6 +96,8 @@ class SavedResult:
     partial_intermediate_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
+    partial_intermediate_digest: int
+    partial_intermediate_overlapping_digest: int
 
     # add `something as label` to the select
     # in view-results to print the label next to it.
@@ -142,6 +144,12 @@ class SavedResult:
                 "partial_intermediate_overlapping_population"
             ],
             partial_intermediate_shift=row["partial_intermediate_shift"],
+            partial_intermediate_digest=row["partial_intermediate_digest"] if "partial_intermediate_digest" in keys else 0,
+            partial_intermediate_overlapping_digest=(
+                row["partial_intermediate_overlapping_digest"]
+                if "partial_intermediate_overlapping_digest" in keys
+                else 0
+            ),
             label=row["label"] if "label" in keys else None
         )
 
@@ -170,7 +178,9 @@ class SavedResult:
             f"partial_intermediate_positive_log_prob={self.partial_intermediate_positive_log_prob}, "
             f"partial_intermediate_depth_separation={self.partial_intermediate_depth_separation}, "
             f"partial_intermediate_overlapping_population={self.partial_intermediate_overlapping_population}, "
-            f"partial_intermediate_shift={self.partial_intermediate_shift}"
+            f"partial_intermediate_shift={self.partial_intermediate_shift}, "
+            f"partial_intermediate_digest={self.partial_intermediate_digest}, "
+            f"partial_intermediate_overlapping_digest={self.partial_intermediate_overlapping_digest}"
             ")"
         )
 
@@ -201,6 +211,8 @@ class StreamResult:
     partial_intermediate_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
+    partial_intermediate_digest: int
+    partial_intermediate_overlapping_digest: int
 
 
 @dataclass
@@ -339,7 +351,9 @@ class ProcessingDatabase:
                 partial_intermediate_positive_log_prob REAL,
                 partial_intermediate_depth_separation INTEGER,
                 partial_intermediate_overlapping_population INTEGER,
-                partial_intermediate_shift INTEGER
+                partial_intermediate_shift INTEGER,
+                partial_intermediate_digest INTEGER,
+                partial_intermediate_overlapping_digest INTEGER
             )
             """
         )
@@ -407,6 +421,8 @@ class ProcessingDatabase:
                 r.partial_intermediate_depth_separation as partial_intermediate_depth_separation,
                 r.partial_intermediate_overlapping_population as partial_intermediate_overlapping_population,
                 r.partial_intermediate_shift as partial_intermediate_shift,
+                r.partial_intermediate_digest as partial_intermediate_digest,
+                r.partial_intermediate_overlapping_digest as partial_intermediate_overlapping_digest,
 
                 fi.so_far as fi_so_far,
                 fi.remaining as fi_remaining,
@@ -514,8 +530,8 @@ class ProcessingDatabase:
 
         self.conn.executemany(
             """INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -541,6 +557,8 @@ class ProcessingDatabase:
                     child.partial_intermediate_depth_separation,
                     child.partial_intermediate_overlapping_population,
                     child.partial_intermediate_shift,
+                    digest_to_signed(child.partial_intermediate_digest),
+                    digest_to_signed(child.partial_intermediate_overlapping_digest),
                 )
                 for _, result in results
                 for child in result.valid_children
