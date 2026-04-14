@@ -412,6 +412,7 @@ class OptimizeArgs:
     snark_offsets: Dict[int, Set[int]]
     partial_progress_factor: float
     partial_range: Set[int]
+    depth_range: list[int]
 
 
 def abs_lane(x):
@@ -452,28 +453,32 @@ def score_pattern(
 
     lanes.sort(key=lambda l: abs_lane(l[0]))
 
+    depths_to_search = shared_args.depth_range
     furthest_lane, is_pi_equivalent, elbow_component = lanes.pop()
-    snark_offset = snark_offset_for_elbow_block(
-        shared_args.snark_offsets, elbow_component
-    )
-    if (
-        not is_pi_equivalent
-        or abs_lane(furthest_lane) < shared_args.min_offset_block_lane
-        or snark_offset is None
-    ):
-        # the object is not correct or too close to lane 0.
-        return None
 
-    if furthest_lane < 0 and not recursed:
-        # flip the pattern to put the object on the NE side instead of SW.
-        return score_pattern(
-            job=job,
-            follow_up=follow_up,
-            before_hit_digest=before_hit_digest,
-            end_pattern=flip_pattern_as_if_other_pi_block(end_pattern),
-            shared_args=shared_args,
-            recursed=True,
+    if shared_args.min_offset_block_lane > 0:
+        snark_offset = snark_offset_for_elbow_block(
+            shared_args.snark_offsets, elbow_component
         )
+        depths_to_search = [snark_offset]
+        if (
+            not is_pi_equivalent
+            or abs_lane(furthest_lane) < shared_args.min_offset_block_lane
+            or snark_offset is None
+        ):
+            # the object is not correct or too close to lane 0.
+            return None
+
+        if furthest_lane < 0 and not recursed:
+            # flip the pattern to put the object on the NE side instead of SW.
+            return score_pattern(
+                job=job,
+                follow_up=follow_up,
+                before_hit_digest=before_hit_digest,
+                end_pattern=flip_pattern_as_if_other_pi_block(end_pattern),
+                shared_args=shared_args,
+                recursed=True,
+            )
 
     # max depth of all components including the offset block
     end_pattern_x, end_pattern_y, _, _ = end_pattern.getrect()
@@ -483,14 +488,7 @@ def score_pattern(
     )
     depth = max(map(lambda c: c.depth, original_components))
     max_depth = max(job.max_depth, depth)
-    # components shifted to line up with the snark that would
-    # hit the elbow
-    components = set(
-        shared_args.component_search.pattern_cache.id(c(-snark_offset, -snark_offset))
-        for _, _, c in lanes
-    )
 
-    overlapping_recipes = shared_args.component_search.overlapping_recipes(components)
     best_full_intermediate_match: Optional[Recipe] = None
     best_partial_intermediate_match: Optional[Recipe] = None
     best_partial_prob = NEGATIVE_INFINITY
@@ -503,70 +501,81 @@ def score_pattern(
     partial_elbow_intermediate_overlapping_population = 0
     partial_intermediate_shift = 0
 
-    for recipe in overlapping_recipes:
-        recipe_components = shared_args.component_search.recipe_components(recipe)
-        missing = recipe_components - components
-        elbow = components - recipe_components
-        partial_match = components - elbow
-        if not missing:
-            # full match!
-            if (
-                not best_full_intermediate_match
-                or recipe.pattern.population
-                > best_full_intermediate_match.pattern.population
-            ):
-                best_full_intermediate_match = recipe
-                elbow_min_depth = min(
-                    map(lambda x: x.depth, elbow), default=float("inf")
-                )
-                partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
-                full_elbow_intermediate_depth_separation = (
-                    elbow_min_depth - partial_match_max_depth
-                )
-                full_elbow_intermediate_overlapping_population = sum(
-                    [
-                        c.pattern.population
-                        for c in elbow
-                        if c.depth <= partial_match_max_depth
-                    ]
-                )
-                # get the digest of the full intermediate match
-                # plus the pattern elements which overlap.
-                overlapping_pattern = sum(
-                    [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
-                    start=lt.pattern(),
-                ) + sum([c.pattern for c in partial_match], start=lt.pattern())
-                full_elbow_intermediate_overlapping_digest = (
-                    overlapping_pattern.digest()
-                )
-                full_intermediate_shift = snark_offset
-        else:
-            # partial match!
-            # find probability of finding rest of match
-            p = total_probability(missing)
-            if p == NEGATIVE_INFINITY:
-                continue
-            p -= len(recipe.remaining) * shared_args.partial_progress_factor
-            if p > best_partial_prob:
-                best_partial_prob = p
-                best_partial_intermediate_match = recipe
-                best_partial_positive_prob = total_probability(partial_match)
+    for pattern_offset in depths_to_search:
+            
+        # components shifted to line up with the snark that would
+        # hit the elbow
+        components = set(
+            shared_args.component_search.pattern_cache.id(c(-pattern_offset, -pattern_offset))
+            for _, _, c in lanes
+        )
 
-                elbow_min_depth = min(
-                    map(lambda x: x.depth, elbow), default=float("inf")
-                )
-                partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
-                partial_elbow_intermediate_depth_separation = (
-                    elbow_min_depth - partial_match_max_depth
-                )
-                partial_elbow_intermediate_overlapping_population = sum(
-                    [
-                        c.pattern.population
-                        for c in elbow
-                        if c.depth <= partial_match_max_depth
-                    ]
-                )
-                partial_intermediate_shift = snark_offset
+        overlapping_recipes = shared_args.component_search.overlapping_recipes(components)
+
+        for recipe in overlapping_recipes:
+            recipe_components = shared_args.component_search.recipe_components(recipe)
+            missing = recipe_components - components
+            elbow = components - recipe_components
+            partial_match = components - elbow
+            if not missing:
+                # full match!
+                if (
+                    not best_full_intermediate_match
+                    or recipe.pattern.population
+                    > best_full_intermediate_match.pattern.population
+                ):
+                    best_full_intermediate_match = recipe
+                    elbow_min_depth = min(
+                        map(lambda x: x.depth, elbow), default=float("inf")
+                    )
+                    partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
+                    full_elbow_intermediate_depth_separation = (
+                        elbow_min_depth - partial_match_max_depth
+                    )
+                    full_elbow_intermediate_overlapping_population = sum(
+                        [
+                            c.pattern.population
+                            for c in elbow
+                            if c.depth <= partial_match_max_depth
+                        ]
+                    )
+                    # get the digest of the full intermediate match
+                    # plus the pattern elements which overlap.
+                    overlapping_pattern = sum(
+                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
+                        start=lt.pattern(),
+                    ) + sum([c.pattern for c in partial_match], start=lt.pattern())
+                    full_elbow_intermediate_overlapping_digest = (
+                        overlapping_pattern.digest()
+                    )
+                    full_intermediate_shift = pattern_offset
+            else:
+                # partial match!
+                # find probability of finding rest of match
+                p = total_probability(missing)
+                if p == NEGATIVE_INFINITY:
+                    continue
+                p -= len(recipe.remaining) * shared_args.partial_progress_factor
+                if p > best_partial_prob:
+                    best_partial_prob = p
+                    best_partial_intermediate_match = recipe
+                    best_partial_positive_prob = total_probability(partial_match)
+
+                    elbow_min_depth = min(
+                        map(lambda x: x.depth, elbow), default=float("inf")
+                    )
+                    partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
+                    partial_elbow_intermediate_depth_separation = (
+                        elbow_min_depth - partial_match_max_depth
+                    )
+                    partial_elbow_intermediate_overlapping_population = sum(
+                        [
+                            c.pattern.population
+                            for c in elbow
+                            if c.depth <= partial_match_max_depth
+                        ]
+                    )
+                    partial_intermediate_shift = pattern_offset
 
     return StreamResult(
         follow_up=follow_up,
@@ -816,11 +825,13 @@ def optimize(
     partial_progress_factor: float,
     partial_range: str,
     n_processes: int,
-    live_view_depth: float
+    live_view_depth: float,
+    depth_range: str,
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
     partial_range: Set[int] = set(range_str_to_list(partial_range))
+    depth_range = range_str_to_list(depth_range)
     if not output_db.recipe_intermediates:
         print(
             f"Transferring recipe_intermediates from {recipe_intermediates_db}",
@@ -840,7 +851,9 @@ def optimize(
             file=sys.stderr,
         )
 
-    snark_offsets = mk_snark_offset_target_options(output_db)
+    snark_offsets = None
+    if min_offset_block_lane > 0:
+        snark_offsets = mk_snark_offset_target_options(output_db)
 
     shared_args = OptimizeArgs(
         starting_points=output_db.starting_points,
@@ -852,6 +865,7 @@ def optimize(
         snark_offsets=snark_offsets,
         partial_progress_factor=partial_progress_factor,
         partial_range=partial_range,
+        depth_range=depth_range,
     )
     queue_stats = output_db.queue_stats
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -1136,8 +1150,14 @@ if __name__ == "__main__":
         "-l",
         "--min-offset-block-lane",
         type=int,
-        default=80,
+        default=0,
         help="Minimum offset for the offset block. (The block that will become the new elbow after the snark is created).",
+    )
+    parser_optimize.add_argument(
+        "--depth-range",
+        type=str,
+        default='-100-100',
+        help="The range of depths to consider when finding intermediate matches"
     )
     parser_optimize.add_argument(
         "-p",
@@ -1297,6 +1317,7 @@ if __name__ == "__main__":
                 partial_range=args.partial_range,
                 n_processes=args.n_processes,
                 live_view_depth=args.live_view_depth,
+                depth_range=args.depth_range,
             )
         case "view-results":
             print("Show completion", args.show_completion)

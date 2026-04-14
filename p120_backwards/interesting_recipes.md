@@ -91,21 +91,21 @@ Key:
 
 ### Black even
 
-+ 1, 100, 137, 115 - glider(d-7)(ph0)(♝⬃⓪)
-+ 3, 105, 164, 161 - glider(d-3)(ph2)(♝⬃⓪)
-+ 3, 208, 186 - glider(d-5)(ph0)(♝⬃⓪)
-+ 5, 144, 132, 107 - glider(d3)(ph2)(♝⬃⓪)
-+ 7, 162, 110, 195 - glider(d27)(ph2)(♝⬃⓪)
-+ 7, 170, 96, 148 - glider(d1)(ph0)(♝⬃⓪)
++ 1, 100, 137, 115, (105) {total: 457} - glider(d-7)(ph0)(♝⬃⓪)
++ 5, 144, 132, 107, (90) {total: 474} - glider(d3)(ph2)(♝⬃⓪)
++ 3, 208, 186, (90) {total: 484} - glider(d-5)(ph0)(♝⬃⓪)
++ 7, 170, 96, 148, (90) {total: 504} - glider(d1)(ph0)(♝⬃⓪)
++ 3, 105, 164, 161, (90) {total: 520} - glider(d-3)(ph2)(♝⬃⓪)
++ 7, 162, 110, 195, (90) {total: 557} - glider(d27)(ph2)(♝⬃⓪)
 
 ### Black odd
 
-+ 1, 92, 163 - glider(d-5)(ph3)(♝⬃①)
-+ 3, 93, 169, 148 - glider(d3)(ph3)(♝⬃①)
-+ 3, 96, 92, 147 - glider(d-15)(ph3)(♝⬃①)
-+ 3, 215, 90, 161 - glider(d5)(ph3)(♝⬃①)
-+ 7, 132, 114, 133 - glider(d21)(ph3)(♝⬃①)
-+ 5, 138, 125 - glider(d-1)(ph1)(♝⬃①)
++ 5, 138, 125, (90) {total: 353} - glider(d-1)(ph1)(♝⬃①)
++ 1, 92, 163, (150) {total: 405} - glider(d-5)(ph3)(♝⬃①)
++ 3, 96, 92, 147, (90) {total: 425} - glider(d-15)(ph3)(♝⬃①)
++ 7, 132, 114, 133, (90) {total: 496} - glider(d21)(ph3)(♝⬃①)
++ 3, 93, 169, 148, (90) {total: 500} - glider(d3)(ph3)(♝⬃①)
++ 3, 215, 90, 161, (90) {total: 556} - glider(d5)(ph3)(♝⬃①)
 
 ### White even
 
@@ -142,7 +142,7 @@ Key:
 - (3, 120, 122, 175) ['block(l-33,d-3)', 'g0', 'g1', 'g2', 'g3']
 - (7, 252, 93, 173) ['block(l-37,d35)', 'g0', 'g1', 'g2', 'g3']
 
-## Far offset beehive
+## Far offset beehive #1
 
 - 1, 92, 90, 219, (179) - place an offset boat
 
@@ -164,6 +164,10 @@ uv run oncoming.py --print-rle="1,92,90,219,(179)2000+3,219,229,127,(298)600+1,1
 ```
 
 TODO: Find three other versions of this for the other directions/corners. Will need new 0/180 degree recipes and clean lwss's.
+
+## Far offset beehive #2
+
+
 
 ## Cap/uncap stream
 
@@ -194,10 +198,10 @@ gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sen
 ### Clean
 
 - 3, 184, 131, 239, (201) - mwss(443,0)(2,0)
+- 3, 225, 194, 140, 208, (284) - mwss(2,-236)(0,-2)
 
 ### Partials
 
-+ (3, 225, 194, 140) ['beehive(l-10,d19)', 'g0', 'g1', 'xq4_27dee6(2,-236)(0,-2)']
 + (7, 188, 90, 175) ['beehive(l-21,d48)', 'blinker(l-18,d28)', 'blinker(l-20,d28)', 'block(l-24,d12)', 'g0', 'g1', 'g2', 'g3', 'g4', 'xq4_27dee6(9,441)(0,2)']
 + (5, 169, 214, 153) ['beehive(l24,d-25)', 'blinker(l22,d-20)', 'blinker(l24,d-20)', 'block(l-23,d1)', 'g0', 'g1', 'g2', 'loaf(l-23,d-15)', 'xq4_27dee6(-256,-15)(-2,0)']
 + (7, 140, 205, 96) ['beehive(l-3,d-6)', 'block(l-10,d-8)', 'block(l22,d-8)', 'block(l25,d-13)', 'g0', 'g1', 'g2', 'xq4_27dee6(-345,-26)(-2,0)']
@@ -1174,7 +1178,6 @@ Single items placed at least 20 hd from the lane.
 - (5, 147, 248, 186) ['block(l25,d-19)', 'g0', 'g1', 'g2']
 - (5, 147, 252, 182) ['block(l25,d-19)', 'g0', 'g1', 'g2']
 - (5, 148, 96, 223) ['block(l24,d-18)', 'g0', 'g1', 'g2', 'g3']
-- 
 - (5, 166, 141, 90) ['boat(l20,d-14)', 'g0', 'g1', 'g2', 'g3']
 - (5, 168, 182, 99) ['beehive(l24,d-25)', 'g0', 'g1', 'g2', 'g3']
 - (5, 182, 109) ['beehive(l24,d-25)', 'g0', 'g1', 'g2', 'g3', 'g4']
