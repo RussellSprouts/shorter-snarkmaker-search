@@ -61,7 +61,3 @@ def optimized_stream_simulation(stream, target_rle, shortest_gap):
     pattern, skipped = just_before_interaction_recursive(total_gens, stream[0:-1], target_rle, shortest_gap)
     pattern = pattern + mk_glider(0, total_gens - skipped + stream[-1])
     return pattern[total_gens - skipped + stream[-1]]
-
-
-007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA183746572D35AA26CB65C95CD665A5A7494A65A5BA76B706D636174637F627F735A8BA98ECE5B9D
-007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA183746572D35AA26CB65C95CD665A5B6D63615D5E6A5B5B5A658F7F69638A6D8A67F85C6E5B9D
