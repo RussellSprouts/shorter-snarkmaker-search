@@ -806,5 +806,298 @@ $ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-sea
 Transferring recipe_intermediates from results/simkin-stages.sqlite
 Queue contains 455 job(s). Costs: {0: 455}
 ...
+2069.64/s, 2257.52 avg/s, 14,150,293 done, 340-505 gens, 99,766/445,544,634 pending, 0x0, -5.95x1, infxinf A (0), inf overlap (0), inf pop (0)
 ```
 
+There's one result which adds a block and the beehive. It might be viable with a really lucky edgy block production, and it's messy. 3711433252734157672
+
+```
+x = 126, y = 114, rule = LifeHistory
+3$27.B$26.5B$24.8B$23.9B$20.4B2A7B$19.5BABA6B$11.2B4.8BA8B$10.3B2.18B
+22.5B$10.25B11.2B6.8B$8.29B8.2A4B3.9B$7.34B.3B2A16B4.B$8.55B3.4B$8.
+26BA27B.8B$9.24BABA15B2A18B$8.25B2A16B2A10B2A6B$7.56B2A7B$6.61BA4B$6.
+BA51B3A5BA6B$6.BA59BA7B.B$6.BA72B$7.22B2A33BA17B$7.21BA2BA32BA19B23.
+4B$9.20B2A33BA21B21.5B$11.39B3A33B20.7B$11.76B20.B2AB2A$12.B.54B2A18B
+18.2B2AB2A$15.53B2A19B16.9B$15.75B5.2B8.9B$16.12B2A59B5.4B6.10B$16.
+12B2A10B2C43B2A5B.8B.12B$18.22B2C18B2A23B2A27B$21.39B2A53B$23.91B2A$
+23.5B2.13B2C69B2A$24.B5.13B2C69B$30.73B.10B$31.9B2D50B3A18B$31.9B2D
+71B$32.2C38B2A16BA22B$33.C38B2A15BABA22B$33.CBCB.51BA2BA22B$34.2C3.2B
+.36BA11B2A24B$44.17B2A15BA32B.3B$42.8B2C9B2A15BA31B$40.B2A6BC2BC57B$
+39.BA2BA6B2C57B$40.B2A57B2A7B$42.58B2A6B$44.55B2.8B$44.5B.48B4.6B$45.
+3B3.46B5.7B$45.3B3.3D29BA9BA2B5.8B$46.2D5.28B.BA9BA2B5.8B$29.2B15.2D
+2.3B.27B2.A9BA2B5.8B$28.4B18.31B2.11B8.7B$27.5B.AB9.2B.B.45B9.5B$27.
+6BA2B3.B3.5B2D42B10.6B$26.7BA14B2D5BA36B10.6B$27.28BA36B11.6B$27.14B.
+13BA35B11.6B$26.25B2D38B12.5B$24.27B2D37B13.6B$23.57B.8B14.6B$24.56B.
+5BA2B14.5B$24.27B2A26B3.3BABA15.5B$25.26B2A27B5.ABA16.3B$27.5B.40B3A
+5B5.A17.3B$29.B6.3B.2B.3B6.13B2A6B.8B23.B$36.3B4.2B7.13B2A3B2AB2.2B2.
+4B$37.B15.17B2A8.4B$50.2B.18B10.4B$49.22B11.4B$44.15B.B.4B2A2B13.4B$
+44.15B5.2B2AB15.4B$43.16B26.4B$43.15B28.4B$43.10B3A2B29.4B$44.15B29.
+4B$45.2B.12B29.4B$48.12B30.4B$47.13B31.4B$46.15B31.4B$47.15B31.4B$48.
+15B31.4B$48.15B32.4B$48.15B33.4B$48.15B34.4B$44.2BA15B36.4B$41.2A2BAB
+A12B39.4B$40.B2A2BABA13B39.4B$40.6BA15B39.4B$40.22B40.4B$40.20B43.4B$
+41.3BA13B46.4B$43.ABA13B46.4B$43.ABA13B47.4B$44.A.13B48.4B$46.7B2.3B
+50.4B$47.3B2A57.4B$49.B2A58.4B$111.4B$112.4B$113.4B$114.4B$115.4B$
+116.4B$117.4B$118.4B$119.4B$120.4B$121.4B!
+```
+
+
+There are a few results which add two blocks which are not the ideal ones, but maybe could go somewhere. 1555223999661683597
+
+```
+x = 100, y = 109, rule = LifeHistory
+2$27.B$26.5B$24.8B$23.9B$20.4B2A7B$19.5BABA6B23.2A$11.2B4.8BA8B19.3BA
+BA$10.3B2.18B16.8BA2B5.2B$10.25B13.12B4.4B$8.29B10.21B$7.34B6.22B$8.
+35B4.22B$8.26BA11B.22B$9.24BABA2B2A31B$8.25B2A3B2A16BA15B$7.48BABA14B
+$6.49BABA16B$6.BA48BA15B3A$6.BA66B$6.BA64B$7.22B2A9BA32B$7.21BA2BA8BA
+32B$9.20B2A9BA33B$11.62B$11.62B$12.B.28B2A29B$15.27BABA6B2A2B3A14B$
+15.28BA7B2A19B$16.12B2A6B3A31B$16.12B2A10B2D28B$18.22B2D27B4.2B$21.
+54B2AB$23.51BA2BAB$23.5B2.13B2D30B2A2B$24.B5.13B2D35B$30.50B$31.9B2C
+37B$31.9B2C37B$32.2C35B2.7B$33.C35B5.4B$33.CBCB.31B6.2B$34.2C3.29B$
+41.5B.20B$41.4B2.3B2D15B$47.2BD2BD14B$47.3B2DB2.13B$22.11B15.4B2.13B$
+21.13B13.4B4.11B$21.13B12.4B3.14B$21.13B11.4B3.15B4.2B$20.14B10.4B5.
+13B4.5B$20.13B10.4B4.3D.11B2.9B2.3B$19.13B10.4B2D3.26B.6B$19.13B9.4B.
+2D2.27B.10B$20.11B9.4B.3B2.39B$19.2B.9B2.58B$18.12B2.16B2C9BA33B$18.
+13B.16B2C9BA7B2A24B$16.B2A40BA6BA2BA22B$15.BABA48B2A21B$16.2A24B2.2B
+3.2B2C2B3A3B3A25B$17.22B9.B.B2C30B2A2B$17.20B10.36B2A2B$17.19B9.40B$
+17.18B2A7.40B$16.19B2A7.36B$16.20B9.2B.33B$15.18B17.B2A22B2.5B$16.11B
+2A5B16.B2A22B4.4B$17.10B2A5B16.26B4.4B$17.17B17.24B6.4B$18.17B16.23B
+8.4B$18.17B15.19B2A3B9.4B$19.16B10.B2.20BA2BAB11.4B$20.13B9.8B2A17B2A
+B13.4B$23.10B8.2A7B2A18B16.4B$24.8B9.2A22BA2B19.4B$24.7B11.22BABAB20.
+4B$25.4B15.20BABA22.4B$26.4B15.20BAB23.4B$27.4B15.20B25.4B$28.4B17.9B
+2.4B28.4B$29.4B16.9B4.B30.4B$30.4B9.A4.7B3A36.4B$31.4B7.BAB3.7B.B38.
+4B$32.4B6.BAB3.6B42.4B$33.4B3.14B43.3B$34.4B.3A3B3A6B44.2B$35.4B.14B
+45.B$36.4B.2BA10B$37.6BA10B$38.5BA10B$39.14B$40.10B$40.10B$41.7BA2B$
+42.B3.BABA$47.2A!
+```
+
+But the most likely useful results are ones which add one of the blocks in the back. 5753209004553313824, 954146300907376725. There's also 3089473709353803125, but that's missing the block in the back so maybe less useful.
+
+Let's first take the results with more progress but less likely to go anywhere and see if they pan out quickly:
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search4.sqlite -o results/simkin-search5.sqlite -q 'partial_intermediate_digest in (3711433252734157672, 1555223999661683597)'
+
+Transferred 7 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search5.sqlite -n 350 --partial-range=42 --depth-range=21
+```
+
+This did manage to make some improvement by finding each of the front three blocks in addition to the two back blocks and beehive, but the last back block is what we actually need. That was only a couple minutes of searching, so we can maybe come back later.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search4.sqlite -o results/simkin-search6.sqlite -q 'partial_intermediate_digest in (5753209004553313824, 954146300907376725)'
+
+Filtered 18 duplicate results
+Transferred 22 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search6.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+1873.16/s, 1986.14 avg/s, 4,949,273 done, 381-546 gens, 131,472/362,995,136 pending, 0x0, -5.95x2, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+```sql
+> select *, cast(partial_intermediate_digest as text) || " " || cast(count(*) as text) as label from r group by partial_intermediate_digest order by partial_intermediate_log_prob desc
+```
+
+There's one result which has all three of the rear blocks: 8475441342317800377. It's a bit explosive, but the major explosion happens a bit after the block is placed. We can hopefully prevent the explosion with a variation.
+
+Let's explore that result and related ones using `--truncate-n-gliders=1` to remove the last glider and start the search from there.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search6.sqlite -o results/simkin-search7.sqlite -q 'partial_intermediate_digest = 8475441342317800377' --truncate-n-gliders=1
+
+Filtered 18 duplicate results
+Transferred 22 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search6.sqlite -n 600 --partial-range=42 --depth-range=21
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search7.sqlite -n 600 --partial-range=42 --depth-range=21
+```
+
+That did find one result which places the beehive, but it has that explosive reaction that probably will just require more gliders to clean up later. However, there are 10,000 results which have the three blocks in the back and many of them are more compact.
+
+Let's use these three measures of compactness in different combinations. setup-next-search will automatically remove duplicates.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search7.sqlite -o results/simkin-search8.sqlite \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by partial_intermediate_overlapping_population*lane_width*depth limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by partial_intermediate_overlapping_population limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by lane_width limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by depth limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by partial_intermediate_overlapping_population*lane_width limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by partial_intermediate_overlapping_population*depth limit 100' \
+  -q 'partial_intermediate_digest = 8475441342317800377 order by lane_width*depth limit 100'
+
+Filtered 11 duplicate results
+Transferred 253 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search8.sqlite -n 512 --partial-range=42 --depth-range=21
+
+...
+1408.92/s, 1302.38 avg/s, 2,880,400 done, 290-455 gens, 155,044/137,942,471 pending, 0x0, -4.24x1, infxinf A (0), inf overlap (0), inf pop (0)
+...
+1687.50/s, 1730.28 avg/s, 9,158,228 done, 323-488 gens, 2,158/378,460,271 pending, 0x0, -4.78x13, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+- Adds the beehive: -5071124356502086650 (x24)
+- Adds one of the blocks: 8518286210586586225 (x123), 1090983416347179425 (x143), -25695747836522627886 (x434)
+
+Let's take the best of these for the next step:
+
+```
+$ uv run snark.py setup-next-search -i results/simkin-search8.sqlite -o results/simkin-search9.sqlite \
+  -q 'partial_intermediate_digest = -5071124356502086650 order by partial_intermediate_overlapping_population*lane_width*depth limit 20' \
+  -q 'partial_intermediate_digest = 8518286210586586225 order by partial_intermediate_overlapping_population*lane_width*depth limit 20' \
+  -q 'partial_intermediate_digest = 1090983416347179425 order by partial_intermediate_overlapping_population*lane_width*depth limit 20' \
+  -q 'partial_intermediate_digest = 1090983416347179425 order by partial_intermediate_overlapping_population*lane_width*depth limit 20'
+
+Filtered 15 duplicate results
+Transferred 45 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search9.sqlite -n 512 --partial-range=42 --depth-range=21
+
+1931.79/s, 2079.42 avg/s, 7,046,650 done, 354-512 gens, 35,139/144,224,194 pending, 0x0, -3.60x22, infxinf A (0), inf overlap (0), inf pop (0)
+...
+1644.20/s, 2025.32 avg/s, 17,317,530 done, 398-512 gens, 87,630/200,494,284 pending, 0x0, -3.60x55, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+There are results which place each of the blocks, as well as many combinations that remove the beehive. From back to front the blocks are:
+
+- -4861072044468114049 (x45)
+- 4025536219945549150 (x14)
+- -4206080009050070834 (x18)
+
+The backmost one is the most promising, let's try that first.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search9.sqlite -o results/simkin-search10.sqlite \
+  -q 'partial_intermediate_digest = -4861072044468114049 order by partial_intermediate_overlapping_population*lane_width*depth limit 20'
+
+Filtered 14 duplicate results
+Transferred 6 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search10.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+1945.23/s, 2058.72 avg/s, 57,535,891 done, 461-600 gens, 1,328,600/823,867,842 pending, 0x0, -2.35x121, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+This ran overnight, and found 121 results which placed the blinker.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search10.sqlite -o results/simkin-search11.sqlite \
+  -q 'partial_intermediate_digest = -4844308016031593667 order by partial_intermediate_overlapping_population*lane_width*depth limit 20'
+
+Transferred 20 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search11.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+3301.67/s, 2481.83 avg/s, 11,347,466 done, 466-600 gens, 119,070/146,658,414 pending, 0x0, -1.18x4, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+This found 1 result which places the back block, and 3 which place the front block. Let's take the back block and try for a completion!
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search11.sqlite -o results/simkin-search12.sqlite \
+  -q 'partial_intermediate_digest = 2043155643089006004'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search12.sqlite -n 600 --partial-range=42 --depth-range=21
+```
+
+This found a result pretty quickly, but the depth was very high and cleanup would be expensive. I returned to simkin-search11 and ran all the way to 501-600. Now, there were 2 results which place the back block, and 12 results which place the front block.
+
+```
+x = 1579, y = 986, rule = LifeHistory
+300.2A298.2A$300.2A298.2A3$3D.3D.D3.D.D.D.3D.D2.D5.3D.3D.3D.3D.3D.
+D.D2.D3.D4.3D.3D2.D3.3D.3D.3D211.3A297.3A$D4.D2.2D.2D.D.D2.D2.2D.D
+5.D3.D3.D.D.D.D.D3.D.D.2D2.2D4.D3.D.D2.D4.D3.D2.D213.A299.A$3D2.D
+2.D.D.D.2D3.D2.D.2D.3D.3D.3D.D.D.3D.D3.3D2.D3.D4.3D.D.D2.D4.D3.D2.
+3D212.A299.A$2.D2.D2.D3.D.D.D2.D2.D2.D7.D.D3.3D.2D2.D3.D.D2.D3.D6.
+D.D.D2.D4.D3.D2.D$3D.3D.D3.D.D.D.3D.D2.D5.3D.3D.D.D.D.D.3D.D.D.3D.
+3D.D.3D.2D.D.3D.3D2.D2.3D13$316.2D298.2D$316.2D298.2D3$319.2D298.
+2D$319.2D298.2D2$316.2D298.2D$316.2D298.2D$308.2D298.2D$309.D299.D
+$309.D.D297.D.D$310.2D298.2D2$326.2D4.2A292.2D4.2A$325.D2.D3.A.A
+290.D2.D3.A.A$326.2D4.A293.2D4.A6$327.3D297.3D$322.2D298.2D$322.2D
+298.2D3$324.2D298.2D$324.2D298.2D3$327.2D298.2D$327.2D298.2D8$357.
+3A297.3A$357.A299.A$358.A299.A23$382.3A297.3A$382.A299.A$383.A299.
+A46$432.A299.A$431.2A298.2A$431.A.A297.A.A21$454.2A298.2A$453.2A
+298.2A$455.A299.A21$476.3A297.3A$476.A299.A$477.A299.A21$501.A299.
+A$500.2A298.2A$500.A.A297.A.A23$525.2A298.2A$524.2A298.2A$526.A
+299.A24$551.2A298.2A$551.A.A297.A.A$551.A299.A21$573.3A297.3A$573.
+A299.A$574.A299.A23$599.2A298.2A$598.2A298.2A$600.A299.A33$634.2A
+298.2A$634.A.A297.A.A$634.A299.A22$657.3A297.3A$657.A299.A$658.A
+299.A37$698.A299.A$697.2A298.2A$697.A.A297.A.A21$721.A299.A$720.2A
+298.2A$720.A.A297.A.A35$757.2A298.2A$756.2A298.2A$758.A299.A23$
+781.3A297.3A$781.A299.A$782.A299.A20$804.2A298.2A$804.A.A297.A.A$
+804.A299.A36$842.2A298.2A$842.A.A297.A.A$842.A299.A33$877.2A298.2A
+$876.2A298.2A$878.A299.A34$913.2A298.2A$912.2A298.2A$914.A299.A21$
+936.2A298.2A$935.2A298.2A$937.A299.A38$976.2A298.2A$976.A.A297.A.A
+$976.A299.A31$1009.2A298.2A$1008.2A298.2A$1010.A299.A27$1038.2A
+298.2A$1037.2A298.2A$1039.A299.A23$1063.2A298.2A$1063.A.A297.A.A$
+1063.A299.A27$1091.3A297.3A$1091.A299.A$1092.A299.A38$1433.A$1432.
+2A$1432.A.A10$1145.A$1144.2A$1144.A.A9$1455.2A$1455.A.A$1455.A10$
+1167.2A$1166.2A$1168.A29$1498.2A$1497.2A$1499.A7$1208.A$1207.2A$
+1207.A.A25$1235.A298.2A$1234.2A298.A.A$1234.A.A297.A40$1577.A$
+1576.2A$1576.A.A2$1280.2A$1279.2A$1281.A!
+```
+
+The new result has a lower depth -- 164 vs 168, but a lane width of 66 instead of 49. However, we do have 369k results which don't make progress. We're really close to the end, so we could take the chance to clean up a bit. I'll run one round of the autoshrink script to pick the cleanest results to search further. I hacked up the autoshrink script to choose the cleanest results with depth < 145, and got:
+
+```
+$ bash autoshrink.sh
+
+Filtered 22 duplicate results
+Transferred 165 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search-shrink2.sqlite -n 512 --partial-range=42 --depth-range=21
+```
+
+This finally found another result which places the next block at depth 400. It is messy but follow-ups might be able to help without breaking the reaction.
+Let's try the two new candidates:
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search11.sqlite -o results/simkin-search-last-block1.1.sqlite \
+  -q 'partial_intermediate_digest = 2043155643089006004 and depth=164'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py setup-next-search -i results/simkin-search-shrink2.sqlite -o results/simkin-search-last-block1.2.sqlite \
+  -q 'partial_intermediate_digest = 2043155643089006004'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py combine-starting-points -i results/simkin-search-last-block1.1.sqlite -i results/simkin-search-last-block1.2.sqlite -o results/simkin-search-last-block1.sqlite
+
+Tranferred 2 starting points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search-last-block1.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+1163.56/s, 1289.81 avg/s, 5,443,429 done, 436-600 gens, 4,785/104,188,549 pending, 42x4, -1.18x116738, 86x323 A (3), 77 overlap (3), 337 pop (3)
+```
+
+There were four results but they have a depth range of 323.
+
+Let's try cleaning up the one result we have from simkin-search12.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search12.sqlite -o results/simkin-search-shrink3.sqlite -q 'full_intermediate is not null'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search-shrink3.sqlite -n 600 --partial-range=42 --depth-range=21
+```
+
+This finishes a depth 600 search with only 40k streams searched! There are 1127 unique results which keep the full match. Looking at the results, there are several `90` gliders in a row, where the pattern stabilizes quickly. Let's try deleting the results and running again with a depth of 720.
+
+This finished with only a couple million streams searched, and has 34k results with full matches. I added an autoshrink command to the Python code -- let's try it.
+
+```bash
+$ uv run snark.py autoshrink -r results/simkin-stages.sqlite -i results/simkin-search-shrink3.sqlite -o results/simkin-search-autoshrink-test.sqlite -n 400 --partial-range=42 --depth-range=21 -q 'full_intermediate is not null' -c 32
+```

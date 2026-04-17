@@ -1,3 +1,4 @@
+import itertools
 import signal
 
 # ignore Ctrl+C until later, so that subprocesses ignore Ctrl+C.
@@ -41,6 +42,7 @@ from life_history import write_life_history
 from arg_parser import range_str_to_list
 from multiprocess_search import MultiprocessSearch
 from components import pattern_components
+
 
 def interrupt_handler(_a, _b):
     print("Gracefully exiting...")
@@ -187,12 +189,16 @@ def combine_starting_points(input_dbs, output_db, reset_costs):
 def setup_next_search(
     input_results_db: pathlib.Path,
     output_starting_points_db: pathlib.Path,
-    queries: List[str],
+    queries: list[list[str]],
     reset_costs: bool,
     truncate_n_gliders: int,
 ):
     in_db = ProcessingDatabase(input_results_db)
     out_db = ProcessingDatabase(output_starting_points_db)
+
+    for r in out_db.query("""SELECT 1 FROM results LIMIT 1"""):
+        print("Output database already has results. Refusing to overwrite.")
+        raise ValueError("Database already has results")
 
     results: Set[SavedResult] = set()
     print(queries)
@@ -275,7 +281,8 @@ def setup_next_search(
     out_db.conn.execute("DELETE FROM queue;")
     out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
     out_db.push_queue(list(map(lambda x: x[1], things_to_add)))
-    out_db.commit()
+    out_db.close()
+    in_db.close()
 
 
 def row_to_string(row):
@@ -504,15 +511,19 @@ def score_pattern(
     partial_intermediate_overlapping_digest = 0
 
     for pattern_offset in depths_to_search:
-            
+
         # components shifted to line up with the snark that would
         # hit the elbow
         components = set(
-            shared_args.component_search.pattern_cache.id(c(-pattern_offset, -pattern_offset))
+            shared_args.component_search.pattern_cache.id(
+                c(-pattern_offset, -pattern_offset)
+            )
             for _, _, c in lanes
         )
 
-        overlapping_recipes = shared_args.component_search.overlapping_recipes(components)
+        overlapping_recipes = shared_args.component_search.overlapping_recipes(
+            components
+        )
 
         for recipe in overlapping_recipes:
             recipe_components = shared_args.component_search.recipe_components(recipe)
@@ -544,7 +555,11 @@ def score_pattern(
                     # get the digest of the full intermediate match
                     # plus the pattern elements which overlap.
                     overlapping_pattern = sum(
-                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
+                        [
+                            c.pattern
+                            for c in elbow
+                            if c.depth <= partial_match_max_depth
+                        ],
                         start=lt.pattern(),
                     ) + sum([c.pattern for c in partial_match], start=lt.pattern())
                     full_elbow_intermediate_overlapping_digest = (
@@ -577,12 +592,21 @@ def score_pattern(
                             if c.depth <= partial_match_max_depth
                         ]
                     )
-                    partial_intermediate_pattern = sum([c.pattern for c in partial_match], start=lt.pattern())
+                    partial_intermediate_pattern = sum(
+                        [c.pattern for c in partial_match], start=lt.pattern()
+                    )
                     partial_intermediate_digest = partial_intermediate_pattern.digest()
-                    overlapping_pattern = sum(
-                        [c.pattern for c in elbow if c.depth <= partial_match_max_depth],
-                        start=lt.pattern(),
-                    ) + partial_intermediate_pattern
+                    overlapping_pattern = (
+                        sum(
+                            [
+                                c.pattern
+                                for c in elbow
+                                if c.depth <= partial_match_max_depth
+                            ],
+                            start=lt.pattern(),
+                        )
+                        + partial_intermediate_pattern
+                    )
                     partial_intermediate_overlapping_digest = (
                         overlapping_pattern.digest()
                     )
@@ -716,7 +740,7 @@ def combine_score(
             a.partial_intermediate_overlapping_digest
             if a_partial_better
             else b.partial_intermediate_overlapping_digest
-        )
+        ),
     )
 
 
@@ -929,11 +953,11 @@ def optimize(
                         width = r.lane_width
                         depth = r.depth - r.full_intermediate_depth_separation
 
-                        if (width, depth) < best_area:
-                            best_area = (width, depth)
+                        if (depth, width) < best_area:
+                            best_area = (depth, width)
                             best_area_str = f"{width}x{depth} A"
                             n_best_area = 1
-                        elif (width, depth) == best_area:
+                        elif (depth, width) == best_area:
                             n_best_area += 1
 
                         if (
@@ -1065,6 +1089,79 @@ def reprocess(input_db, output_db, queries):
     print(f"Wrote queue to {output_db}. Run optimize with max-gens 0 to process.")
 
 
+def autoshrink(
+    input_db: pathlib.Path,
+    output_db: pathlib.Path,
+    queries: list[list[str]],
+    gens_per_round: int,
+    full_or_partial: str,
+    candidates: int,
+    recipe_intermediates_db: pathlib.Path,
+    gen_options: str,
+    n_processes: int,
+    min_offset_block_lane: int,
+    depth_range: str,
+    partial_progress_factor: float,
+    partial_range: str,
+    live_view_depth: int,
+):
+    if full_or_partial not in ("full", "partial"):
+        raise ValueError("--full-or-partial should be 'full' or 'partial'")
+
+    if not queries:
+        queries = [['1=1']]
+
+    cond = f"({' or '.join(f'({q[0]})' for q in queries)})"
+    a = "population"
+    b = f"(1.0*max({full_or_partial}_intermediate_overlapping_population, 1) / max({full_or_partial}_intermediate_depth_separation, 1))"
+    c = "(lane_width*sqrt(lane_width))"
+    d = f"(depth - {full_or_partial}_intermediate_depth_separation)"
+    tiebreak = f"({a} * {b} * {c} * {d})"
+
+    measures = (a, b, c, d)
+
+    candidate_queries = []
+    for n in (1, 2, 3, 4):
+        for combo in itertools.combinations(measures, n):
+            candidate_queries.append([
+                f"select * from r where {cond} order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+            ])
+            candidate_queries.append([
+                f"select * from r where {cond} group by digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+            ])
+
+    last_path = input_db
+    for i in range(1, 1000):
+        round_output_path = pathlib.Path(
+            f"{output_db.parent}/{output_db.stem}-round{i}{output_db.suffix}"
+        )
+        if not round_output_path.exists():
+            print(f"Querying {last_path} for candidates...")
+
+            setup_next_search(
+                input_results_db=last_path,
+                output_starting_points_db=round_output_path,
+                queries=candidate_queries,
+                reset_costs=True,
+                truncate_n_gliders=0,
+            )
+        last_path = round_output_path
+
+        print(f"Running search in {round_output_path}...")
+        optimize(
+            recipe_intermediates_db=recipe_intermediates_db,
+            output_db=round_output_path,
+            max_gens=gens_per_round,
+            gen_options=gen_options,
+            n_processes=n_processes,
+            min_offset_block_lane=min_offset_block_lane,
+            depth_range=depth_range,
+            partial_progress_factor=partial_progress_factor,
+            partial_range=partial_range,
+            live_view_depth=live_view_depth,
+        )
+
+
 def recipe_tree(recipe_intermediates_db, start):
     recipes_db = ProcessingDatabase(recipe_intermediates_db)
     intermediates = recipes_db.recipe_intermediates
@@ -1179,8 +1276,8 @@ if __name__ == "__main__":
     parser_optimize.add_argument(
         "--depth-range",
         type=str,
-        default='-100-100',
-        help="The range of depths to consider when finding intermediate matches"
+        default="-100-100",
+        help="The range of depths to consider when finding intermediate matches",
     )
     parser_optimize.add_argument(
         "-p",
@@ -1198,8 +1295,8 @@ if __name__ == "__main__":
     parser_optimize.add_argument(
         "--live-view-depth",
         type=int,
-        default=float('inf'),
-        help="The max depth result to consider for results in the live view."
+        default=float("inf"),
+        help="The max depth result to consider for results in the live view.",
     )
 
     parser_view_results = subcommand.add_parser(
@@ -1318,6 +1415,96 @@ if __name__ == "__main__":
         "--end", help="The recipe intermediate ID to end with", type=int, default=None
     )
 
+    parser_autoshrink = subcommand.add_parser(
+        "autoshrink",
+        description="Automatically shrinks the elbow of the given pattern.",
+    )
+    parser_autoshrink.add_argument(
+        "-i", "--input-db", type=pathlib.Path, help="Input database of results"
+    )
+    parser_autoshrink.add_argument(
+        "-o",
+        "--output-db",
+        type=pathlib.Path,
+        help="Prefix for output database of results",
+    )
+    parser_autoshrink.add_argument(
+        "-q",
+        "--query",
+        type=str,
+        help="SQL WHERE clause to filter results of each stage. Database query will be `SELECT * FROM r WHERE {query};`",
+        action="append",
+        nargs="*",
+    )
+    parser_autoshrink.add_argument(
+        "-n", "--gens-per-round", type=int, help="How deep to search in each round"
+    )
+    parser_autoshrink.add_argument(
+        "--full-or-partial",
+        type=str,
+        help="Whether check full or partial overlap.",
+        default="full",
+    )
+    parser_autoshrink.add_argument(
+        "-c",
+        "--candidates",
+        type=int,
+        default=32,
+        help="How many candidates to choose per scoring criterion",
+    )
+    parser_autoshrink.add_argument(
+        "-r",
+        "--recipe-intermediates-db",
+        help="Database file containing output from recipe-intermediates",
+        type=pathlib.Path,
+        required=True,
+    )
+    parser_autoshrink.add_argument(
+        "-g",
+        "--gen-options",
+        type=str,
+        default="90-255",
+        help='Options for spacing of gliders in a stream. E.g. "74,75,78-255". Defaults to "90-255". Maximum 255.',
+    )
+    parser_autoshrink.add_argument(
+        "--n-processes",
+        default=20,
+        type=int,
+        help="Number of processes to use for processing.",
+    )
+    parser_autoshrink.add_argument(
+        "-l",
+        "--min-offset-block-lane",
+        type=int,
+        default=0,
+        help="Minimum offset for the offset block. (The block that will become the new elbow after the snark is created).",
+    )
+    parser_autoshrink.add_argument(
+        "--depth-range",
+        type=str,
+        default="-100-100",
+        help="The range of depths to consider when finding intermediate matches",
+    )
+    parser_autoshrink.add_argument(
+        "-p",
+        "--partial-progress-factor",
+        type=float,
+        default=0.1,
+        help="For partial intermediates, a factor affecting how much the distance of the partial from a complete snark affects its score.",
+    )
+    parser_autoshrink.add_argument(
+        "--partial-range",
+        type=str,
+        default="0-255",
+        help="The range of partial intermediates to consider, based on the number of gliders so far.",
+    )
+    parser_autoshrink.add_argument(
+        "--live-view-depth",
+        type=int,
+        default=float("inf"),
+        help="The max depth result to consider for results in the live view.",
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -1369,4 +1556,21 @@ if __name__ == "__main__":
         case "recipe-tree":
             recipe_tree(
                 recipe_intermediates_db=args.recipe_intermediates_db, start=args.start
+            )
+        case "autoshrink":
+            autoshrink(
+                input_db=args.input_db,
+                output_db=args.output_db,
+                queries=args.query,
+                gens_per_round=args.gens_per_round,
+                full_or_partial=args.full_or_partial,
+                candidates=args.candidates,
+                recipe_intermediates_db=args.recipe_intermediates_db,
+                gen_options=args.gen_options,
+                n_processes=args.n_processes,
+                min_offset_block_lane=args.min_offset_block_lane,
+                depth_range=args.depth_range,
+                partial_progress_factor=args.partial_progress_factor,
+                partial_range=args.partial_range,
+                live_view_depth=args.live_view_depth,
             )
