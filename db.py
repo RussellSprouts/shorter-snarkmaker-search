@@ -30,18 +30,22 @@ class StartingPoint:
     stream: bytes
     follow_up_gen_limit: int
     max_depth: int
+    target_rle: str
 
     def from_row(row: sqlite3.Row):
+        keys = row.keys()
+
         return StartingPoint(
             row["id"],
             row["cost"],
             row["stream"],
             row["follow_up_gen_limit"],
             row["max_depth"],
+            row["target_rle"] if "target_rle" in keys else "2o$2o3$3o$o$bo!",
         )
 
     def __repr__(self):
-        return f"StartingPoint(id={self.id}, cost={self.cost}, stream=bytes({tuple(self.stream)}), follow_up_gen_limit={self.follow_up_gen_limit}, max_depth={self.max_depth})"
+        return f"StartingPoint(id={self.id}, cost={self.cost}, stream=bytes({tuple(self.stream)}), follow_up_gen_limit={self.follow_up_gen_limit}, max_depth={self.max_depth}, target_rle={self.target})"
 
 
 @dataclass(order=True)
@@ -157,6 +161,7 @@ class SavedResult:
         return (
             "SavedResult("
             f"stream=bytes({tuple(self.stream)}), "
+            f"label='{self.label}'"
             f"starting_point={self.starting_point}, "
             f"digest={self.digest}, "
             f"before_hit_digest={self.before_hit_digest}, "
@@ -289,7 +294,8 @@ class ProcessingDatabase:
                 cost INTEGER,
                 stream BLOB,
                 follow_up_gen_limit INTEGER,
-                max_depth INTEGER
+                max_depth INTEGER,
+                target_rle TEXT
             )
             """
         )
@@ -356,25 +362,6 @@ class ProcessingDatabase:
                 partial_intermediate_overlapping_digest INTEGER
             )
             """
-        )
-
-        # If this is a new DB, seed it with the initial values
-        self.conn.execute(
-            """
-            INSERT OR IGNORE INTO starting_points
-                (id, cost, stream, follow_up_gen_limit, max_depth)
-                VALUES (0, 0, x'00', ?, 0)
-            """,
-            (255,),
-        )
-        self.conn.execute(
-            """
-            INSERT OR IGNORE INTO queue (
-                id, in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth
-            ) SELECT 0, 0, 0, 0, x'', ?, 0
-            WHERE NOT EXISTS (SELECT 1 FROM queue) AND NOT EXISTS (SELECT 1 from results)
-            """,
-            (255,),
         )
 
         # Table of intermediate stages of the slow salvo recipe
@@ -515,10 +502,10 @@ class ProcessingDatabase:
     def add_starting_points(self, starting_points: List[StartingPoint]):
         self.conn.executemany(
             """INSERT INTO starting_points
-            (id, cost, stream, follow_up_gen_limit, max_depth)
-            VALUES (?, ?, ?, ?, ?)""",
+            (id, cost, stream, follow_up_gen_limit, max_depth, target_rle)
+            VALUES (?, ?, ?, ?, ?, ?)""",
             (
-                (s.id, s.cost, s.stream, s.follow_up_gen_limit, s.max_depth)
+                (s.id, s.cost, s.stream, s.follow_up_gen_limit, s.max_depth, s.target_rle)
                 for s in starting_points
             ),
         )
@@ -599,6 +586,11 @@ class ProcessingDatabase:
                 for recipe in recipes
             ],
         )
+
+    def has_results(self):
+        return self.conn.execute("""
+            SELECT EXISTS (SELECT 1 FROM results LIMIT 1)
+        """).fetchone()[0]
 
     def commit(self):
         self.conn.commit()

@@ -134,8 +134,29 @@ class MultiprocessSearch:
         stats = self.db.queue_stats
         queued_costs = list(stats.keys())
         if len(queued_costs) == 0:
-            print("Warning: queue is empty, not processing.", file=sys.stderr)
-            return
+            if not self.db.has_results():
+                print("Seeding the queue...")
+                # If this is a new DB, seed it with the initial values
+                self.db.conn.execute(
+                    """
+                    INSERT OR IGNORE INTO starting_points
+                        (id, cost, stream, follow_up_gen_limit, max_depth, target_rle)
+                        VALUES (0, 0, x'00', ?, 0, "2o$2o3$3o$o$bo!")
+                    """,
+                    (255,),
+                )
+                self.db.conn.execute(
+                    """
+                    INSERT OR IGNORE INTO queue (
+                        id, in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth
+                    ) SELECT 0, 0, 0, 0, x'', ?, 0
+                    WHERE NOT EXISTS (SELECT 1 FROM queue) AND NOT EXISTS (SELECT 1 from results)
+                    """,
+                    (255,),
+                )
+            else:
+                print("Warning: queue is empty, not processing.", file=sys.stderr)
+                return
 
         # start the first tasks.
         send_tasks()

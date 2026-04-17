@@ -1,6 +1,6 @@
 import functools
 
-from gliders import mk_glider, PI_BLOCKS
+from gliders import mk_glider, PI_BLOCKS, offset_based_on_glider
 from lifetree import lt
 
 def mk_glider_interaction_envelopes():
@@ -27,18 +27,21 @@ def get_envelope(gens):
     shift = gens // 4
     return glider_envelopes[phase](shift, shift)
 
+@functools.lru_cache(maxsize=None)
+def target_rle_to_pattern(target_rle: str):
+    return offset_based_on_glider(lt.pattern(target_rle))
 
 @functools.lru_cache(maxsize=2**20)
-def just_before_interaction_recursive(total_gens, stream, shortest_gap=90):
+def just_before_interaction_recursive(total_gens, stream, target_rle, shortest_gap):
     """Cached function which returns the resulting pattern and gens
     skipped for the last possible generation before a glider with delay shortest_gap
     would interact with the results from stream.
     """
     if not len(stream):
-        return PI_BLOCKS[0], 0
+        return target_rle_to_pattern(target_rle), 0
     else:
         pattern, skipped = just_before_interaction_recursive(
-            total_gens - stream[-1], stream[0:-1]
+            total_gens - stream[-1], stream[0:-1], target_rle, shortest_gap
         )
         pattern = pattern + mk_glider(0, total_gens - skipped)
         gen = skipped
@@ -52,9 +55,13 @@ def just_before_interaction_recursive(total_gens, stream, shortest_gap=90):
         return pattern, gen
 
 
-def optimized_stream_simulation(stream):
+def optimized_stream_simulation(stream, target_rle, shortest_gap):
     """Returns the stream at gen sum(stream)"""
     total_gens = sum(stream) - stream[-1]
-    pattern, skipped = just_before_interaction_recursive(total_gens, stream[0:-1])
+    pattern, skipped = just_before_interaction_recursive(total_gens, stream[0:-1], target_rle, shortest_gap)
     pattern = pattern + mk_glider(0, total_gens - skipped + stream[-1])
     return pattern[total_gens - skipped + stream[-1]]
+
+
+007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA183746572D35AA26CB65C95CD665A5A7494A65A5BA76B706D636174637F627F735A8BA98ECE5B9D
+007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA183746572D35AA26CB65C95CD665A5B6D63615D5E6A5B5B5A658F7F69638A6D8A67F85C6E5B9D

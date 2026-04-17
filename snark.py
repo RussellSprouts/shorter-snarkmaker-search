@@ -196,7 +196,7 @@ def setup_next_search(
     in_db = ProcessingDatabase(input_results_db)
     out_db = ProcessingDatabase(output_starting_points_db)
 
-    for r in out_db.query("""SELECT 1 FROM results LIMIT 1"""):
+    if out_db.has_results():
         print("Output database already has results. Refusing to overwrite.")
         raise ValueError("Database already has results")
 
@@ -262,6 +262,7 @@ def setup_next_search(
                 ),
                 follow_up_gen_limit=255,
                 max_depth=r.max_depth,
+                target_rle=in_db.starting_points[r.starting_point].target_rle
             ),
             StreamJob(
                 id=None,
@@ -764,7 +765,9 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         stream = starting_point.stream + job.stream + bytes([next_possibility])
         added_gens = initial_added_gens + next_possibility
 
-        before_hit = optimized_stream_simulation(stream)
+        before_hit = optimized_stream_simulation(
+            stream, starting_point.target_rle, shared_args.gen_options[0]
+        )
         before_hit_digest = before_hit.digest()
         if before_hit_digest in before_hit_digests_seen:
             # we've reached a state we've seen before with
@@ -1109,7 +1112,7 @@ def autoshrink(
         raise ValueError("--full-or-partial should be 'full' or 'partial'")
 
     if not queries:
-        queries = [['1=1']]
+        queries = [["1=1"]]
 
     cond = f"({' or '.join(f'({q[0]})' for q in queries)})"
     a = "population"
@@ -1123,12 +1126,16 @@ def autoshrink(
     candidate_queries = []
     for n in (1, 2, 3, 4):
         for combo in itertools.combinations(measures, n):
-            candidate_queries.append([
-                f"select * from r where {cond} order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
-            ])
-            candidate_queries.append([
-                f"select * from r where {cond} group by digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
-            ])
+            candidate_queries.append(
+                [
+                    f"select * from r where {cond} order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                ]
+            )
+            candidate_queries.append(
+                [
+                    f"select * from r where {cond} group by digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                ]
+            )
 
     last_path = input_db
     for i in range(1, 1000):
