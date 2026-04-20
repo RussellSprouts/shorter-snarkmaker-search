@@ -134,6 +134,8 @@ The actual results are stored in a Sqlite database file. There is a SQL VIEW nam
 
 - **full_intermediate_depth_separation**: The separation between the furthest depth of the components of the full intermediate match and the rest of the components of the ash. A small or negative value indicates there could be/is overlap.
 
+- **full_intermediate_non_overlapping_depth_separation**: The separation between the furthest depth of the components of the full intermediate match and the the components of the ash that are not overlapping. Useful to separate patterns from ash even when there is still an overlap.
+
 - **full_intermediate_overlapping_population**: Adds up the population of each component of the ash which isn't part of the full recipe intermediate match, but has a depth <= the depth of the recipe intermediate.
 
 - **full_intermediate_overlapping_digest**: The hash of the pattern containing the components which have a depth <= the depth of the recipe intermediate. Useful to explore how the overlapping parts are modified or cleaned up by reactions.
@@ -147,6 +149,8 @@ The actual results are stored in a Sqlite database file. There is a SQL VIEW nam
 - **partial_intermediate_positive_log_prob**: A very rough approximation of how rare the matching pieces of the recipe are -- how lucky we are that we've made it this far. Calculated the same way as partial_intermediate_log_prob, but with no bonus for `--partial-progress-factor`. For this, a more negative value is better.
 
 - **partial_intermediate_depth_separation**: The separation between the furthest depth of the components of the partial intermediate match and the rest of the components of the ash. A small or negative value indicates there could be/is overlap.
+
+- **partial_intermediate_non_overlapping_depth_separation**: The separation between the furthest depth of the components of the partial intermediate match and the the components of the ash that are not overlapping. Useful to separate patterns from ash even when there is still an overlap.
 
 - **partial_intermediate_overlapping_population**: Adds up the population of each component of the ash which isn't part of the partial recipe intermediate match, but has a depth <= the depth of the recipe intermediate.
 

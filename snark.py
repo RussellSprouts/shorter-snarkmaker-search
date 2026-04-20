@@ -282,6 +282,7 @@ def setup_next_search(
     out_db.conn.execute("DELETE FROM queue;")
     out_db.add_starting_points(list(map(lambda x: x[0], things_to_add)))
     out_db.push_queue(list(map(lambda x: x[1], things_to_add)))
+    out_db.commit()
     out_db.close()
     in_db.close()
 
@@ -461,6 +462,13 @@ def score_pattern(
 
     lanes.sort(key=lambda l: abs_lane(l[0]))
 
+    # max depth of all components including the offset block
+    original_components = set(
+        shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
+    )
+    depth = max(map(lambda c: c.depth, original_components))
+    max_depth = max(job.max_depth, depth)
+
     depths_to_search = shared_args.depth_range
     furthest_lane, is_pi_equivalent, elbow_component = lanes.pop()
 
@@ -488,24 +496,19 @@ def score_pattern(
                 recursed=True,
             )
 
-    # max depth of all components including the offset block
     end_pattern_x, end_pattern_y, _, _ = end_pattern.getrect()
-
-    original_components = set(
-        shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
-    )
-    depth = max(map(lambda c: c.depth, original_components))
-    max_depth = max(job.max_depth, depth)
 
     best_full_intermediate_match: Optional[Recipe] = None
     best_partial_intermediate_match: Optional[Recipe] = None
     best_partial_prob = NEGATIVE_INFINITY
     best_partial_positive_prob = NEGATIVE_INFINITY
     full_elbow_intermediate_depth_separation = 0
+    full_intermediate_non_overlapping_depth_separation = 0
     full_elbow_intermediate_overlapping_population = 0
     full_elbow_intermediate_overlapping_digest = 0
     full_intermediate_shift = 0
     partial_elbow_intermediate_depth_separation = 0
+    partial_intermediate_non_overlapping_depth_separation = 0
     partial_elbow_intermediate_overlapping_population = 0
     partial_intermediate_shift = 0
     partial_intermediate_digest = 0
@@ -546,6 +549,13 @@ def score_pattern(
                     full_elbow_intermediate_depth_separation = (
                         elbow_min_depth - partial_match_max_depth
                     )
+                    elbow_non_overlapping_min_depth = min(
+                        map(lambda x : x.depth, [e for e in elbow if e.depth > partial_match_max_depth]),
+                        default=1000
+                    )
+                    full_intermediate_non_overlapping_depth_separation = (
+                        elbow_non_overlapping_min_depth - partial_match_max_depth
+                    )
                     full_elbow_intermediate_overlapping_population = sum(
                         [
                             c.pattern.population
@@ -585,6 +595,13 @@ def score_pattern(
                     partial_match_max_depth = max(map(lambda x: x.depth, partial_match))
                     partial_elbow_intermediate_depth_separation = (
                         elbow_min_depth - partial_match_max_depth
+                    )
+                    elbow_non_overlapping_min_depth = min(
+                        map(lambda x : x.depth, [e for e in elbow if e.depth > partial_match_max_depth]),
+                        default=1000
+                    )
+                    partial_intermediate_non_overlapping_depth_separation = (
+                        elbow_non_overlapping_min_depth - partial_match_max_depth
                     )
                     partial_elbow_intermediate_overlapping_population = sum(
                         [
@@ -629,6 +646,7 @@ def score_pattern(
             best_full_intermediate_match.id if best_full_intermediate_match else None
         ),
         full_intermediate_depth_separation=full_elbow_intermediate_depth_separation,
+        full_intermediate_non_overlapping_depth_separation=full_intermediate_non_overlapping_depth_separation,
         full_intermediate_overlapping_population=full_elbow_intermediate_overlapping_population,
         full_intermediate_overlapping_digest=full_elbow_intermediate_overlapping_digest,
         full_intermediate_shift=full_intermediate_shift,
@@ -640,6 +658,7 @@ def score_pattern(
         partial_intermediate_log_prob=best_partial_prob,
         partial_intermediate_positive_log_prob=best_partial_positive_prob,
         partial_intermediate_depth_separation=partial_elbow_intermediate_depth_separation,
+        partial_intermediate_non_overlapping_depth_separation=partial_intermediate_non_overlapping_depth_separation,
         partial_intermediate_overlapping_population=partial_elbow_intermediate_overlapping_population,
         partial_intermediate_shift=partial_intermediate_shift,
         partial_intermediate_digest=partial_intermediate_digest,
@@ -691,6 +710,11 @@ def combine_score(
             if a_better
             else b.full_intermediate_depth_separation
         ),
+        full_intermediate_non_overlapping_depth_separation=(
+            a.full_intermediate_non_overlapping_depth_separation
+            if a_better
+            else b.full_intermediate_non_overlapping_depth_separation
+        ),
         full_intermediate_overlapping_population=(
             a.full_intermediate_overlapping_population
             if a_better
@@ -721,6 +745,10 @@ def combine_score(
             a.partial_intermediate_depth_separation
             if a_partial_better
             else b.partial_intermediate_depth_separation
+        ),
+        partial_intermediate_non_overlapping_depth_separation=(
+            a.partial_intermediate_non_overlapping_depth_separation
+            if a_better else b.partial_intermediate_non_overlapping_depth_separation
         ),
         partial_intermediate_overlapping_population=(
             a.partial_intermediate_overlapping_population
@@ -926,7 +954,7 @@ def optimize(
     n_best = 0
     best_log_prob = float("-inf")
     n_best_p = 0
-    best_area = (float("inf"), float("inf"))
+    best_area = float('inf')
     best_area_str = "infxinf A"
     n_best_area = 0
     lowest_population = float("inf")
@@ -954,13 +982,13 @@ def optimize(
                             n_best_p += 1
                     if r.full_intermediate is not None:
                         width = r.lane_width
-                        depth = r.depth - r.full_intermediate_depth_separation
+                        depth = r.depth - r.full_intermediate_non_overlapping_depth_separation
 
-                        if (depth, width) < best_area:
-                            best_area = (depth, width)
+                        if depth + width < best_area:
+                            best_area = depth + width
                             best_area_str = f"{width}x{depth} A"
                             n_best_area = 1
-                        elif (depth, width) == best_area:
+                        elif depth + width == best_area:
                             n_best_area += 1
 
                         if (
@@ -986,11 +1014,11 @@ def optimize(
                             n_best = 1
                             best_full_intermediate = progress
 
-                        if r.population < lowest_population:
-                            lowest_population = r.population
-                            n_lowest_population = 1
-                        elif r.population == lowest_population:
-                            n_lowest_population += 1
+                if r.population < lowest_population:
+                    lowest_population = r.population
+                    n_lowest_population = 1
+                elif r.population == lowest_population:
+                    n_lowest_population += 1
 
             streams_in_job = job.follow_up_gen_limit - gen_options[0] + 1
             if speedo.tick(streams_in_job):
@@ -1116,15 +1144,16 @@ def autoshrink(
 
     cond = f"({' or '.join(f'({q[0]})' for q in queries)})"
     a = "population"
-    b = f"(1.0*max({full_or_partial}_intermediate_overlapping_population, 1) / max({full_or_partial}_intermediate_depth_separation, 1))"
+    b = f"(1.0*max({full_or_partial}_intermediate_overlapping_population, 1) / max({full_or_partial}_intermediate_non_overlapping_depth_separation, 1))"
     c = "(lane_width*sqrt(lane_width))"
-    d = f"(depth - {full_or_partial}_intermediate_depth_separation)"
+    d = f"(depth - {full_or_partial}_intermediate_non_overlapping_depth_separation)"
+    e = f"(depth - {full_or_partial}_intermediate_non_overlapping_depth_separation + lane_width)"
     tiebreak = f"({a} * {b} * {c} * {d})"
 
-    measures = (a, b, c, d)
+    measures = (a, b, c, d, e)
 
     candidate_queries = []
-    for n in (1, 2, 3, 4):
+    for n in range(1, len(measures) + 1):
         for combo in itertools.combinations(measures, n):
             candidate_queries.append(
                 [
@@ -1134,6 +1163,11 @@ def autoshrink(
             candidate_queries.append(
                 [
                     f"select * from r where {cond} group by digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                ]
+            )
+            candidate_queries.append(
+                [
+                    f"select * from r where {cond} group by {full_or_partial}_intermediate_overlapping_digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
                 ]
             )
 
@@ -1153,6 +1187,8 @@ def autoshrink(
                 truncate_n_gliders=0,
             )
         last_path = round_output_path
+
+        
 
         print(f"Running search in {round_output_path}...")
         optimize(
@@ -1189,6 +1225,36 @@ def recipe_tree(recipe_intermediates_db, start):
     recurse(start_int, 4)
     print(recipe_graph.stamp_collection(include_glider=True).rle_string())
 
+def custom_starting_point(output_db, stream, target_rle):
+    output_db = ProcessingDatabase(output_db)
+
+    stream_bytes = bytes(int(i) for i in stream.split(','))
+
+    for i in output_db.add_starting_points([
+        StartingPoint(
+            None,
+            0,
+            stream_bytes,
+            255,
+            0,
+            target_rle
+        )
+    ]):
+        id = i['id']
+    output_db.push_queue([
+        StreamJob(
+            None,
+            0,
+            id,
+            bytes(),
+            255,
+            0,
+            None
+        )
+    ])
+    output_db.commit()
+    output_db.close()
+    print("Added starting point.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -1512,6 +1578,32 @@ if __name__ == "__main__":
         help="The max depth result to consider for results in the live view.",
     )
 
+    parser_custom_starting_point = subcommand.add_parser(
+        "custom-starting-point",
+        description="Adds a custom starting point to the database and queues it.",
+    )
+    parser_custom_starting_point.add_argument(
+        "-o",
+        "--output-db",
+        help="Output sqlite database file.",
+        type=pathlib.Path,
+        required=True,
+    )
+    parser_custom_starting_point.add_argument(
+        "-s",
+        "--stream",
+        help="The stream for the starting point. A comma-separated list of integers",
+        type=str,
+        required=True
+    )
+    parser_custom_starting_point.add_argument(
+        "-t",
+        "--target-rle",
+        help="The rle for the target.",
+        type=str,
+        default="2o$2o3$3o$o$bo!"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -1580,4 +1672,10 @@ if __name__ == "__main__":
                 partial_progress_factor=args.partial_progress_factor,
                 partial_range=args.partial_range,
                 live_view_depth=args.live_view_depth,
+            )
+        case "custom-starting-point":
+            custom_starting_point(
+                output_db=args.output_db,
+                stream=args.stream,
+                target_rle=args.target_rle
             )

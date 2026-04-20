@@ -91,6 +91,7 @@ class SavedResult:
 
     full_intermediate: int
     full_intermediate_depth_separation: int
+    full_intermediate_non_overlapping_depth_separation: int
     full_intermediate_overlapping_population: int
     full_intermediate_overlapping_digest: int
     full_intermediate_shift: int
@@ -98,6 +99,7 @@ class SavedResult:
     partial_intermediate_log_prob: float
     partial_intermediate_positive_log_prob: float
     partial_intermediate_depth_separation: int
+    partial_intermediate_non_overlapping_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
     partial_intermediate_digest: int
@@ -127,6 +129,11 @@ class SavedResult:
             full_intermediate_depth_separation=row[
                 "full_intermediate_depth_separation"
             ],
+            full_intermediate_non_overlapping_depth_separation=(
+                row["full_intermediate_non_overlapping_depth_separation"]
+                if "full_intermediate_non_overlapping_depth_separation" in keys
+                else 0
+            ),
             full_intermediate_overlapping_population=row[
                 "full_intermediate_overlapping_population"
             ],
@@ -144,17 +151,26 @@ class SavedResult:
             partial_intermediate_depth_separation=row[
                 "partial_intermediate_depth_separation"
             ],
+            partial_intermediate_non_overlapping_depth_separation=(
+                row["partial_intermediate_non_overlapping_depth_separation"]
+                if "partial_intermediate_non_overlapping_depth_separation" in keys
+                else 0
+            ),
             partial_intermediate_overlapping_population=row[
                 "partial_intermediate_overlapping_population"
             ],
             partial_intermediate_shift=row["partial_intermediate_shift"],
-            partial_intermediate_digest=row["partial_intermediate_digest"] if "partial_intermediate_digest" in keys else 0,
+            partial_intermediate_digest=(
+                row["partial_intermediate_digest"]
+                if "partial_intermediate_digest" in keys
+                else 0
+            ),
             partial_intermediate_overlapping_digest=(
                 row["partial_intermediate_overlapping_digest"]
                 if "partial_intermediate_overlapping_digest" in keys
                 else 0
             ),
-            label=row["label"] if "label" in keys else None
+            label=row["label"] if "label" in keys else None,
         )
 
     def __repr__(self):
@@ -175,6 +191,7 @@ class SavedResult:
             f"flipped_offset_block={self.flipped_offset_block}, "
             f"full_intermediate={self.full_intermediate}, "
             f"full_intermediate_depth_separation={self.full_intermediate_depth_separation}, "
+            f"full_intermediate_non_overlapping_depth_separation={self.full_intermediate_non_overlapping_depth_separation}, "
             f"full_intermediate_overlapping_population={self.full_intermediate_overlapping_population}, "
             f"full_intermediate_overlapping_digest={self.full_intermediate_overlapping_digest}, "
             f"full_intermediate_shift={self.full_intermediate_shift}, "
@@ -182,6 +199,7 @@ class SavedResult:
             f"partial_intermediate_log_prob={self.partial_intermediate_log_prob}, "
             f"partial_intermediate_positive_log_prob={self.partial_intermediate_positive_log_prob}, "
             f"partial_intermediate_depth_separation={self.partial_intermediate_depth_separation}, "
+            f"partial_intermediate_non_overlapping_depth_separation={self.partial_intermediate_non_overlapping_depth_separation}, "
             f"partial_intermediate_overlapping_population={self.partial_intermediate_overlapping_population}, "
             f"partial_intermediate_shift={self.partial_intermediate_shift}, "
             f"partial_intermediate_digest={self.partial_intermediate_digest}, "
@@ -206,6 +224,7 @@ class StreamResult:
 
     full_intermediate: int
     full_intermediate_depth_separation: int
+    full_intermediate_non_overlapping_depth_separation: int
     full_intermediate_overlapping_population: int
     full_intermediate_overlapping_digest: int
     full_intermediate_shift: int
@@ -214,6 +233,7 @@ class StreamResult:
     partial_intermediate_log_prob: float
     partial_intermediate_positive_log_prob: float
     partial_intermediate_depth_separation: int
+    partial_intermediate_non_overlapping_depth_separation: int
     partial_intermediate_overlapping_population: int
     partial_intermediate_shift: int
     partial_intermediate_digest: int
@@ -287,8 +307,7 @@ class ProcessingDatabase:
         # Table of starting points for the search.
         # Initialized with the first 0 delay glider, or the
         # best results from the previous step.
-        self.conn.execute(
-            """
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS starting_points (
                 id INTEGER PRIMARY KEY,
                 cost INTEGER,
@@ -297,12 +316,10 @@ class ProcessingDatabase:
                 max_depth INTEGER,
                 target_rle TEXT
             )
-            """
-        )
+            """)
 
         # Table of results that are queued for processing
-        self.conn.execute(
-            """
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS queue (
                 id INTEGER PRIMARY KEY,
                 in_progress INTEGER,
@@ -313,27 +330,19 @@ class ProcessingDatabase:
                 max_depth INTEGER,
                 follow_ups BLOB
             )
-            """
-        )
-        self.conn.execute(
-            """
+            """)
+        self.conn.execute("""
             CREATE INDEX IF NOT EXISTS queue_idx ON queue (cost ASC)
-            """
-        )
-        self.conn.execute(
-            """
+            """)
+        self.conn.execute("""
             CREATE INDEX IF NOT EXISTS queue_in_progress_idx ON queue (in_progress ASC)
-            """
-        )
-        self.conn.execute(
-            """
+            """)
+        self.conn.execute("""
             CREATE INDEX IF NOT EXISTS queue_id_idx ON queue (id ASC)
-            """
-        )
+            """)
 
         # Table of processing results
-        self.conn.execute(
-            """
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS results (
                 stream BLOB,
                 starting_point INTEGER REFERENCES starting_points(id),
@@ -349,6 +358,7 @@ class ProcessingDatabase:
                 flipped_offset_block INTEGER,
                 full_intermediate INTEGER REFERENCES recipe_intermediates(id),
                 full_intermediate_depth_separation INTEGER,
+                full_intermediate_non_overlapping_depth_separation INTEGER,
                 full_intermediate_overlapping_population INTEGER,
                 full_intermediate_overlapping_digest INTEGER,
                 full_intermediate_shift INTEGER,
@@ -356,17 +366,16 @@ class ProcessingDatabase:
                 partial_intermediate_log_prob REAL,
                 partial_intermediate_positive_log_prob REAL,
                 partial_intermediate_depth_separation INTEGER,
+                partial_intermediate_non_overlapping_depth_separation INTEGER,
                 partial_intermediate_overlapping_population INTEGER,
                 partial_intermediate_shift INTEGER,
                 partial_intermediate_digest INTEGER,
                 partial_intermediate_overlapping_digest INTEGER
             )
-            """
-        )
+            """)
 
         # Table of intermediate stages of the slow salvo recipe
-        self.conn.execute(
-            """
+        self.conn.execute("""
             CREATE TABLE IF NOT EXISTS recipe_intermediates (
                 id INTEGER PRIMARY KEY,
                 so_far BLOB,
@@ -376,13 +385,30 @@ class ProcessingDatabase:
                 x INTEGER,
                 y INTEGER
             )
-            """
-        )
+            """)
+
+        try:
+            self.conn.execute("""
+            ALTER TABLE results ADD COLUMN full_intermediate_non_overlapping_depth_separation INTEGER;
+            """)
+            self.conn.commit()
+        except:
+            pass
+
+        try:
+            self.conn.execute("""
+            ALTER TABLE results ADD COLUMN partial_intermediate_non_overlapping_depth_separation INTEGER;
+            """)
+            self.conn.commit()
+        except:
+            pass
 
         # Create a view with all the relevant joins for ease of
         # querying.
-        self.conn.execute(
-            """
+        self.conn.execute("""
+            DROP VIEW IF EXISTS r;
+        """)
+        self.conn.execute("""
             CREATE VIEW IF NOT EXISTS r AS
             SELECT
                 r.stream as stream,
@@ -399,6 +425,7 @@ class ProcessingDatabase:
                 r.flipped_offset_block as flipped_offset_block,
                 r.full_intermediate as full_intermediate,
                 r.full_intermediate_depth_separation as full_intermediate_depth_separation,
+                r.full_intermediate_non_overlapping_depth_separation as full_intermediate_non_overlapping_depth_separation,
                 r.full_intermediate_overlapping_population as full_intermediate_overlapping_population,
                 r.full_intermediate_overlapping_digest as full_intermediate_overlapping_digest,
                 r.full_intermediate_shift as full_intermediate_shift,
@@ -406,6 +433,7 @@ class ProcessingDatabase:
                 r.partial_intermediate_log_prob as partial_intermediate_log_prob,
                 r.partial_intermediate_positive_log_prob as partial_intermediate_positive_log_prob,
                 r.partial_intermediate_depth_separation as partial_intermediate_depth_separation,
+                r.partial_intermediate_non_overlapping_depth_separation as partial_intermediate_non_overlapping_depth_separation,
                 r.partial_intermediate_overlapping_population as partial_intermediate_overlapping_population,
                 r.partial_intermediate_shift as partial_intermediate_shift,
                 r.partial_intermediate_digest as partial_intermediate_digest,
@@ -435,8 +463,7 @@ class ProcessingDatabase:
             LEFT OUTER JOIN recipe_intermediates fi ON fi.id = full_intermediate
             LEFT OUTER JOIN recipe_intermediates pi on pi.id = partial_intermediate
             JOIN starting_points sp on sp.id = starting_point
-            """
-        )
+            """)
 
         self.reset_in_progress_queue()
 
@@ -479,7 +506,7 @@ class ProcessingDatabase:
         )
         return result
 
-    def push_queue(self, jobs):
+    def push_queue(self, jobs: list[StreamJob]):
         self.n_queued += len(jobs)
         for job in jobs:
             self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) + 1
@@ -500,12 +527,19 @@ class ProcessingDatabase:
         )
 
     def add_starting_points(self, starting_points: List[StartingPoint]):
-        self.conn.executemany(
+        return self.conn.executemany(
             """INSERT INTO starting_points
             (id, cost, stream, follow_up_gen_limit, max_depth, target_rle)
-            VALUES (?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?) RETURNING id""",
             (
-                (s.id, s.cost, s.stream, s.follow_up_gen_limit, s.max_depth, s.target_rle)
+                (
+                    s.id,
+                    s.cost,
+                    s.stream,
+                    s.follow_up_gen_limit,
+                    s.max_depth,
+                    s.target_rle,
+                )
                 for s in starting_points
             ),
         )
@@ -517,8 +551,8 @@ class ProcessingDatabase:
 
         self.conn.executemany(
             """INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_non_overlapping_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_non_overlapping_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -535,6 +569,7 @@ class ProcessingDatabase:
                     child.flipped_offset_block,
                     child.full_intermediate,
                     child.full_intermediate_depth_separation,
+                    child.full_intermediate_non_overlapping_depth_separation,
                     child.full_intermediate_overlapping_population,
                     digest_to_signed(child.full_intermediate_overlapping_digest),
                     child.full_intermediate_shift,
@@ -542,6 +577,7 @@ class ProcessingDatabase:
                     child.partial_intermediate_log_prob,
                     child.partial_intermediate_positive_log_prob,
                     child.partial_intermediate_depth_separation,
+                    child.partial_intermediate_non_overlapping_depth_separation,
                     child.partial_intermediate_overlapping_population,
                     child.partial_intermediate_shift,
                     digest_to_signed(child.partial_intermediate_digest),

@@ -1101,3 +1101,212 @@ This finished with only a couple million streams searched, and has 34k results w
 ```bash
 $ uv run snark.py autoshrink -r results/simkin-stages.sqlite -i results/simkin-search-shrink3.sqlite -o results/simkin-search-autoshrink-test.sqlite -n 400 --partial-range=42 --depth-range=21 -q 'full_intermediate is not null' -c 32
 ```
+
+This ran for 20 rounds, and found these results:
+
+round | gliders | depth
+======|=========|=======
+9     | 67      | 126
+10    | 69      | 112
+11    | 72      | 104
+12    | 73      | 103
+13    | 74      | 103
+14    | 76      | 103
+15    | 76      | 103
+16    | 77      | 103
+17    | 80      | 103
+18    | 85      | 103
+19    | 86      | 103
+20    | 87      | 103
+
+Near the end it got stuck, probably because there was no way to improve the full_intermediate_depth_separation. I should add a full_intermediate_nonoverlapping_depth_separation, so that we can pull the ash away from the result, even if there are some pieces still entangled.
+
+We have these results, but I still want to find a completion for the pattern that is not so explosive in the final steps.
+
+Going back to simkin-search10, there are several results which place the second block instead of the blinker, and there are the remaining 100 blinker results. Let's try those.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search10.sqlite -o results/simkin-search11-try-2.sqlite \
+  -q 'partial_intermediate_digest = -4844308016031593667 order by partial_intermediate_overlapping_population*lane_width*depth limit -1 offset 20' \
+  -q 'partial_intermediate_digest = -861303193338872548'
+
+Transferred 110 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search11-try-2.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+1430.14/s, 1416.79 avg/s, 4,763,294 done, 342-507 gens, 314,570/1,018,317,246 pending, 0x0, -1.18x6, infxinf A (0), inf overlap (0), inf pop (0)
+```
+
+There are several options, some which find all the blocks, some which find the back two blocks and the blinker. (Ignoring the results which find the first and third blocks). Let's try the most compact one first, which is just missing the last block.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search11-try-2.sqlite -o results/simkin-search12-try-2.sqlite \
+  -q 'partial_intermediate_log_prob > -2 order by (lane_width+depth)*population limit 1 offset 2'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search12-try-2.sqlite -n 600 --partial-range=42 --depth-range=21
+
+...
+1377.50/s, 1332.78 avg/s, 8,045,385 done, 522-600 gens, 112,022/19,409,788 pending, 42x3, -1.18x210792, 66x253 A (2), 66 overlap (3), 235 pop (1)
+```
+
+The three new results are more compact than the previous result from simkin-search12.sqlute. Let's try autoshrinking them!
+
+```bash
+$ uv run snark.py autoshrink -r results/simkin-stages.sqlite -i results/simkin-search12-try-2.sqlite -o results/simkin-search-autoshrink-2.sqlite -n 350 --partial-range=42 --depth-range=21 -q 'full_intermediate is not null' -c 32
+```
+
+Similar to the previous full result, the three results finished depth 350 almost instantly, so I increased the depth until I settled on 700, which processed <2 million streams. After the first round, I decreased it back to 350. I implemented full_intermediate_non_overlapping_depth_separation so that we can shrink the ash without cleaning up the parts still entangled with the gun -- those can be cleaned up when we tear down the gun instead.
+
+In simkin-search-autoshrink-2-round3, there's this result:
+
+```
+x = 1699, y = 1402, rule = LifeHistory
+300.2A$300.2A3$3D.3D.D3.D.D.D.3D.D2.D5.3D.3D.3D.3D.3D.D.D5.3D.D.D.
+3D.3D.3D.D.D.3D.3D.D2.D.D.D5.3D5.3D.3D.D.D.D2.D.2D2.3D3.3D.3D2.D3.
+3D.3D.3D137.3A$D4.D2.2D.2D.D.D2.D2.2D.D5.D3.D3.D.D.D.D.D3.D.D5.D.D
+.D.D2.D2.D.D.D3.D.D.D.D2.D2.2D.D.D.D7.D5.D.D.D.D.D.D.2D.D.D.D3.D3.
+D3.D.D2.D4.D3.D2.D139.A$3D2.D2.D.D.D.2D3.D2.D.2D.3D.3D.3D.D.D.3D.D
+3.3D.3D.D.D.D.D2.D2.D.D.3D.3D.3D2.D2.D.2D.2D2.3D.3D.3D.3D.D.D.D.D.
+D.2D.D.D.3D3.3D.D.D2.D4.D3.D2.3D138.A$2.D2.D2.D3.D.D.D2.D2.D2.D7.D
+.D3.3D.2D2.D3.D.D5.3D.D.D2.D2.D.D3.D.D.D.2D3.D2.D2.D.D.D5.D7.2D2.D
+.D.D.D.D2.D.D.D3.D5.D.D.D2.D4.D3.D2.D$3D.3D.D3.D.D.D.3D.D2.D5.3D.
+3D.D.D.D.D.3D.D.D5.D.D.3D2.D2.3D.3D.D.D.D.D.3D.D2.D.D.D5.3D5.D.D.
+3D.3D.D2.D.3D.3D.D.3D.2D.D.3D.3D2.D2.3D13$316.2D$316.2D3$319.2D$
+319.2D2$316.2D$316.2D$308.2D$309.D$309.D.D$310.2D2$326.2D4.2A$325.
+D2.D3.A.A$326.2D4.A6$327.3D$322.2D$322.2D3$324.2D$324.2D3$327.2D$
+327.2D8$357.3A$357.A$358.A23$382.3A$382.A$383.A46$432.A$431.2A$
+431.A.A21$454.2A$453.2A$455.A21$476.3A$476.A$477.A21$501.A$500.2A$
+500.A.A23$525.2A$524.2A$526.A24$551.2A$551.A.A$551.A21$573.3A$573.
+A$574.A23$599.2A$598.2A$600.A33$634.2A$634.A.A$634.A22$657.3A$657.
+A$658.A37$698.A$697.2A$697.A.A21$721.A$720.2A$720.A.A35$757.2A$
+756.2A$758.A23$781.3A$781.A$782.A20$804.2A$804.A.A$804.A36$842.2A$
+842.A.A$842.A33$877.2A$876.2A$878.A34$913.2A$912.2A$914.A21$936.2A
+$935.2A$937.A38$976.2A$976.A.A$976.A31$1009.2A$1008.2A$1010.A27$
+1038.2A$1037.2A$1039.A23$1063.2A$1063.A.A$1063.A27$1091.3A$1091.A$
+1092.A25$1120.A$1119.2A$1119.A.A26$1148.A$1147.2A$1147.A.A22$1170.
+3A$1170.A$1171.A29$1203.A$1202.2A$1202.A.A23$1227.2A$1226.2A$1228.
+A23$1253.A$1252.2A$1252.A.A27$1281.2A$1280.2A$1282.A25$1307.3A$
+1307.A$1308.A37$1347.2A$1346.2A$1348.A20$1370.A$1369.2A$1369.A.A
+21$1392.2A$1391.2A$1393.A20$1415.A$1414.2A$1414.A.A21$1437.2A$
+1437.A.A$1437.A21$1460.2A$1459.2A$1461.A59$1520.3A$1520.A$1521.A
+26$1549.2A$1548.2A$1550.A33$1583.3A$1583.A$1584.A25$1610.3A$1610.A
+$1611.A21$1635.A$1634.2A$1634.A.A30$1666.2A$1666.A.A$1666.A28$
+1697.A$1696.2A$1696.A.A!
+```
+
+It has only 2 objects on one side of the stream. Let's explore it deeper.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-search-autoshrink-2-round3.sqlite -o results/simkin-search12-manual-shrink1.sqlite \
+  -q 'full_intermediate is not null order by population - full_intermediate_overlapping_population limit 1'
+
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-search12-manual-shrink1.sqlite -n 600 --partial-range=42 --depth-range=21
+
+4060.84/s, 4502.01 avg/s, 2,752,654 done, 525-600 gens, 34,352/5,505,651 pending, 42x25, -1.25x25, 59x134 A (3), 59 overlap (25), 140 pop (3)
+```
+
+We don't find any improvements even at 525, so let's instead take the pattern and activate the gun and try cleaning up from there.
+
+With a custom script, I found that we can activate the gun with a follow-up glider of 99. From there, I ran oncoming.py searches.
+
+I spent a while and found a way to clean up everything in front of the gun in 14 gliders, before realizing that the new gliders were on the wrong side of the gun gliders -- I had swapped them from where the gliders were in the original single channel recipe :o
+
+```
+x = 96, y = 123, rule = B3/S23
+14bo$14bo$14bo16$2o$obo64bo$bo65bo$67bo$17bo6b2o$16bobo5b2o37b3o3b3o$
+16bobo$17bo49bo$34bo32bo$9b2o23b3o30bo$8bobo26bo$9bo26b2o5$25b2o5b2o$
+25b2o5b2o46b2o$79bo2bo$29b2o49b2o$24bo4b2o$5b2o16bobo$5b2o16bobo$24bo$
+52b2o$39bo12b2o$37bobo$37b3o9b2o5b2o$37bo11b2o5b2o$12bo$6b2o3bobo$5bo
+2bo2b2o80b2o$6b2o85bobo$94bo11$44b2o$44b2o$36bo$36bo$36bo4$47b2ob2o$
+47b2ob2o25$39b2o$39b2o2$48bo$48bo11b2o$48bo10bobo$60bo10$46b3o10$46b3o!
+```
+
+So, I started over with a search of --subtree="1,3,5,7,9,...,121;90-255;90-255" to depth 3.
+
+3,122,122 cleans up the three blocks and blinker close to the gun, and only consumes 3 gun gliders.
+
+11,128,134 cleans up the far pieces
+
+15,250,96
+
+43, 144, 94
+
+27,155
+
+---
+
+43, 144, 94, 218, 148 leaves:
+
+- 2 blocks in SW
+- 1 beehive in SW
+- 1 blinker in SW
+- 1 boat in NE
+- 1 beehive in NE
+
+Searching to depth 7 we find:
+
+Found:
+
+- 43,144,94,218,148,180,90: deletes the far blinker in the SW, replaces close block with beehive
+- 43,144,94,218,148,226,111: deletes the boat in the NE
+- 43,144,94,218,148,148: deletes the close block 
+
+Starting with 180,90, we find no better results in two gliders.
+
+226,111,119,100 removes the close SW block.
+
+From there, we can use standard recipes to remove the remainder with 8 more gliders. I didn't remove the beehive since it's fairly far back anyway.
+
+The full recipe looks like:
+```
+x = 2088, y = 2084, rule = LifeHistory
+2A2.2A$2A2.A.A$4.A30$35.3A$35.A$36.A23$61.2A$61.A.A$61.A23$86.2A$86.A
+.A$86.A47$135.2A$134.2A$136.A20$158.A$157.2A$157.A.A21$180.2A$180.A.A
+$180.A22$204.2A$203.2A$205.A22$229.A$228.2A$228.A.A25$254.3A$254.A$
+255.A20$277.2A$277.A.A$277.A23$303.A$302.2A$302.A.A34$337.3A$337.A$
+338.A21$361.2A$361.A.A$361.A38$401.2A$400.2A$402.A21$424.2A$423.2A$
+425.A34$461.A$460.2A$460.A.A23$485.2A$485.A.A$485.A21$507.3A$507.A$
+508.A36$545.3A$545.A$546.A32$581.A$580.2A$580.A.A34$617.A$616.2A$616.
+A.A21$640.A$639.2A$639.A.A39$679.3A$679.A$680.A30$713.A$712.2A$712.A.
+A27$742.A$741.2A$741.A.A24$766.3A$766.A$767.A26$795.2A$795.A.A$795.A
+26$823.2A$822.2A$824.A26$851.2A$850.2A$852.A21$874.2A$874.A.A$874.A
+30$906.2A$905.2A$907.A22$931.A$930.2A$930.A.A24$956.2A$955.2A$957.A
+26$985.A$984.2A$984.A.A25$1011.2A$1011.A.A$1011.A37$1051.A$1050.2A$
+1050.A.A21$1073.2A$1072.2A$1074.A20$1096.A$1095.2A$1095.A.A21$1118.2A
+$1117.2A$1119.A21$1140.3A$1140.A$1141.A20$1164.A$1163.2A$1163.A.A59$
+1224.2A$1224.A.A$1224.A26$1253.A$1252.2A$1252.A.A33$1287.2A$1287.A.A$
+1287.A25$1314.2A$1314.A.A$1314.A22$1338.2A$1337.2A$1339.A30$1369.3A$
+1369.A$1370.A28$1400.2A$1399.2A$1401.A23$1424.3A$1424.A$1425.A62$
+1489.2A$1488.2A$1490.A34$1525.2A$1524.2A$1526.A21$1549.A$1548.2A$
+1548.A.A53$1603.2A$1602.2A$1604.A35$1640.2A$1639.2A$1641.A54$1697.A$
+1696.2A$1696.A.A26$1724.2A$1724.A.A$1724.A28$1754.2A$1753.2A$1755.A
+23$1779.2A$1778.2A$1780.A22$1802.3A$1802.A$1803.A20$1826.A$1825.2A$
+1825.A.A33$1860.2A$1859.2A$1861.A48$1910.2A$1910.A.A$1910.A53$1966.A$
+1965.2A$1965.A.A52$2020.A$2019.2A$2019.A.A33$2054.2A$2053.2A$2055.A
+29$2085.2A$2085.A.A$2085.A!
+```
+
+```
+0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99,257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125
+```
+
+To use snark.py to search for cleanups, we need a version with no gliders longer than 255. To do this, we send a zero glider to delete the glider we would have hit at 257, then hit the next glider 120 generations later. 254 is a zero-glider to delete it, then 123 comes next. I also added a series of 2 gliders (94, 240, 240, 240) to simulate the time when we'll be using the constructor arm, then a 96 glider to bring us just about as close as possible.
+
+```
+0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121,99, 254 ,123, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, 94, 240, 240, 240, 96
+```
+
+We'll manually set this as a starting point for a search.
+
+```bash
+$ uv run snark.py custom-starting-point -o results/simkin-streams-of-destruction.sqlite --stream='0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121,99, 254 ,123, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, 94, 240, 240, 240, 96'
+
+Added starting point.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction.sqlite -n 720 --partial-range=-1 --depth-range=0
+```
