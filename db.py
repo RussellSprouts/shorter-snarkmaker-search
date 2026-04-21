@@ -45,7 +45,7 @@ class StartingPoint:
         )
 
     def __repr__(self):
-        return f"StartingPoint(id={self.id}, cost={self.cost}, stream=bytes({tuple(self.stream)}), follow_up_gen_limit={self.follow_up_gen_limit}, max_depth={self.max_depth}, target_rle={self.target})"
+        return f"StartingPoint(id={self.id}, cost={self.cost}, stream=bytes({tuple(self.stream)}), follow_up_gen_limit={self.follow_up_gen_limit}, max_depth={self.max_depth}, target_rle={self.target_rle})"
 
 
 @dataclass(order=True)
@@ -527,11 +527,12 @@ class ProcessingDatabase:
         )
 
     def add_starting_points(self, starting_points: List[StartingPoint]):
-        return self.conn.executemany(
-            """INSERT INTO starting_points
+        ids = []
+        for s in starting_points:
+            r = self.conn.execute(
+                """INSERT INTO starting_points
             (id, cost, stream, follow_up_gen_limit, max_depth, target_rle)
             VALUES (?, ?, ?, ?, ?, ?) RETURNING id""",
-            (
                 (
                     s.id,
                     s.cost,
@@ -540,9 +541,10 @@ class ProcessingDatabase:
                     s.max_depth,
                     s.target_rle,
                 )
-                for s in starting_points
-            ),
-        )
+            ).fetchone()
+            ids.append(r['id'])
+
+        return ids
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
         self.n_queued -= len(results)

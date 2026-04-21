@@ -3,6 +3,7 @@ import sys
 import argparse
 import re
 import itertools
+import functools
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -165,20 +166,29 @@ if args.find_minimum_follow:
         # now we know which gliders participate. Remove the rest.
         envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
 
+        pattern = mk_fake_gun(args.n_gun_gliders - n_escaping) + single_channel_stream(delays)
+
+        @functools.lru_cache(maxsize=None)
+        def pattern_at_gen(n):
+            if n == 0:
+                return pattern
+            return pattern_at_gen(n-1)[1]
+
         for i in range(args.toolkit.min_spacing, args.toolkit.min_spacing + 1000):
-            p = mk_fake_gun(args.n_gun_gliders - n_escaping) + single_channel_stream(delays)
             follow_up_glider = mk_glider(0, total + i)
             glider_envelope = lt.pattern()
-            for _ in range(0, simulate_gens + i):
+            for j in range(0, simulate_gens + i):
                 follow_up_glider = follow_up_glider[1]
-                p = p[1]
                 glider_envelope += follow_up_glider.convolve(envelope)
-                if (p & glider_envelope).nonempty():
+                if (pattern_at_gen(j+1) & glider_envelope).nonempty():
                     break
             else:
                 # the envelope doesn't overlap with the reaction!
                 print(','.join(map(str,delays)) + f',({i})')
                 break
+        else:
+            print(','.join(map(str,delays)) + f',({1000 + args.toolkit.min_spacing}+???)')
+
 
     sys.exit(0)
 

@@ -1230,7 +1230,7 @@ def custom_starting_point(output_db, stream, target_rle):
 
     stream_bytes = bytes(int(i) for i in stream.split(','))
 
-    for i in output_db.add_starting_points([
+    id = output_db.add_starting_points([
         StartingPoint(
             None,
             0,
@@ -1239,8 +1239,8 @@ def custom_starting_point(output_db, stream, target_rle):
             0,
             target_rle
         )
-    ]):
-        id = i['id']
+    ])[0]
+    
     output_db.push_queue([
         StreamJob(
             None,

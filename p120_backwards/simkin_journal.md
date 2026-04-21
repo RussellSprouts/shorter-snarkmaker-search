@@ -1310,3 +1310,21 @@ Added starting point.
 
 $ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction.sqlite -n 720 --partial-range=-1 --depth-range=0
 ```
+
+I ran that overnight to a depth of 573-720 (over 80 million streams searched).
+
+I discovered that the `depth` field doesn't count the offset block, even if searching for offset blocks is disabled. There are a lot of results which have great depth but left behind a beehive which isn't counted. I fixed that for the next phase. To find results that are good anyway, I used this query:
+
+```sql
+select *, digest as label from r where offset_block_lane <> -55 group by digest order by abs(offset_block_lane)*depth*lane_width limit 10;
+```
+
+From this, I see that 3303815248586962336, -5953464551465482076, and -4955427749339316353 are especially compact results.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction.sqlite -o results/simkin-streams-of-destruction2.sqlite -q 'r.digest in (3303815248586962336, -5953464551465482076, -4955427749339316353)'
+
+Transferred 3 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction2.sqlite -n 720 --partial-range=-1 --depth-range=0
+```
