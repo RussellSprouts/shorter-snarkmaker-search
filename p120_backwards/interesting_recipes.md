@@ -237,14 +237,6 @@ Gliders going towards the recipe.
 
 ## Far offset beehive upstream NE
 
-(3, 110, 92, 186) ['beehive(l-10,d7)', 'blinker(l-2,d-6)', 'blinker(l0,d-6)', 'g0', 'g1', 'g2', 'g3', 'g4', 'glider(l16)(ph3)(♗⬁)', 'ship tie(l-16,d-12)', 'ship tie(l-8,d-12)']
-(3, 154, 124, 91) ['beehive(l-7,d-16)', 'block(l-11,d-11)', 'block(l24,d20)', 'g0', 'g1', 'g2', 'g3', 'g4', 'glider(l16)(ph2)(♗⬁)', 'loaf(l-20,d4)']
-
-- 3, 165, 162, 97, (138) - offset boat l30
-- 3, 208, 137, 135, 98, 200, (90) - glider lane 31
-- 1, 104, 93, 129, (90) - lwss
-
-
 - 1, 92, 90, 219, (179) - place an offset boat
 
 - 3, 219, 229, 127, (298) - send a 0 degree glider towards the boat to make a delayed 90 degree glider
