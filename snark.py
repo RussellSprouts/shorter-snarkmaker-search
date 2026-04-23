@@ -456,23 +456,27 @@ def score_pattern(
             )
         )
 
-    if len(lanes) < 2:
-        # empty pattern or lonely block
-        return None
-
     lanes.sort(key=lambda l: abs_lane(l[0]))
 
     # max depth of all components including the offset block
     original_components = set(
         shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
     )
-    depth = max(map(lambda c: c.depth, original_components))
+    depth = max(map(lambda c: c.depth, original_components), default=0)
     max_depth = max(job.max_depth, depth)
 
     depths_to_search = shared_args.depth_range
-    furthest_lane, is_pi_equivalent, elbow_component = lanes.pop()
+    if lanes:
+        furthest_lane, is_pi_equivalent, elbow_component = lanes.pop()
+    else:
+        furthest_lane = 0
+        is_pi_equivalent = False
+        elbow_component = lt.pattern()
 
     if shared_args.min_offset_block_lane > 0:
+        if len(lanes) < 2:
+            return None
+
         snark_offset = snark_offset_for_elbow_block(
             shared_args.snark_offsets, elbow_component
         )
@@ -496,7 +500,7 @@ def score_pattern(
                 recursed=True,
             )
 
-    end_pattern_x, end_pattern_y, _, _ = end_pattern.getrect()
+    end_pattern_x, end_pattern_y, _, _ = end_pattern.getrect() or (0, 0, 0, 0)
 
     best_full_intermediate_match: Optional[Recipe] = None
     best_partial_intermediate_match: Optional[Recipe] = None
@@ -637,7 +641,7 @@ def score_pattern(
         x=end_pattern_x,
         y=end_pattern_y,
         offset_block_lane=furthest_lane,
-        lane_width=abs_lane(lanes[-1][0]),  # next highest lane
+        lane_width=abs_lane(lanes[-1][0]) if lanes else 0,  # next highest lane
         max_depth=max_depth,
         depth=depth,
         population=end_pattern.population,
@@ -813,7 +817,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         just_after_hit = before_hit[20]
         just_after_hit1 = just_after_hit[1]
         just_after_hit2 = just_after_hit1[1]
-        end_pattern = just_after_hit2[512 - 22]
+        end_pattern = just_after_hit2[1024 - 22]
         end_pattern1 = end_pattern[1]
         end_pattern2 = end_pattern1[1]
 
@@ -1240,7 +1244,7 @@ def custom_starting_point(output_db, stream, target_rle):
             target_rle
         )
     ])[0]
-    
+
     output_db.push_queue([
         StreamJob(
             None,

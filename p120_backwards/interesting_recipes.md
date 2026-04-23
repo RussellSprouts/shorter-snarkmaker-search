@@ -421,23 +421,46 @@ These recipes send a pair of gliders. If the separation matches, you might be ab
 - 7, 228, 160, 100 - glider(d11)(ph0)(♝⬃⓪), glider(d8)(ph0)(♗⬃①)
 - 7, 244, 160, 100 - glider(d12)(ph0)(♗⬃①), glider(d15)(ph0)(♝⬃⓪)
 
-## Teardown gun
+## Pi block to construction arm
 
-- 58, 96, 96, 109, 133, 99 -- destroy construction arm, leaving nothing behind.
+Builds construction arm, converting a pi-explodable block into a simkin gun on the right lane.
 
-Note that 58 is just an arbitary label for the mod 120 phase of the glider gun. Here's what this looks like:
+`0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125`
+
+## Construction arm to pi block
+
+To pick a standard reference, this is the first generation where the glider appears, so we call it phase 0 of the gun. The oncoming glider is
 
 ```
-x = 185, y = 194, rule = LifeHistory
-9.A$9.3A$12.A$11.2A5$2A5.2A$2A5.2A$18.3A$4.2A12.A4.A$4.2A13.A3.2A$
-24.2A$21.A2.A$22.2A$27.2A$27.2A2$24.2A5.2A$24.2A5.2A11$28.A$29.A$
-27.3A11$34.3D.3D5.3D.3D5.3D.3D6.D2.3D.3D6.D2.3D.3D5.3D.3D$34.D3.D.
-D5.D.D.D7.D.D.D7.2D2.D.D.D.D5.2D4.D3.D5.D.D.D.D$34.3D.3D5.3D.3D5.
-3D.3D6.D2.D.D.3D6.D2.3D.3D5.3D.3D$36.D.D.D7.D.D.D7.D.D.D6.D2.D.D3.
-D6.D4.D3.D7.D3.D$34.2D2.3D5.3D.3D5.3D.3D5.3D.3D.3D5.3D.3D.3D5.3D.
-3D10$49.2A$49.A.A$49.A22$73.2A$73.A.A$73.A22$97.2A$97.A.A$97.A25$
-125.A$124.2A$124.A.A32$157.3A$157.A$158.A22$183.A$182.2A$182.A.A!
+x = 83, y = 59, rule = LifeHistory
+13.3A17$2A$A.A$.A64.3A2$17.A6.2A38.A5.A$16.A.A5.2A38.A5.A$16.A.A
+45.A5.A$17.A$34.A31.3A$9.2A23.3A$8.A.A26.A$9.A26.2A5$25.2A5.2A$25.
+2A5.2A46.2A$79.A2.A$29.2A49.2A$24.A4.2A$5.2A16.A.A8.2A$5.2A16.A.A
+7.A2.A$24.A7.2A$33.2A3.A13.2A$34.A4.A12.2A$37.3A$49.2A5.2A$49.2A5.
+2A$12.A$6.2A3.A.A$5.A2.A2.2A$6.2A5$44.3E$44.E.D$44.DAD$44.D.D$44.
+3D!
 ```
+
+To use with oncoming.py:
+
+```
+--use-gun-rle='x = 83, y = 50, rule = B3/S23
+13b3o17$2o$obo$bo64b3o2$17bo6b2o38bo5bo$16bobo5b2o38bo5bo$16bobo45bo5b
+o$17bo$34bo31b3o$9b2o23b3o$8bobo26bo$9bo26b2o5$25b2o5b2o$25b2o5b2o46b
+2o$79bo2bo$29b2o49b2o$24bo4b2o$5b2o16bobo8b2o$5b2o16bobo7bo2bo$24bo7b
+2o$33b2o3bo13b2o$34bo4bo12b2o$37b3o$49b2o5b2o$49b2o5b2o$12bo$6b2o3bobo
+$5bo2bo2b2o$6b2o!'
+```
+
+From this reference, the recipe is:
+
+`98, 94, 167, 97, 125, 197, 126, 108, 122, 94, 102, 107, 109, 100, 109, 90, 90, 163, 116`
+
+## Remove construction arm
+
+Similarly, we can remove the construction arm completely.
+
+`98, 94, 167, 97, 125, 197, 113, 90, 178, 90, 97, 96, 93, 91, 90, 105, 92`
 
 ## Faraway items
 

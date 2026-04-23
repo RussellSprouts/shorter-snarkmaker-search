@@ -207,13 +207,12 @@ if args.use_gun_rle:
     glider_appears = gun
     # now, let's fast forward the gun until we see an output glider.
     for i in range(0, args.toolkit.period):
+        print('trying', i)
         if remove_gliders(glider_appears) != glider_appears:
             # there's a glider
             break
         glider_appears = glider_appears[1]
 
-    # let the glider advance a bit further away for clearance
-    glider_appears = glider_appears[args.toolkit.period // 2]
     glider_appears = glider_appears[(args.n_gun_gliders - 1) * args.toolkit.period]
 
     # and make the gliders canonical

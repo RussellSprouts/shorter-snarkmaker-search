@@ -1328,3 +1328,163 @@ Transferred 3 results as starting_points.
 
 $ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction2.sqlite -n 720 --partial-range=-1 --depth-range=0
 ```
+
+That ran for ~20 hours before crashing (probably OOM?). It made it to 522-687. There are results with population as low as 26.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction2.sqlite -o results/simkin-streams-of-destruction3.sqlite -q '1=1 order by population*lane_width*depth limit 32'
+
+Filtered 7 duplicate results
+Transferred 25 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction3.sqlite -n 512 --partial-range=-1 --depth-range=0
+
+...
+3371.79/s, 3256.64 avg/s, 31,289,316 done, 450-512 gens, 357,462/48,763,608 pending, 0x0, -infx1521998, infxinf A (0), inf overlap (0), 14 pop (1)
+```
+
+Hopefully we can find both a reduction to elbow and to a SPEBOE.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction3.sqlite -o results/simkin-streams-of-destruction4.sqlite -q '1=1 order by population*lane_width limit 100'
+
+Transferred 100 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction4.sqlite -n 450 --partial-range=-1 --depth-range=0
+
+...
+319.49/s, 2103.49 avg/s, 6,905,892 done, 450-450 gens, 716/716 pending, 0x0, -infx399675, infxinf A (0), inf overlap (0), 7 pop (2)
+```
+
+This found many results which leave only two items. Let's try a large range of items to find cleanups.
+
+```
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction4.sqlite -o results/simkin-streams-of-destruction5.sqlite \
+  -q '1=1 order by population*lane_width limit 1000' \
+  -q '1=1 order by population limit 1000' \
+  -q '1=1 order by lane_width limit 1000' \
+  -q '1=1 order by depth limit 1000' \
+  -q '1=1 order by depth*lane_width limit 1000'
+
+Filtered 478 duplicate results
+Transferred 2587 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction5.sqlite -n 255 --partial-range=-1 --depth-range=0
+
+2247.65/s, 4418.46 avg/s, 1,283,173 done, 253-255 gens, 327/738 pending, 0x0, -infx185649, infxinf A (0), inf overlap (0), 6 pop (11)
+```
+
+This didn't find any better results. Let's try expanding the search a few steps back:
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction2.sqlite -o results/simkin-streams-of-destruction3-try2.sqlite -q '1=1 order by population*lane_width*depth limit 1000'
+
+Filtered 334 duplicate results
+Transferred 666 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction3-try2.sqlite -n 450 --partial-range=-1 --depth-range=0
+
+...
+5318.53/s, 3527.44 avg/s, 25,397,921 done, 334-450 gens, 458,289/211,336,384 pending, 0x0, -infx1969851, infxinf A (0), inf overlap (0), 12 pop (1)
+```
+
+That found better results than the first time, let's try one more round of the same:
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction3-try2.sqlite -o results/simkin-streams-of-destruction4-try2.sqlite -q '1=1 order by population*lane_width*depth limit 1000'
+
+Filtered 291 duplicate results
+Transferred 709 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction4-try2.sqlite -n 450 --partial-range=-1 --depth-range=0
+
+...
+1769.73/s, 4235.15 avg/s, 53,586,413 done, 396-450 gens, 1,025,200/80,100,084 pending, 0x0, -infx2963805, infxinf A (0), inf overlap (0), 6 pop (6)
+```
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction4-try2.sqlite -o results/simkin-streams-of-destruction5-try2.sqlite -q '1=1 order by population*lane_width*depth limit 1000'
+
+Filtered 170 duplicate results
+Transferred 830 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction5-try2.sqlite -n 255 --partial-range=-1 --depth-range=0
+```
+
+This didn't find any better results, which didn't make sense, because I know that some of the 2 blinker results would become population 3 with a single follow-up glider. Turns out my code was rejecting anything with 0 or 1 components. I was still able to search for results with 55 population (for pi explosion ash), but none were due to SPEBOEs.
+
+Now that that's fixed, let's try running the search again.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction2.sqlite -o results/simkin-streams-of-destruction3-try3.sqlite -q '1=1 order by population*lane_width*depth limit 1000'
+
+Filtered 334 duplicate results
+Transferred 666 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction3-try3.sqlite -n 450 --partial-range=-1 --depth-range=0
+
+...
+2309.53/s, 2568.73 avg/s, 117,564,306 done, 403-450 gens, 857,664/123,684,423 pending, 0x0, -infx8631980, infxinf A (0), inf overlap (0), 11 pop (6)
+```
+
+That didn't find any results with zero or one objects, but let's do one more round and hopefully find both reductions we're looking for.
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction3-try3.sqlite -o results/simkin-streams-of-destruction4-try3.sqlite -q '1=1 order by population*abs(offset_block_lane)*depth limit 1000'
+
+Filtered 319 duplicate results
+Transferred 681 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction4-try3.sqlite -n 450 --partial-range=-1 --depth-range=0
+```
+
+This crashed after a minute due to "list index out of range" -- that's due to result with one item. Let's fix the bug (for real) and re-run.
+
+After searching to 372-450, there are results with a single blinker. One of them could be removed with 3 gliders (blinker -> pond -> block -> nothing), but let's keep looking for a better solution.
+
+There are 10k unique patterns with a population of 55, so that's probably not a viable way to search for pi explosions. Instead, let's see if we can calculate what the digest should be.
+
+```python
+from lifetree import lt
+from db import digest_to_signed
+pi = lt.pattern('3o$bbo$3o')
+
+print(pi[512].rle_string())
+
+print(
+  digest_to_signed(pi[512].digest()),
+  digest_to_signed(pi[513].digest()),
+  digest_to_signed(pi('swap_xy')[512].digest()),
+  digest_to_signed(pi('swap_xy')[513].digest())
+) # -3443148232012422141, -8488739081659944848, -5723354449140285033,1372242107773586727
+```
+
+simkin-streams-of-destruction5-try2.sqlite has 3 results which match these digests, so they seem to be correct! However, those results all have pi explosion ash due to reaching this state:
+
+```
+x = 20, y = 25, rule = B3/S23
+3bo$b2ob2o3bo$o5bobobo$o5bo4bo$3o4bo2bo7bo$3bo3b3o7b2o$4b2o3bo7bobo$7b
+2o$7bo2bo$10b3o$7bo2bo$8bo$7b2o2$6b2o5bo$12bo2bo$3bob2o$4b2o11b2o$13bo
+bo$14bo3$14bobo$14bobo$14b3o!
+```
+
+```bash
+$ uv run snark.py setup-next-search -i results/simkin-streams-of-destruction4-try3.sqlite -o results/simkin-streams-of-destruction5-try3.sqlite -q '1=1 order by population*abs(offset_block_lane)*depth limit 1000'
+
+Filtered 230 duplicate results
+Transferred 770 results as starting_points.
+
+$ uv run snark.py optimize -r results/simkin-stages.sqlite -o results/simkin-streams-of-destruction5-try3.sqlite -n 450 --partial-range=-1 --depth-range=0
+
+...
+2424.16/s, 2769.97 avg/s, 1,749,438 done, 387-450 gens, 133,632/92,820,487 pending, 0x0, -infx115495, infxinf A (0), inf overlap (0), 4 pop (1)
+```
+
+This found both of the goals!
+
+Deleting the gun:
+007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA1837465726F705D7F6266726B9D5A5A5A5B5BF3718B6C5F7F7963FE7B905EDA94E26F77645F5B8AC9DDD88A7D5EF0F0F0605EA7617DC5715AB25A61605D5B5A695C
+
+Reducing to pi block:
+007E6664C35A5B5F62695A658D5E9F5C92635A988B905CA1837465726F705D7F6266726B9D5A5A5A5B5BF3718B6C5F7F7963FE7B905EDA94E26F77645F5B8AC9DDD88A7D5EF0F0F0605EA7617DC57E6C7A5E666B6D646D5A5AA374
+
