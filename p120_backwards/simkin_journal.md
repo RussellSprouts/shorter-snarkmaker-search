@@ -12,7 +12,7 @@ x = 33, y = 29, rule = B3/S23
 ```
 
 ```bash
-pslmake/pslmake.py -i single-channel-toolit/snark-maker/p120_backwards/simkin-seed.rle --xl -w 1000
+pslmake/pslmake.py -i single-channel-toolit/snark-maker/p120_backwards/simkin-seed.rle
 ```
 
 pslmake gives a 43 glider recipe, including the final glider that activates the gun. See simkin-seed-slow-salvo.rle. That final glider is important, because the last glider in the recipe defines our single channel lane as well.

@@ -4,6 +4,7 @@ import argparse
 import re
 import itertools
 import functools
+import pathlib
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -95,6 +96,11 @@ argparser.add_argument(
     '--use-gun-rle',
     type=str,
     help="Uses the rle as the gun"
+)
+argparser.add_argument(
+    '--extract-recipes',
+    type=pathlib.Path,
+    help="Extracts the recipes from the given file. Outputs a JSON."
 )
 
 args = argparser.parse_args()
@@ -234,6 +240,64 @@ if args.use_gun_rle:
     (x, y, _, _) = rect
     fake_gun = glider_appears(fx - x, fy - y)
 
+
+if args.extract_recipes:
+    def parse_object(obj):
+        m = re.match(r"^'([\w ]+)((?:\([^)]*\))*)'$", obj.strip())
+        if not m:
+            raise SyntaxError(f"Invalid object: {obj}")
+        name = m.group(1)
+        info = m.group(2)
+        return {
+            'name': name,
+            'info': info
+        }
+
+    gun_glider_names = set()
+    for i in range(0, args.n_gun_gliders):
+        gun_glider_names.add(f"g{i}")
+
+    def parse_objects(objs):
+        results = []
+        gun_gliders = set()
+        for o in re.split(r"('[^']*')", objs):
+            o = o.strip()
+            if not o or o == ',':
+                continue
+            obj = parse_object(o)
+            if obj['name'] in gun_glider_names:
+                gun_gliders.add(obj['name'])
+            else:
+                results.append(obj)        
+
+        for i in range(0, args.n_gun_gliders):
+            if not f"g{i}" in gun_gliders:
+                break
+
+        consumed = args.n_gun_gliders - i
+        if i != len(gun_gliders):
+            results.append('!skipped glider')
+        if i == 0:
+            results.append('!consumed all')
+
+        return {
+            'consumed': consumed,
+            'objects': results
+        }
+    with open(args.extract_recipes) as results_file:
+        for line in results_file:
+            m = re.match(
+                r"""^\((\d+(?:, \d+)*,?)\)\s*\[('[^']*'(?:, '[^']*')*)?\]$""",
+                line.strip()
+            )
+            if not m:
+                raise SyntaxError(f"Invalid line: {line}")
+            stream = tuple(map(int, filter(bool, m.group(1).split(','))))
+            info = parse_objects(m.group(2) or '')
+            if info['consumed'] < 10 and len(info['objects']) == 1:
+                print(stream, info)
+
+    sys.exit(0)
 
 if args.print_rle:
     green_patt = lt.pattern('')

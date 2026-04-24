@@ -10,12 +10,12 @@ There are 8 unique collisions that happen depending on the timing of the recipe 
 - 3: pond on gun side
 - 4: delete
 - 5: pond on recipe side
-- 6: forwards kickback -- 180 degree glider towards the recipe gliders
+- 6: "kickforward" -- 180 degree glider towards the recipe gliders
 - 7: block on recipe side
 
 The recipes start with a number showing the mod 8 timing they start on.
 
-The kickback gliders will delete the next glider on that lane. This gives the very useful `2, (90)` recipe, which deletes two gun gliders, allowing you to push forward large amounts with just one glider.
+The kickback glider will delete the next glider on that lane. This gives the very useful `2, (90)` recipe, which deletes two gun gliders, allowing you to push forward large amounts with just one glider.
 
 The raw data for most combinations of 4 gliders is available at <https://drive.google.com/file/d/1eZvUXMR2_LEaEr9ZYgbiJfwE6yULxSHp/view?usp=sharing> (40Mb download, 500Mb unzipped). I have excluded results which had gliders in multiple directions and results with a large cloud of ash (200+ characters on the line).
 
@@ -1682,3 +1682,24 @@ Single items placed at least 20 hd from the lane.
 (7, 196, 96, 131) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'toad(l-5,d5)']
 (7, 196, 96, 134) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'toad(l-5,d5)']
 (7, 196, 96, 136) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'toad(l-5,d5)']
+
+## Kickforward recipes
+
+6, 90: delete
+6, 91: octomino
+6, 92: honeyfarm
+6, 93: block
+6: 94: honeyfarm
+6: 95: octomino
+6: 97: delete
+
+6; 91-95,99-103,107-111,115-119,123-127,131-135,139-143,147-151,155-159,163-167,171-175,179-183,187-191,195-199,203-207,211-215,219-223,227-231,235-239,243-247,251-
+
+♝⬃⓪: (6, 94, 102, 137) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d45)(ph2)(♝⬃⓪)']
+♗⬀①: (6, 93, 250, 103) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d22)(ph1)(♗⬀①)']
+♝⬃①: (6, 92, 109, 91) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d31)(ph1)(♝⬃①)']
+♗⬀⓪: (6, 93, 234, 191) ['g0', 'g1', 'g2', 'g3', 'glider(d10)(ph2)(♗⬀⓪)']
+♗⬃⓪: (6, 93, 235, 146) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'glider(d8)(ph2)(♗⬃⓪)']
+♝⬃⓪: (6, 94, 102, 137) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d45)(ph2)(♝⬃⓪)']
+♗⬃①: (6, 92, 105, 134) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'glider(d28)(ph3)(♗⬃①)']
+♝⬃①: (6, 92, 109, 91) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d31)(ph1)(♝⬃①)']
