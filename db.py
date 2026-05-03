@@ -88,6 +88,7 @@ class SavedResult:
     depth: int
     population: int
     flipped_offset_block: int
+    target_rle: str
 
     full_intermediate: int
     full_intermediate_depth_separation: int
@@ -125,6 +126,7 @@ class SavedResult:
             depth=row["depth"] if "depth" in keys else row["max_depth"],
             population=row["population"],
             flipped_offset_block=row["flipped_offset_block"],
+            target_rle=row["target_rle"],
             full_intermediate=row["full_intermediate"],
             full_intermediate_depth_separation=row[
                 "full_intermediate_depth_separation"
@@ -457,6 +459,7 @@ class ProcessingDatabase:
                 sp.stream as sp_stream,
                 sp.follow_up_gen_limit as sp_follow_up_gen_limit,
                 sp.max_depth as sp_max_depth,
+                sp.target_rle as target_rle,
 
                 CAST(sp.stream || r.stream AS BLOB) as full_stream
             FROM results r

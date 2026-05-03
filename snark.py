@@ -329,9 +329,7 @@ def view_results(input_results_db, show_completion):
                         else None
                     )
                     stream = starting_point.stream + result.stream
-                    block = (
-                        PI_BLOCKS[1] if result.flipped_offset_block else PI_BLOCKS[0]
-                    )
+                    block = offset_based_on_glider(lt.pattern(result.target_rle))
 
                     if full_intermediate:
                         evaluated_pattern = (single_channel_stream(stream) + block)[
