@@ -158,6 +158,7 @@ Gliders going towards the gun.
 | 14⬁①  | 5, 144, 148, 140, (319)         |
 | 15⬁⓪  | 5, 135, 248, 249, (90)          |
 | 15⬁①  | 5, 144, 180, 116, (227)         |
+| 18⬁①  | 5, 151, 199, 210, 181, (148)    |
 | 20⬁⓪  | 3, 219, 229, 127, (298)         |
 | 21⬁①  | 7, 164, 100, 117, (198)         |
 | 22⬁⓪  | 3, 105, 150, 117, (90)          |
@@ -305,6 +306,46 @@ Blocks the gun stream with a boat-bit reaction, so you don't have to keep sendin
 gliders during a long wait. Minimum time is 3, 1073, (90) ~ 1166. Compare to sending 2, 240, 240, 240, 240,... (90) to keep the stream in the same place.
 
 (cap) 3,174,138, (uncap) 657+240*n,104,(90)
+
+## Seed to cap/uncap stream -- "checkpoint"
+
+Create a seed that will cap the gun glider stream when you later send a zero degree glider on lane 18. This lets you set a checkpoint far upstream that you can quickly jump to later.
+
+### Build an edgy eater seed
+
+- `5, 144, 165, 125,(112)2,(90)80+3, 225, 90, 107,(90)112+7, 156, 96, 104,(90)`
+- (i.e., `5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, (90)`)
+
+### Trigger the seed immediately
+
+- `5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, 210, 151, 199, 210, 181, (148)`
+
+No gun gliders will escape the eater.
+
+### Trigger the seed with a delay
+
+- `85 (mod 120), 151, 199, 210, 181, (148)`
+
+E.g.,
+
+- `5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, 290 + (A*120), 151, 199, 210, 181`
+
+where `A >= 0`. This will allow `A+1` gun gliders to escape before blocking off the stream.
+
+### Convert the last gun gliders to an elbow
+
+You can use the last gliders that escape from the eater to create a SPEBOE elbow:
+
+- 3 gun gliders, 3 recipe gliders: `1, 109, 125, (90)`
+- 5 gun gliders, 2 recipe gliders: `3, 230, (255)`
+
+### Uncap stream
+
+- 110 (mod 120), (90)
+
+E.g., `5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, 210, 151, 199, 210, 181, 204`
+
+Sending a glider at 110 (mod 120) will cleanly remove the eater.
 
 ## LWSS
 
@@ -1703,3 +1744,39 @@ Single items placed at least 20 hd from the lane.
 ♝⬃⓪: (6, 94, 102, 137) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d45)(ph2)(♝⬃⓪)']
 ♗⬃①: (6, 92, 105, 134) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'glider(d28)(ph3)(♗⬃①)']
 ♝⬃①: (6, 92, 109, 91) ['g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'glider(d31)(ph1)(♝⬃①)']
+
+3, 225, 207, 115;3, 219, 220, 156;5, 144, 103, 148;3, 231, 97, 107;
+
+55 (3, 225, 207, 115) ['barge(l16,d26)', 'g0', 'g1', 'g2']
+60 (3, 219, 220, 156) ['barge(l12,d0)', 'g0', 'g1', 'g2', 'g3']
+98 (5, 144, 103, 148) ['barge(l18,d4)', 'beehive(l-10,d5)', 'boat(l18,d-14)', 'g0', 'g1', 'g2', 'g3']
+108 (3, 231, 97, 107) ['barge(l20,d18)', 'block(l14,d-6)', 'block(l20,d-18)', 'g0', 'g1', 'g2', 'loaf(l23,d-3)']
+112 (3, 123, 102, 223) ['barge(l12,d20)', 'beehive(l-12,d-9)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'loaf(l-2,d-20)']
+112 (3, 123, 104, 221) ['barge(l12,d20)', 'beehive(l-12,d-9)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'loaf(l-2,d-20)']
+112 (3, 123, 106, 219) ['barge(l12,d20)', 'beehive(l-12,d-9)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'loaf(l-2,d-20)']
+112 (3, 123, 111, 214) ['barge(l12,d20)', 'beehive(l-12,d-9)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'loaf(l-2,d-20)']
+112 (3, 147, 185, 116) ['barge(l13,d19)', 'beehive(l-12,d1)', 'g0', 'g1', 'g2', 'loaf(l-4,d-10)', 'ship(l-11,d-15)']
+112 (3, 225, 176, 198) ['barge(l20,d12)', 'blinker(l18,d34)', 'blinker(l20,d34)', 'boat(l12,d24)', 'g0', 'g1', 'g2']
+112 (3, 94, 138, 107) ['barge(l20,d24)', 'block(l14,d0)', 'block(l20,d-12)', 'g0', 'g1', 'g2', 'g3', 'loaf(l23,d3)']
+113 (3, 101, 136, 119) ['barge(l16,d4)', 'beehive(l-23,d-2)', 'beehive(l14,d-9)', 'block(l-5,d17)', 'g0', 'g1', 'g2']
+116 (5, 148, 96, 169) ['barge(l22,d-28)', 'blinker(l22,d-20)', 'blinker(l24,d-20)', 'block(l24,d-38)', 'g0', 'g1', 'g2']
+120 (7, 180, 177, 93) ['barge(l21,d17)', 'barge(l21,d7)', 'block(l-1,d23)', 'block(l-11,d19)', 'g0', 'g1', 'g2', 'g3', 'g4']
+125 (7, 144, 220, 107) ['barge(l20,d28)', 'block(l-18,d12)', 'block(l14,d4)', 'block(l20,d-8)', 'g0', 'g1', 'g2', 'loaf(l23,d7)']
+
+3, 225, 207, 115;
+3, 219, 220, 156;
+5, 144, 103, 148;
+3, 231, 97, 107;
+3, 123, 102, 223;
+3, 123, 104, 221;
+3, 123, 106, 219;
+3, 123, 111, 214;
+3, 147, 185, 116;
+3, 225, 176, 198;
+3, 94, 138, 107;
+3, 101, 136, 119;
+5, 148, 96, 169;
+7, 180, 177, 93;
+7, 144, 220, 107;
+
+
