@@ -321,15 +321,22 @@ if args.check_for_shutoff:
     for i, r in enumerate(recipes):
         gliders_int = recipe_stream_to_delays(r)
         original = fake_gun + single_channel_stream(gliders_int)
-        extended = mk_fake_gun(args.n_gun_gliders + 120) + single_channel_stream(gliders_int)
+        extended_fake_gun = mk_fake_gun(args.n_gun_gliders + 120)
+        extended = extended_fake_gun + single_channel_stream(gliders_int)
 
         original = original[simulate_gens]
-        extended = extended[simulate_gens + 120 * 120 * 4]
+
+        extended_simulate_gens = simulate_gens + args.toolkit.period * 120 * 4
+        extended = extended[extended_simulate_gens]
+        # allow the first n+20 gliders to possibly escape, but the rest should be absorbed.
+        expected_gun_positions = mk_fake_gun(args.n_gun_gliders + 20)[extended_simulate_gens]
 
         if original == extended:
             print("Confirmed shutoff!")
             print(gliders_int)
-
+        elif (original - expected_gun_positions) == (extended - expected_gun_positions):
+            print("Possible shutoff with escaping gun gliders")
+            print(gliders_int)
 
     sys.exit(0)
 
