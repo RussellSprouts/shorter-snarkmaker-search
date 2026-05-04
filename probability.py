@@ -17,6 +17,8 @@ probabilities = {
     lt.pattern("bo$obo$bo!").octodigest(): math.log(1 / 103),  # tub
     lt.pattern("b2o$o2bo$o2bo$b2o!").octodigest(): math.log(1 / 106),  # pond
     lt.pattern("2o$obo$2bo$2b2o!").octodigest(): math.log(1 / 6407),  # eater 1
+    lt.pattern("3.2A$3.A$4.3A$7.A$4.3A$3.A$3.4A$.2A3.A$A2.3A$2A.A$3.A$3.2A!").octodigest(): -100, # snark heart intermediate
+    lt.pattern("3.2A$4.A$2.A$2.5A$7.A$4.3A$3.A$3.4A$.2A3.A$A2.3A$2A.A$3.A$3.2A!").octodigest(): -1000, # snark heart
 }
 
 NEGATIVE_INFINITY = float('-inf')

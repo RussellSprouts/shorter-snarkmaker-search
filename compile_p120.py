@@ -64,7 +64,7 @@ def main():
 
         def hash_value(candidate):
             return (
-                candidate.n_emitted,
+                # candidate.n_emitted,
                 candidate.next_glider,
                 candidate.time,
                 candidate.so_far[-1].digest if candidate.so_far else 0
