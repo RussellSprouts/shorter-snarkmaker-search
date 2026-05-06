@@ -392,12 +392,13 @@ Sending a glider at 110 (mod 120) will cleanly remove the eater.
 
 These recipes send a pair of gliders. If the separation matches, you might be able to save time by using them.
 
-- 1, 92, 203, (617) glider(d-5)(ph0)(♝⬃①), glider(d-7)(ph2)(♝⬃⓪)
+### Well separated
+
+These recipes have the gliders spaced far apart, so are likely to work as replacements in slow salvos.
+
 - 1, 96, 224, 96, (150) - glider(d-16)(ph0)(♗⬃①), glider(d-6)(ph0)(♗⬃①)
 - 1, 96, 240, 96, (150) - glider(d-12)(ph0)(♗⬃①), glider(d-6)(ph0)(♗⬃①)
 - 3, 102, 136, 123, (162) - glider(d-1)(ph0)(♝⬀①), glider(d-5)(ph2)(♝⬀⓪)
-- 3, 105, 217, 182, (90) - glider(d-2)(ph0)(♗⬃⓪), glider(d12)(ph0)(♗⬃⓪)
-- 3, 160, 100, 118, (650) - glider(d-17)(ph0)(♝⬃⓪), glider(d-20)(ph0)(♗⬃①)
 - 3, 163, 250, 226, (413) - glider(d5)(ph0)(♝⬀①), glider(d7)(ph2)(♝⬀⓪)
 - 3, 165, 101, 103, (526) - glider(d-16)(ph0)(♗⬃①), glider(d12)(ph0)(♗⬃⓪)
 - 3, 196, 136, 211, (190) - glider(d-10)(ph0)(♗⬃⓪), glider(d-17)(ph0)(♝⬃⓪)
@@ -405,8 +406,6 @@ These recipes send a pair of gliders. If the separation matches, you might be ab
 - 3, 196, 147, 147, (171) - glider(d-10)(ph0)(♗⬃⓪), glider(d-8)(ph0)(♗⬃①)
 - 3, 196, 152, 108, (90) - glider(d-10)(ph0)(♗⬃⓪), glider(d-3)(ph0)(♝⬃①)
 - 3, 196, 171, 212, (90) - glider(d-10)(ph0)(♗⬃⓪), glider(d7)(ph2)(♝⬃⓪)
-- 3, 219, 220, 221, (101) - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
-- 3, 219, 220, 231, (90) - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
 - 5, 138, 119, 163, (336) - glider(d-1)(ph0)(♝⬃①), glider(d-10)(ph0)(♗⬃①)
 - 5, 138, 121, 219, (90)  - glider(d-1)(ph0)(♝⬃①), glider(d-3)(ph0)(♝⬃⓪)
 - 5, 138, 121, 221, (90) - glider(d-1)(ph0)(♝⬃①), glider(d-2)(ph2)(♗⬃⓪)
@@ -442,10 +441,20 @@ These recipes send a pair of gliders. If the separation matches, you might be ab
 - 5, 138, 241, 221, (90) - glider(d-1)(ph0)(♝⬃①), glider(d28)(ph2)(♗⬃⓪)
 - 5, 138, 249, 219, (90) - glider(d-1)(ph0)(♝⬃①), glider(d29)(ph0)(♝⬃⓪)
 - 5, 138, 249, 221, (90) - glider(d-1)(ph0)(♝⬃①), glider(d30)(ph2)(♗⬃⓪)
-- 5, 153, 196, 108, (119) - glider(d32)(ph0)(♗⬀①), glider(d7)(ph2)(♝⬀⓪)
 - 7, 140, 206, 126, (228) - glider(d6)(ph0)(♗⬃①), glider(d7)(ph2)(♝⬃⓪)
 - 7, 156, 222, 113, (486) - glider(d-1)(ph0)(♝⬀①), glider(d16)(ph0)(♗⬀⓪)
 - 7, 196, 196, 155, (403) - glider(d10)(ph0)(♗⬃⓪), glider(d3)(ph2)(♝⬃⓪)
+
+### Closely spaced
+
+These recipes are very closely spaced, so they are less likely to work as replacements in slow salvos. They might be considered tandem glider recipes.
+
+- 1, 92, 203, (617) glider(d-5)(ph0)(♝⬃①), glider(d-7)(ph2)(♝⬃⓪)
+- 3, 105, 217, 182, (90) - glider(d-2)(ph0)(♗⬃⓪), glider(d12)(ph0)(♗⬃⓪)
+- 3, 160, 100, 118, (650) - glider(d-17)(ph0)(♝⬃⓪), glider(d-20)(ph0)(♗⬃①)
+- 3, 219, 220, 221, (101) - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
+- 3, 219, 220, 231, (90) - glider(d-4)(ph0)(♗⬀①), glider(d-5)(ph0)(♝⬀⓪)
+- 5, 153, 196, 108, (119) - glider(d32)(ph0)(♗⬀①), glider(d7)(ph2)(♝⬀⓪)
 - 7, 196, 213, 103, (90) - glider(d-2)(ph0)(♗⬃⓪), glider(d15)(ph2)(♝⬃⓪)
 - 7, 228, 160, 100, (408) - glider(d11)(ph0)(♝⬃⓪), glider(d8)(ph0)(♗⬃①)
 - 7, 244, 160, 100, (408) - glider(d12)(ph0)(♗⬃①), glider(d15)(ph0)(♝⬃⓪)

@@ -72,8 +72,9 @@ class SubtreeDef:
 
 argparser.add_argument(
     '--subtree',
-    default='0-7',
+    default=[],
     type=SubtreeDef,
+    action="append",
     help="Search range. E.g. '1;90-255' to search the glider 1 followed by any glider in [90,255], or '1,3,5,7' to search the starting gliders 1,3,5 and 7. Use comma to separate at the same depth, then semicolon to separate depths. Ranges are inclusive.",
 )
 argparser.add_argument(
@@ -499,5 +500,8 @@ if __name__ == "__main__":
             for n in range(args.toolkit.min_spacing, args.max_delay + 1):
                 recurse(s + (n,), depth - 1)
 
-    for starting_point in itertools.product(*args.subtree.options):
-        recurse(starting_point, depth=args.depth - len(starting_point))
+    if not args.subtree:
+        args.subtree = [SubtreeDef('0-7')]
+    for subtree in args.subtree:
+        for starting_point in itertools.product(*subtree.options):
+            recurse(starting_point, depth=args.depth - len(starting_point))
