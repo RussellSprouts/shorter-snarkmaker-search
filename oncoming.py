@@ -106,7 +106,14 @@ argparser.add_argument(
 argparser.add_argument(
     '--to-apgluxe',
     action=argparse.BooleanOptionalAction,
-    default=False
+    default=False,
+    help="Just print out the rles, don't simulate anything."
+)
+argparser.add_argument(
+    '--only-gliders',
+    action=argparse.BooleanOptionalAction,
+    default=False,
+    help='Only process glider recipes'
 )
 
 args = argparser.parse_args()
@@ -393,6 +400,8 @@ if __name__ == "__main__":
     # Those are useful for pushing upstream, but won't act as elbows.
     valid_first_gliders = (1, 3, 5, 7)
 
+    reference = fake_gun[args.simulate_gens]
+
     def component_info(c, alt = False):
         if c == c[120]:
             # still life or oscillator
@@ -483,14 +492,29 @@ if __name__ == "__main__":
             # return
             pass
 
-        components = pattern_components(patt)
-        components1 = pattern_components(patt[1])
-
         infos = set()
-        for c in components:
-            infos.add(component_info(c, False))
-        for c in components1:
-            infos.add(component_info(c, True))
+
+        if args.only_gliders:
+            if patt.population % 5 or patt.population >= 5 + 5 * args.n_gun_gliders:
+                return
+            diff = patt - reference
+            if diff.population != 5:
+                return
+            if diff.centre() != diff[4].centre():
+                return
+            gli_info = component_info(diff)
+            if not gli_info.startswith('glider'):
+                return
+            for i in range(patt.population // 5 - 1):
+                infos.add(f'g{i}')
+            infos.add(gli_info)
+        else:
+            components = pattern_components(patt)
+            components1 = pattern_components(patt[1])
+            for c in components:
+                infos.add(component_info(c, False))
+            for c in components1:
+                infos.add(component_info(c, True))
 
         print(s, sorted(filter(lambda a: a is not None, infos)))
 
