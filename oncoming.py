@@ -400,7 +400,7 @@ if __name__ == "__main__":
     # Those are useful for pushing upstream, but won't act as elbows.
     valid_first_gliders = (1, 3, 5, 7)
 
-    reference = fake_gun[args.simulate_gens]
+    reference = fake_gun[simulate_gens]
 
     def component_info(c, alt = False):
         if c == c[120]:
