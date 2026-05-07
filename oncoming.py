@@ -103,6 +103,11 @@ argparser.add_argument(
     type=pathlib.Path,
     help="Extracts the recipes from the given file. Outputs a JSON."
 )
+argparser.add_argument(
+    '--to-apgluxe',
+    action=argparse.BooleanOptionalAction,
+    default=False
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -214,7 +219,6 @@ if args.use_gun_rle:
     glider_appears = gun
     # now, let's fast forward the gun until we see an output glider.
     for i in range(0, args.toolkit.period):
-        print('trying', i)
         if remove_gliders(glider_appears) != glider_appears:
             # there's a glider
             break
@@ -308,6 +312,7 @@ if args.print_rle:
         if not r.strip():
             continue
         gliders_int = recipe_stream_to_delays(r)
+        print(gliders_int)
         green_patt += fake_gun(200 * i, 0) + single_channel_stream(gliders_int)(200 * i, 0)
         red_patt += write_text(' '.join(map(str, gliders_int)))(200 * i, 0)
     print(write_life_history(green=green_patt, red=red_patt))
@@ -492,9 +497,11 @@ if __name__ == "__main__":
     def recurse(s, depth=0):
         patt = fake_gun + single_channel_stream(s)
 
-        patt_n = patt[simulate_gens]
-
-        evaluate(s, patt_n)
+        if not args.to_apgluxe:
+            patt_n = patt[simulate_gens]
+            evaluate(s, patt_n)
+        else:
+            print(patt.rle_string()[len('#CLL state-numbering golly\n'):])
 
         if depth > 0:
             for n in range(args.toolkit.min_spacing, args.max_delay + 1):

@@ -201,11 +201,11 @@ def setup_next_search(
         raise ValueError("Database already has results")
 
     results: Set[SavedResult] = set()
-    print(queries)
     if not queries:
         print("No queries given, transfering all results", file=sys.stdout)
         queries = ["1 = 1"]
-    for query in queries:
+    for i, query in enumerate(queries):
+        print(f"Running query {i+1}/{len(queries)}...", query)
         query = query[0]
         if not query.lower().startswith("select "):
             query = f"SELECT * FROM r LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
@@ -420,6 +420,7 @@ class OptimizeArgs:
     partial_progress_factor: float
     partial_range: Set[int]
     depth_range: list[int]
+    n_results_limit: int
 
 
 def abs_lane(x):
@@ -460,8 +461,10 @@ def score_pattern(
     original_components = set(
         shared_args.component_search.pattern_cache.id(c) for _, _, c in lanes
     )
-    depth = max(map(lambda c: c.depth, original_components), default=0)
+    depths = list(map(lambda c: c.depth, original_components))
+    depth = max(depths, default=0)
     max_depth = max(job.max_depth, depth)
+    far_depth = min(depths, default=0)
 
     depths_to_search = shared_args.depth_range
     if lanes:
@@ -642,6 +645,7 @@ def score_pattern(
         lane_width=abs_lane(lanes[-1][0]) if lanes else 0,  # next highest lane
         max_depth=max_depth,
         depth=depth,
+        far_depth=far_depth,
         population=end_pattern.population,
         flipped_offset_block=1 if recursed else 0,
         full_intermediate=(
@@ -704,6 +708,7 @@ def combine_score(
         lane_width=a.lane_width,
         max_depth=a.max_depth,
         depth=a.depth,
+        far_depth=a.far_depth,
         population=a.population,
         flipped_offset_block=a.flipped_offset_block,
         full_intermediate=a.full_intermediate if a_better else b.full_intermediate,
@@ -907,6 +912,7 @@ def optimize(
     n_processes: int,
     live_view_depth: float,
     depth_range: str,
+    n_results_limit: int
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -946,6 +952,7 @@ def optimize(
         partial_progress_factor=partial_progress_factor,
         partial_range=partial_range,
         depth_range=depth_range,
+        n_results_limit=n_results_limit,
     )
     queue_stats = output_db.queue_stats
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -983,16 +990,6 @@ def optimize(
                         elif r.partial_intermediate_log_prob == best_log_prob:
                             n_best_p += 1
                     if r.full_intermediate is not None:
-                        width = r.lane_width
-                        depth = r.depth - r.full_intermediate_non_overlapping_depth_separation
-
-                        if depth + width < best_area:
-                            best_area = depth + width
-                            best_area_str = f"{width}x{depth} A"
-                            n_best_area = 1
-                        elif depth + width == best_area:
-                            n_best_area += 1
-
                         if (
                             r.full_intermediate_overlapping_population
                             < best_overlapping_population
@@ -1015,6 +1012,16 @@ def optimize(
                         elif progress > best_full_intermediate:
                             n_best = 1
                             best_full_intermediate = progress
+
+                width = r.lane_width
+                depth = r.depth - r.far_depth
+
+                if depth + width < best_area:
+                    best_area = depth + width
+                    best_area_str = f"{width}x{depth} A"
+                    n_best_area = 1
+                elif depth + width == best_area:
+                    n_best_area += 1
 
                 if r.population < lowest_population:
                     lowest_population = r.population
@@ -1137,6 +1144,7 @@ def autoshrink(
     partial_progress_factor: float,
     partial_range: str,
     live_view_depth: int,
+    n_results_limit: int
 ):
     if full_or_partial not in ("full", "partial"):
         raise ValueError("--full-or-partial should be 'full' or 'partial'")
@@ -1146,11 +1154,11 @@ def autoshrink(
 
     cond = f"({' or '.join(f'({q[0]})' for q in queries)})"
     a = "population"
-    b = f"(1.0*max({full_or_partial}_intermediate_overlapping_population, 1) / max({full_or_partial}_intermediate_non_overlapping_depth_separation, 1))"
+    b = f"{full_or_partial}_intermediate_overlapping_population"
     c = "(lane_width*sqrt(lane_width))"
-    d = f"(depth - {full_or_partial}_intermediate_non_overlapping_depth_separation)"
-    e = f"(depth - {full_or_partial}_intermediate_non_overlapping_depth_separation + lane_width)"
-    tiebreak = f"({a} * {b} * {c} * {d})"
+    d = f"(CASE WHEN {full_or_partial}_intermediate IS NOT NULL THEN depth - far_depth - {full_or_partial}_intermediate_non_overlapping_depth_separation ELSE depth - far_depth END)"
+    e = f"({d} + lane_width)"
+    tiebreak = f"({a} + {b} + {c} + {d})"
 
     measures = (a, b, c, d, e)
 
@@ -1159,17 +1167,17 @@ def autoshrink(
         for combo in itertools.combinations(measures, n):
             candidate_queries.append(
                 [
-                    f"select * from r where {cond} order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                    f"select * from r where {cond} order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
                 ]
             )
             candidate_queries.append(
                 [
-                    f"select * from r where {cond} group by digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                    f"select * from r where {cond} group by digest order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
                 ]
             )
             candidate_queries.append(
                 [
-                    f"select * from r where {cond} group by {full_or_partial}_intermediate_overlapping_digest order by {' * '.join(combo)}, {tiebreak} limit {candidates}"
+                    f"select * from r where {cond} group by {full_or_partial}_intermediate_overlapping_digest order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
                 ]
             )
 
@@ -1204,6 +1212,7 @@ def autoshrink(
             partial_progress_factor=partial_progress_factor,
             partial_range=partial_range,
             live_view_depth=live_view_depth,
+            n_results_limit=n_results_limit,
         )
 
 
@@ -1579,6 +1588,13 @@ if __name__ == "__main__":
         default=float("inf"),
         help="The max depth result to consider for results in the live view.",
     )
+    parser_autoshrink.add_argument(
+        "--n-results-limit",
+        type=int,
+        default=float("inf"),
+        help="The maximum number of results to collect before moving to the next stage.",
+    )
+
 
     parser_custom_starting_point = subcommand.add_parser(
         "custom-starting-point",
@@ -1629,6 +1645,7 @@ if __name__ == "__main__":
                 n_processes=args.n_processes,
                 live_view_depth=args.live_view_depth,
                 depth_range=args.depth_range,
+                n_results_limit=float('inf'),
             )
         case "view-results":
             print("Show completion", args.show_completion)
@@ -1674,6 +1691,7 @@ if __name__ == "__main__":
                 partial_progress_factor=args.partial_progress_factor,
                 partial_range=args.partial_range,
                 live_view_depth=args.live_view_depth,
+                n_results_limit=args.n_results_limit,
             )
         case "custom-starting-point":
             custom_starting_point(

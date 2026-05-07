@@ -86,6 +86,7 @@ class SavedResult:
     lane_width: int
     max_depth: int
     depth: int
+    far_depth: int
     population: int
     flipped_offset_block: int
     target_rle: str
@@ -124,6 +125,7 @@ class SavedResult:
             lane_width=row["lane_width"],
             max_depth=row["max_depth"],
             depth=row["depth"] if "depth" in keys else row["max_depth"],
+            far_depth=row["far_depth"] if "far_depth" in keys else 0,
             population=row["population"],
             flipped_offset_block=row["flipped_offset_block"],
             target_rle=row["target_rle"],
@@ -189,6 +191,7 @@ class SavedResult:
             f"lane_width={self.lane_width}, "
             f"max_depth={self.max_depth}, "
             f"depth={self.depth}, "
+            f"far_depth={self.far_depth} "
             f"population={self.population}, "
             f"flipped_offset_block={self.flipped_offset_block}, "
             f"full_intermediate={self.full_intermediate}, "
@@ -221,6 +224,7 @@ class StreamResult:
     lane_width: int
     max_depth: int
     depth: int
+    far_depth: int
     population: int
     flipped_offset_block: int
 
@@ -356,6 +360,7 @@ class ProcessingDatabase:
                 lane_width INTEGER,
                 max_depth INTEGER,
                 depth INTEGER,
+                far_depth INTEGER,
                 population INTEGER,
                 flipped_offset_block INTEGER,
                 full_intermediate INTEGER REFERENCES recipe_intermediates(id),
@@ -405,6 +410,14 @@ class ProcessingDatabase:
         except:
             pass
 
+        try:
+            self.conn.execute("""
+            ALTER TABLE results ADD COLUMN far_depth INTEGER;
+            """)
+            self.conn.commit()
+        except:
+            pass
+
         # Create a view with all the relevant joins for ease of
         # querying.
         self.conn.execute("""
@@ -423,6 +436,7 @@ class ProcessingDatabase:
                 r.lane_width as lane_width,
                 r.max_depth as max_depth,
                 r.depth as depth,
+                r.far_depth as far_depth,
                 r.population as population,
                 r.flipped_offset_block as flipped_offset_block,
                 r.full_intermediate as full_intermediate,
@@ -476,6 +490,12 @@ class ProcessingDatabase:
 
         self.queue_stats = self.fetch_queue_stats()
         self.n_queued = sum(self.queue_stats.values())
+        
+        self.n_results = self.fetch_n_results()
+
+    def fetch_n_results(self):
+        r = self.conn.execute("""SELECT count(*) FROM results;""").fetchone()
+        return r[0]
 
     def reload_recipe_intermediates(self):
         self.recipe_intermediates = {
@@ -551,13 +571,14 @@ class ProcessingDatabase:
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
         self.n_queued -= len(results)
+        self.n_results += sum(map(lambda a: len(a[1].valid_children), results))
         for job, _ in results:
             self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) - 1
 
         self.conn.executemany(
             """INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_non_overlapping_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_non_overlapping_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, far_depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_non_overlapping_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_non_overlapping_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -570,6 +591,7 @@ class ProcessingDatabase:
                     child.lane_width,
                     child.max_depth,
                     child.depth,
+                    child.far_depth,
                     child.population,
                     child.flipped_offset_block,
                     child.full_intermediate,

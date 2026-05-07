@@ -25,9 +25,6 @@ def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
             shared_args.component_search.add_recipe(recipe)
             n_patterns += 1
 
-    print("Intermediate patterns:", n_patterns)
-
-
     while True:
         id = None
         try:
@@ -178,7 +175,13 @@ class MultiprocessSearch:
                     (args, result)
                 ])
                 yield (args, result, new_jobs)
+
+                if self.db.n_results >= self.shared_args.n_results_limit:
+                    print("Maximum number of results reached. Closing.")
+                    return
+
                 send_tasks()
+
 
 
     def queue(self, new_jobs):
