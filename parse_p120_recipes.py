@@ -110,7 +110,7 @@ class Expr:
         elif self.op == 'mod':
             return self.a.eval() % self.b.eval()
 
-def parse_ast(input):
+def parse_ast(input, macros):
     tokens = tokenize(input)
 
     def next(n):
@@ -154,8 +154,10 @@ def parse_ast(input):
             )
         return val
 
-    def expand_macro():
-        pass
+    def expand_macro(text):
+        if text not in macros:
+            raise SyntaxError(f'Unknown macro {text}')
+        return parse_ast(macros[text], macros)
 
     def parse_segment():
         match next(1):
@@ -163,7 +165,7 @@ def parse_ast(input):
                 expr = parse_expression()
                 return Segment(wait=expr)
             case (Token(type='identifier', text=text),):
-                expand_macro(text)
+                return expand_macro(text)
             case (Token(type='minimum_follow', match=m),):
                 return Segment(minimum=int(m[1]))
             case (Token(type='set'),):
@@ -184,14 +186,26 @@ def parse_ast(input):
                 return Segment(delay=expr,mod=mod)
 
     def parse_segments():
-        segments = [parse_segment()]
+        segments = []
+        s = parse_segment()
+        match s:
+            case Segment():
+                segments.append(s)
+            case _:
+                segments.extend(s)
         while tokens:
             match tokens[0:1]:
                 case (Token(type='comma'),):
                     # remove optional commas
                     tokens.pop(0)
             if tokens:
-                segments.append(parse_segment())
+                s = parse_segment()
+                print(s)
+                match s:
+                    case Segment():
+                        segments.append(s)
+                    case _:
+                        segments.extend(s)
         return segments
 
     return parse_segments()
@@ -201,8 +215,8 @@ class Parse:
     delays: list[int]
     start_mode: str
 
-def parse_p120_recipe(input):
-    ast = parse_ast(input)
+def parse_p120_recipe(input, macros):
+    ast = parse_ast(input, macros)
     mode = 'p120'
     start_mode = mode
     set_start_mode = False

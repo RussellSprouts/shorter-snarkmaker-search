@@ -23,6 +23,7 @@ class ToolkitDef:
     min_spacing: int
     lane_offset: int
     period: int
+    name: str
 
     def __init__(self, str):
         m = re.match(r"sc(\d+)b(\d+)p(\d+)", str)
@@ -33,6 +34,7 @@ class ToolkitDef:
         self.min_spacing = int(m.group(1))
         self.lane_offset = int(m.group(2))
         self.period = int(m.group(3))
+        self.name = str
 
 
 argparser.add_argument(
@@ -315,13 +317,18 @@ if args.extract_recipes:
     sys.exit(0)
 
 if args.print_rle:
+    macros = {
+        'sc90b5p120': {
+            'construct_arm': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode p120, set 28 (mod 120), (90)'
+        }
+    }
     green_patt = lt.pattern("")
     red_patt = lt.pattern("")
     recipes = args.print_rle.split(";")
     for i, r in enumerate(recipes):
         if not r.strip():
             continue
-        parse = parse_p120_recipe(r)
+        parse = parse_p120_recipe(r, macros.get(args.toolkit.name, {}))
         gliders_int = parse.delays
         print(gliders_int)
         if parse.start_mode == "p120":
