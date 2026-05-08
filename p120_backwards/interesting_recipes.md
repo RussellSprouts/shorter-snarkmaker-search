@@ -224,6 +224,40 @@ Gliders going towards the recipe.
 - \*: The glider would crash into a follow-up glider.
 - \*\* The 180 kickback reaction
 
+### Partials
+
+- 9 (3, 165, 109, 160) ['blinker(l11,d-29)', 'blinker(l13,d-29)', 'glider(l20)(ph3)(♗⬂)', 'loaf(l21,d-27)']
+- 7 (3, 165, 109, 154) ['block(l13,d-1)', 'glider(l20)(ph3)(♗⬂)', 'loaf(l21,d-27)']
+- 5 (3, 96, 96, 157) ['glider(l21)(ph1)(♝⬂)', 'loaf(l-4,d-14)']
+- 11 (5, 142, 158, 111) ['blinker(l13,d-23)', 'blinker(l15,d-23)', 'blinker(l27,d-11)', 'blinker(l29,d-11)', 'glider(l21)(ph2)(♝⬂)']
+- 5 (3, 219, 131, 107) ['beehive(l26,d-11)', 'glider(l22)(ph2)(♗⬂)']
+- 7 (7, 238, 163, 140) ['beehive(l16,d-5)', 'block(l24,d24)', 'glider(l22)(ph3)(♗⬂)']
+- 11 (5, 169, 103, 142) ['beehive(l24,d-25)', 'block(l-4,d6)', 'block(l13,d7)', 'glider(l23)(ph0)(♝⬂)', 'loaf(l-4,d-26)']
+- 5 (5, 142, 129, 249) ['glider(l23)(ph1)(♝⬂)', 'loaf(l16,d-4)']
+- 7 (3, 105, 178, 156) ['beehive(l12,d3)', 'boat(l15,d-9)', 'glider(l24)(ph2)(♗⬂)']
+- 13 (1, 92, 158, 253) ['beehive(l-3,d22)', 'blinker(l16,d20)', 'blinker(l18,d20)', 'blinker(l21,d5)', 'blinker(l23,d5)', 'glider(l24)(ph1)(♗⬂)']
+- 13 (1, 92, 158, 253) ['beehive(l-3,d22)', 'blinker(l16,d20)', 'blinker(l18,d20)', 'blinker(l21,d5)', 'blinker(l23,d5)', 'glider(l24)(ph1)(♗⬂)']
+- 7 (7, 150, 163, 102) ['beehive(l21,d0)', 'block(l32,d14)', 'glider(l25)(ph0)(♝⬂)']
+- 7 (7, 190, 139, 246) ['beehive(l28,d-13)', 'glider(l25)(ph3)(♝⬂)', 'pond(l35,d3)']
+- 14 (3, 194, 138) ['beehive(l16,d-33)', 'beehive(l32,d-21)', 'blinker(l-12,d-16)', 'blinker(l-14,d-16)', 'blinker(l-6,d-16)', 'blinker(l-8,d-16)', 'glider(l26)(ph2)(♗⬂)']
+- 7 (5, 135, 224, 154) ['beehive(l24,d1)', 'block(l23,d-21)', 'glider(l26)(ph1)(♗⬂)']
+- 11 (1, 101, 169, 161) ['block(l-17,d-7)', 'block(l17,d-1)', 'block(l19,d-27)', 'boat(l20,d-14)', 'glider(l27)(ph2)(♝⬂)']
+- 7 (1, 101, 132, 126) ['block(l16,d14)', 'glider(l27)(ph1)(♝⬂)', 'ship(l17,d-5)']
+- 11 (1, 104, 100, 180) ['beehive(l21,d-22)', 'block(l14,d-34)', 'glider(l28)(ph2)(♗⬂)', 'loaf(l-10,d-2)', 'loaf(l-6,d-10)']
+- 11 (7, 139, 238, 105) ['block(l-4,d-8)', 'block(l20,d26)', 'block(l25,d-31)', 'boat(l19,d-15)', 'glider(l28)(ph1)(♗⬂)']
+- 15 (7, 136, 246, 184) ['beehive(l-5,d6)', 'beehive(l42,d-13)', 'blinker(l-3,d15)', 'blinker(l-5,d15)', 'block(l17,d-3)', 'boat(l46,d-6)', 'glider(l29)(ph0)(♝⬂)']
+- 5 (5, 142, 181, 115) ['beehive(l-11,d-30)', 'glider(l29)(ph3)(♝⬂)']
+- 13 (3, 208, 150, 116) ['beehive(l32,d19)', 'beehive(l33,d-10)', 'beehive(l49,d8)', 'blinker(l39,d-3)', 'blinker(l41,d-3)', 'glider(l30)(ph2)(♗⬂)']
+- 13 (3, 216, 96, 237) ['beehive(l-7,d-2)', 'blinker(l33,d3)', 'blinker(l35,d3)', 'block(l26,d-6)', 'block(l27,d1)', 'glider(l30)(ph1)(♗⬂)']
+- 9 (7, 186, 96, 130) ['block(l-3,d9)', 'block(l22,d2)', 'boat(l23,d11)', 'glider(l31)(ph0)(♝⬂)']
+- 9 (3, 212, 91, 116) ['block(l13,d-1)', 'block(l26,d-28)', 'glider(l31)(ph1)(♝⬂)', 'pond(l-4,d-2)']
+- 15 (3, 93, 113, 136) ['beehive(l42,d25)', 'blinker(l32,d18)', 'blinker(l34,d18)', 'block(l-2,d6)', 'block(l-9,d9)', 'boat(l23,d29)', 'glider(l32)(ph2)(♗⬂)']
+- 15 (5, 195, 229, 107) ['beehive(l24,d-25)', 'blinker(l15,d-17)', 'blinker(l17,d-17)', 'blinker(l21,d-17)', 'blinker(l23,d-17)', 'block(l44,d-2)', 'glider(l32)(ph1)(♗⬂)']
+- 11 (7, 164, 139, 209) ['beehive(l19,d6)', 'block(l-13,d11)', 'block(l24,d0)', 'boat(l21,d-7)', 'glider(l33)(ph2)(♝⬂)']
+- 13 (5, 185, 194, 101) ['beehive(l15,d-18)', 'beehive(l16,d-9)', 'beehive(l24,d-9)', 'block(l24,d-26)', 'glider(l33)(ph1)(♝⬂)', 'loaf(l13,d-43)']
+- 15 (5, 134, 136, 104) ['blinker(l-6,d4)', 'blinker(l-8,d4)', 'block(l35,d-1)', 'block(l41,d5)', 'block(l46,d10)', 'boat(l-2,d-2)', 'glider(l34)(ph0)(♗⬂)']
+- 
+
 ## Offset blocks NE
 
 - 3, 211, 122, 174, (90) {total: 507} - block(l32,d10)
@@ -463,7 +497,7 @@ These recipes are very closely spaced, so they are less likely to work as replac
 
 Builds construction arm, converting a pi-explodable block into a simkin gun on the right lane.
 
-`0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125`
+`mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode p120, set 28 (mod 120), (90)`
 
 ## Construction arm to pi block
 
@@ -492,7 +526,7 @@ $5bo2bo2b2o$6b2o!'
 
 From this reference, the recipe is:
 
-`98, 94, 167, 97, 125, 197, 126, 108, 122, 94, 102, 107, 109, 100, 109, 90, 90, 163, 116, (90)`
+`98 (mod 120), 94, 167, 97, 125, 197, 126, 108, 122, 94, 102, 107, 109, 100, 109, 90, 90, 163, 116, mode sc, (90)`
 
 ## Remove construction arm
 
