@@ -16,6 +16,7 @@ atom ::=
   | '(' expr ')'
   | number
   | identifier
+comment ::= '#' .* '\n'
 """
 
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ import sys
 
 token_types = {
     'whitespace': re.compile(r'\s+'),
+    'comment': re.compile(r'#.*\n'),
     'minimum_follow': re.compile(r'\(\s*([0-9]+)\s*\)'),
     'mod_clause': re.compile(r'\(\s*mod\s+([0-9]+)\s*\)'),
     'set': re.compile(r'set\b'),
@@ -52,7 +54,7 @@ def tokenize(input):
         for name, regex in token_types.items():
             m = regex.match(input, i)
             if m:
-                if name != 'whitespace':
+                if name not in ('whitespace', 'comment'):
                     tokens.append(Token(i, name, m[0], m))
                 i += len(m[0])
                 break
@@ -200,7 +202,6 @@ def parse_ast(input, macros):
                     tokens.pop(0)
             if tokens:
                 s = parse_segment()
-                print(s)
                 match s:
                     case Segment():
                         segments.append(s)

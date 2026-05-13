@@ -1,0 +1,36 @@
+# Build a merger around the p120 arm
+
+# Blinker (will become TL)
+3, 219, 132, 130, (346)
+
+# Tub l27
+wait 184, 7, 130, 220, 204, 241, (90)
+
+# Turn blinker to TL l33
+2, (90), wait 104
+3, 201, (167)
+
+# Remove bottom blinker
+wait 104, 3, 201, (167)
+
+# Blinker l19
+wait 192
+1, 90, 93, 92, 94, 121, (95)
+
+# Blinker l8
+0, (90), wait 16
+3, 105, 234, (90)
+
+2, 96, 96, 96, (90)
+
+# glider l20
+3, 165, 109, 154, 238, 168, 119, (375)
+
+# glider l27
+1, 101, 132, 126, 247, 132, (125)
+
+# glider l21
+3, 96, 96, 157, 236, (90)
+
+# glider l26
+3, 194, 138

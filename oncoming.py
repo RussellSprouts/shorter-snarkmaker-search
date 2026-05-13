@@ -5,6 +5,10 @@ import re
 import itertools
 import functools
 import pathlib
+import os
+from multiprocessing import Pool
+import multiprocessing
+from datetime import timedelta
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -13,6 +17,7 @@ from life_history import write_life_history
 from lifetree import lt
 from gliders import PI_BLOCKS, mk_glider, single_channel_stream
 from parse_p120_recipes import parse_p120_recipe
+from speedometer import Speedometer
 
 argparser = argparse.ArgumentParser(
     prog="oncoming.py", description="Search for glider patterns"
@@ -57,6 +62,9 @@ argparser.add_argument(
 )
 argparser.add_argument(
     "--simulate-gens", type=int, default=None, help="How many generations to simulate"
+)
+argparser.add_argument(
+    "--max-population", type=int, default=float('inf'), help="The maximum population results to report"
 )
 
 
@@ -108,6 +116,18 @@ argparser.add_argument(
     action=argparse.BooleanOptionalAction,
     default=False,
     help="Only process glider recipes",
+)
+argparser.add_argument(
+    "--swim_upstream_after",
+    action=argparse.BooleanOptionalAction,
+    default=False,
+    help="Send 2,96,96,96... after each part of the subtree"
+)
+argparser.add_argument(
+    "--concurrent",
+    action=argparse.BooleanOptionalAction,
+    default=False,
+    help="Use multiple threads for searching."
 )
 
 args = argparser.parse_args()
@@ -394,6 +414,191 @@ friendly_names = {
     "xq4_6frc": "lwss",
 }
 
+reference = fake_gun[simulate_gens]
+
+class HashablePattern:
+    def __init__(self, c: lifelib.Pattern, digest: int):
+        self.c = c
+        self.digest = digest
+    
+    def __hash__(self):
+        return self.digest
+
+    def __eq__(self, other):
+        return self.digest == other.digest
+
+@functools.lru_cache(maxsize=None)
+def pattern_orientation(c):
+    c = c.c
+    orientations = [c.digest()]
+    for o in ["rot270", "rot180", "rot90", "flip_x", "flip_y", "swap_xy", "swap_xy_flip"]:
+        orientations.append(c(o).digest())
+    orientations = sorted(set(orientations))
+    return orientations.index(c.digest())
+
+def component_info(c, alt=False):
+    if c == c[1]:
+        # still life
+        code = c.apgcode
+        name = friendly_names.get(code, code)
+        x, y, w, h = c.getrect()
+        lane = x - y
+        depth = x + y + w + h
+        orientation = pattern_orientation(HashablePattern(c, c.digest()))
+        return f"{name}(l{lane},d{depth},o{orientation})"
+    elif c == c[120]:
+        # oscillator
+        code = c.apgcode
+        name = friendly_names.get(code, code)
+        x, y, w, h = c.getrect()
+        lane = x - y
+        depth = x + y + w + h
+        orientation = pattern_orientation(HashablePattern(c, c.digest()))
+        if name == 'blinker' and alt:
+            # skip blinkers when processing the alt.
+            return None
+        return f"{name}(l{lane},d{depth},o{orientation})"
+    elif c.centre() == c[4].centre():
+        # spaceship
+        code = c.apgcode
+        name = friendly_names.get(code, code)
+
+        x, y, w, h = c.getrect()
+        x4, y4, _, _ = c[4].getrect()
+
+        if x4 - x == 0 or y4 - y == 0:
+            # xWSS, need to process even if alt is true.
+            return f"{name}({x},{y})({x4-x},{y4-y})"
+        elif alt:
+            # ignore gliders in alt -- we've already got them.
+            return None
+
+        # give the incoming gliders the names g0, g1, etc.
+        for i, e in enumerate(expected_incoming_gliders):
+            if c == e:
+                return f"g{i}"
+
+        # glider phase/color info
+        match (x4 - x, y4 - y):
+            case (1, 1):
+                # same direction as gun
+                canonical = canonical_se
+                direction = "⬂"
+            case (1, -1):
+                # gun side 90 degree
+                canonical = canonical_ne
+                direction = "⬀"
+            case (-1, 1):
+                # recipe side 90 degree
+                canonical = canonical_sw
+                direction = "⬃"
+            case (-1, -1):
+                # same direction as recipe
+                canonical = canonical_nw
+                direction = "⬁"
+
+        if c.centre() == canonical:
+            phase = 0
+            phase_mod2 = "⓪"
+        elif c[1].centre() == canonical:
+            phase = 1
+            phase_mod2 = "①"
+        elif c[2].centre() == canonical:
+            phase = 2
+            phase_mod2 = "⓪"
+        elif c[3].centre() == canonical:
+            phase = 3
+            phase_mod2 = "①"
+
+        lx, ly, lw, lh = c[phase].getrect()
+        lane = lx - ly
+        depth = lx + ly + lw + lh
+
+        match (x4 - x, y4 - y):
+            case (1, 1):
+                location = f"l{lane}"
+                color = "♗♝"[lane % 2]
+            case (1, -1):
+                location = f"d{depth}"
+                color = "♗♝"[depth % 2]
+            case (-1, 1):
+                location = f"d{depth}"
+                color = "♗♝"[depth % 2]
+            case (-1, -1):
+                location = f"l{lane}"
+                color = "♗♝"[lane % 2]
+
+        return f"{name}({location})(ph{phase})({color}{direction}{phase_mod2})"
+    else:
+        # not an object
+        return None
+
+def evaluate(s, patt):
+    if patt.population > args.max_population:
+        # print(s, 'too big')
+        return (s, ['too big'])
+
+    infos = set()
+
+    if args.only_gliders:
+        if patt.population % 5 or patt.population >= 5 + 5 * args.n_gun_gliders:
+            return
+        diff = patt - reference
+        if diff.population != 5:
+            return
+        if diff.centre() != diff[4].centre():
+            return
+        gli_info = component_info(diff)
+        if not gli_info.startswith("glider"):
+            return
+        for i in range(patt.population // 5 - 1):
+            infos.add(f"g{i}")
+        infos.add(gli_info)
+    else:
+        components = pattern_components(patt)
+        has_unidentified = False
+        for c in components:
+            info = component_info(c, False)
+            if info is not None:
+                infos.add(info)
+            else:
+                has_unidentified = True
+        if has_unidentified:
+            components1 = pattern_components(patt[1])
+            for c in components1:
+                info = component_info(c, True)
+                if info is not None:
+                    infos.add(info)
+
+    return (s, sorted(infos))
+
+def process_concurrent(s):
+    stream_to_check = s
+    if args.swim_upstream_after:
+        stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
+    patt = fake_gun + single_channel_stream(stream_to_check)
+
+    patt_n = patt[simulate_gens]
+    result = evaluate(s, patt_n)
+    return result
+
+def recurse(s, depth=0):
+    stream_to_check = s
+    if args.swim_upstream_after:
+        stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
+    patt = fake_gun + single_channel_stream(stream_to_check)
+
+    if not args.to_apgluxe:
+        patt_n = patt[simulate_gens]
+        print(*evaluate(s, patt_n))
+    else:
+        print(patt.rle_string()[len("#CLL state-numbering golly\n") :])
+
+    if depth > 0:
+        for n in range(args.toolkit.min_spacing, args.max_delay + 1):
+            recurse(s + (n,), depth - 1)
+
+
 if __name__ == "__main__":
     """
     p = lt.pattern('')
@@ -413,145 +618,41 @@ if __name__ == "__main__":
     7 - block on recipe side
     """
 
-    # Only keep the interesting first gliders.
-    # The deletes are too fast to follow-up.
-    # The kickbacks will just delete the next glider from that side.
-    # Those are useful for pushing upstream, but won't act as elbows.
-    valid_first_gliders = (1, 3, 5, 7)
-
-    reference = fake_gun[simulate_gens]
-
-    def component_info(c, alt=False):
-        if c == c[120]:
-            # still life or oscillator
-            code = c.apgcode
-            name = friendly_names.get(code, code)
-            x, y, w, h = c.getrect()
-            lane = x - y
-            depth = x + y + w + h
-            return f"{name}(l{lane},d{depth})"
-        elif c.centre() == c[4].centre():
-            # spaceship
-            code = c.apgcode
-            name = friendly_names.get(code, code)
-
-            x, y, w, h = c.getrect()
-            x4, y4, _, _ = c[4].getrect()
-
-            if x4 - x == 0 or y4 - y == 0:
-                # xWSS, need to process even if alt is true.
-                return f"{name}({x},{y})({x4-x},{y4-y})"
-            elif alt:
-                # ignore gliders in alt -- we've already got them.
-                return None
-
-            # give the incoming gliders the names g0, g1, etc.
-            for i, e in enumerate(expected_incoming_gliders):
-                if c == e:
-                    return f"g{i}"
-
-            # glider phase/color info
-            match (x4 - x, y4 - y):
-                case (1, 1):
-                    # same direction as gun
-                    canonical = canonical_se
-                    direction = "⬂"
-                case (1, -1):
-                    # gun side 90 degree
-                    canonical = canonical_ne
-                    direction = "⬀"
-                case (-1, 1):
-                    # recipe side 90 degree
-                    canonical = canonical_sw
-                    direction = "⬃"
-                case (-1, -1):
-                    # same direction as recipe
-                    canonical = canonical_nw
-                    direction = "⬁"
-
-            if c.centre() == canonical:
-                phase = 0
-                phase_mod2 = "⓪"
-            elif c[1].centre() == canonical:
-                phase = 1
-                phase_mod2 = "①"
-            elif c[2].centre() == canonical:
-                phase = 2
-                phase_mod2 = "⓪"
-            elif c[3].centre() == canonical:
-                phase = 3
-                phase_mod2 = "①"
-
-            lx, ly, lw, lh = c[phase].getrect()
-            lane = lx - ly
-            depth = lx + ly + lw + lh
-
-            match (x4 - x, y4 - y):
-                case (1, 1):
-                    location = f"l{lane}"
-                    color = "♗♝"[lane % 2]
-                case (1, -1):
-                    location = f"d{depth}"
-                    color = "♗♝"[depth % 2]
-                case (-1, 1):
-                    location = f"d{depth}"
-                    color = "♗♝"[depth % 2]
-                case (-1, -1):
-                    location = f"l{lane}"
-                    color = "♗♝"[lane % 2]
-
-            return f"{name}({location})(ph{phase})({color}{direction}{phase_mod2})"
-        else:
-            # not an object
-            return None
-
-    def evaluate(s, patt):
-        if patt.population > 150:
-            # print(s, 'too big')
-            # return
-            pass
-
-        infos = set()
-
-        if args.only_gliders:
-            if patt.population % 5 or patt.population >= 5 + 5 * args.n_gun_gliders:
-                return
-            diff = patt - reference
-            if diff.population != 5:
-                return
-            if diff.centre() != diff[4].centre():
-                return
-            gli_info = component_info(diff)
-            if not gli_info.startswith("glider"):
-                return
-            for i in range(patt.population // 5 - 1):
-                infos.add(f"g{i}")
-            infos.add(gli_info)
-        else:
-            components = pattern_components(patt)
-            components1 = pattern_components(patt[1])
-            for c in components:
-                infos.add(component_info(c, False))
-            for c in components1:
-                infos.add(component_info(c, True))
-
-        print(s, sorted(filter(lambda a: a is not None, infos)))
-
-    def recurse(s, depth=0):
-        patt = fake_gun + single_channel_stream(s)
-
-        if not args.to_apgluxe:
-            patt_n = patt[simulate_gens]
-            evaluate(s, patt_n)
-        else:
-            print(patt.rle_string()[len("#CLL state-numbering golly\n") :])
-
-        if depth > 0:
-            for n in range(args.toolkit.min_spacing, args.max_delay + 1):
-                recurse(s + (n,), depth - 1)
-
-    if not args.subtree:
-        args.subtree = [SubtreeDef("0-7")]
-    for subtree in args.subtree:
-        for starting_point in itertools.product(*subtree.options):
-            recurse(starting_point, depth=args.depth - len(starting_point))
+    if args.concurrent:
+        print("Generating jobs...", file=sys.stderr)
+        if not args.subtree:
+            args.subtree = [SubTreeDef("0-7")]
+        for subtree in args.subtree:
+            all_options = []
+            for depth in range(0, args.depth - len(subtree.options) + 1):
+                for starting_point in itertools.product(*subtree.options):
+                    deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
+                    for d in itertools.product(*map(lambda a: (a,), starting_point), *deeper):
+                        all_options.append(d)
+            multiprocessing.set_start_method('spawn')
+            with Pool(processes=os.cpu_count() - 1) as pool:
+                speedo = Speedometer()
+                print("Starting...", file=sys.stderr)
+                for result in pool.imap_unordered(process_concurrent, all_options, chunksize=256):
+                    if speedo.tick(1):
+                        current_per_s = speedo.get_current_speed_and_reset()
+                        avg_per_s = speedo.overall_speed()
+                        done = speedo.n_finished
+                        percent = done/len(all_options)*100
+                        estimate_s = int((len(all_options) - done)/avg_per_s)
+                        estimate_min = estimate_s // 60
+                        estimate_hr = estimate_min // 60
+                        if estimate_hr > 0:
+                            estimate = f"{estimate_hr}h {estimate_min % 60}m {estimate_s % 60}s"
+                        elif estimate_min > 0:
+                            estimate = f"{estimate_min % 60}m {estimate_s % 60}s"
+                        else:
+                            estimate = f"{estimate_s}s"
+                        print(f"{current_per_s:.2f}/s, {avg_per_s:.2f}/s avg, {done}/{len(all_options)} ({percent:0.2f}%), {estimate} left", file=sys.stderr)
+                    print(*result)
+    else:
+        if not args.subtree:
+            args.subtree = [SubtreeDef("0-7")]
+        for subtree in args.subtree:
+            for starting_point in itertools.product(*subtree.options):
+                recurse(starting_point, depth=args.depth - len(starting_point))
