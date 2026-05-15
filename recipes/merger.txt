@@ -1,36 +1,87 @@
 # Build a merger around the p120 arm
 
-# Blinker (will become TL)
-3, 219, 132, 130, (346)
+# Build a beehive with tail
+    # Block l47
+    7, 206, 224, 114, 123, 114, 172, (90)
+    # -5:0 -4:0 -18:0 -9:0 -3:0 2:0 -11:0 -24:1 -15:1 -27:1 
+    2, (90), wait 112
+    3, 102, 90, (90), wait 96, 3, 201, (167), wait 56, 3, 201, (167), wait 128, 3, 102, 90, (90), wait 96, 3, 102, 90, (90), wait 112, 3, 201, (167), wait 40, 3, 102, 90, (90), 2, (90), wait 96, 3, 159, 122, 95, (90), wait 8, 3, 212, 96, (104), wait 16, 3, 212, 96, (104)
+
+wait 18*8
+
+# Build an eater
+    # Honeyfarm l27/28
+    3, 93, 99, 153, (90)
+    # 90 degree to turn the honeyfarm to an eater 1
+    # 11:0 13:0 -6:0 5:1 10:0 17:0
+    # Had to compile manually because there is very little clearance
+    wait 72, 3, 201, (167), wait 15*8, 3, 201, (167), wait 8, 3, 105, 233, (90), wait 8, 7, 132, 126, 156
+    # the cleanup can be accomplished with two fast gliders instead of two slow gliders
+    123, 100, (90)
+
+0, (90)
+wait 16
 
 # Tub l27
 wait 184, 7, 130, 220, 204, 241, (90)
 
-# Turn blinker to TL l33
-2, (90), wait 104
-3, 201, (167)
-
-# Remove bottom blinker
-wait 104, 3, 201, (167)
-
 # Blinker l19
-wait 192
+wait 5*8
 1, 90, 93, 92, 94, 121, (95)
 
+2, (90)
+
+# Block l22
+wait 144
+6, 93, 131, 251, (179)
+
+2, (90)
+
 # Blinker l8
+wait 96
 0, (90), wait 16
 3, 105, 234, (90)
 
-2, 96, 96, 96, (90)
+2, (90)
 
-# glider l20
-3, 165, 109, 154, 238, 168, 119, (375)
+# Block l16
+wait 5*8
+3, 208, 156, 129, (90)
 
-# glider l27
-1, 101, 132, 126, 247, 132, (125)
+2, (90)
 
-# glider l21
-3, 96, 96, 157, 236, (90)
+# Loaf l12
+wait 5*8
+3, 230, 241, 105, 104, 96, 112, (90) 2, (90)
+
+2, 96, (90)
+
+wait 11*8
 
 # glider l26
-3, 194, 138
+3, 194, 138, 490, 164, 218, (280)
+
+wait 246
+
+# glider l16
+7, 136, 165, 92, (90)
+
+wait 96
+
+# glider l26
+3, 194, 138, 490, 164, 218, (280)
+
+# block l22 to absorb the stray glider from the block insertion
+6, 93, 131, 251, (179)
+
+wait 56
+
+# block l27 -- insert around the eater 2
+5, 142, 170, 120, 129, 232, 178, 220, (884)
+
+# block l12
+wait 48
+7, 136, 187, 221, (90)
+
+# cap the stream so the merge circuit doesn't break
+2, 96, 96, (90) 3,174,138

@@ -220,6 +220,7 @@ Gliders going towards the recipe.
 | 19⬂⓪ | 7, 130, 234, 160, (200) |
 | 20⬂⓪ | 5, 147, 223, 235, (238) |
 | 24⬂⓪ | 3, 105, 178, 141, (335) |
+| 26⬂⓪ | 3, 194, 138, 490, 164, 218, (280) |
 
 - \*: The glider would crash into a follow-up glider.
 - \*\* The 180 kickback reaction

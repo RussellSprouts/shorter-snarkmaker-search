@@ -118,7 +118,7 @@ argparser.add_argument(
     help="Only process glider recipes",
 )
 argparser.add_argument(
-    "--swim_upstream_after",
+    "--swim-upstream-after",
     action=argparse.BooleanOptionalAction,
     default=False,
     help="Send 2,96,96,96... after each part of the subtree"
@@ -650,6 +650,7 @@ if __name__ == "__main__":
                             estimate = f"{estimate_s}s"
                         print(f"{current_per_s:.2f}/s, {avg_per_s:.2f}/s avg, {done}/{len(all_options)} ({percent:0.2f}%), {estimate} left", file=sys.stderr)
                     print(*result)
+            pool.join()
     else:
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]

@@ -150,7 +150,7 @@ def parse_ast(input, macros):
         while tokens and tokens[0].type == 'add_operator':
             op_tok = tokens.pop(0)
             val = Expr(
-                op=op_tok.text(),
+                op=op_tok.text,
                 a=val,
                 b=parse_times_expression()
             )
