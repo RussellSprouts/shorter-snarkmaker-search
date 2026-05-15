@@ -17,7 +17,7 @@ The recipes start with a glider numbered to show the mod 8 timing it should star
 
 The kickback glider will delete the next glider on that lane. This gives the very useful `2, (90)` recipe, which deletes two gun gliders, allowing you to push forward large amounts with just one glider.
 
-The raw data for most combinations of 4 gliders is available at <https://drive.google.com/file/d/1eZvUXMR2_LEaEr9ZYgbiJfwE6yULxSHp/view?usp=sharing> (40Mb download, 500Mb unzipped). I have excluded results which had gliders in multiple directions and results with a large cloud of ash (200+ characters on the line).
+The raw data for most combinations of 4 gliders is available at <https://drive.google.com/file/d/1wVJe2FR99bbhLniNt-iOFGN7l5sXIz2H/view?usp=sharing> (135Mb download, 1.6Gb unzipped). I have excluded results which absorbed all 10 gun gliders.
 
 The `oncoming.py` file implements many useful tools for working with this toolkit:
 
@@ -173,6 +173,7 @@ Gliders going towards the recipe.
 
 | Lane   | Recipe                       |
 | ------ | ---------------------------- |
+| -24⬂⓪ |3, 219, 190, 240, 151, 200, 91, (187) |
 | -23⬂① | 5, 153, 221, 249, (107) |
 | -17⬂⓪ | 3, 151, 116, 250, (109) |
 | -14⬂① | 3, 180, 190, 218, 137, (90) |
