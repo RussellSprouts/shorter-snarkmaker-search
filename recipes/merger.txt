@@ -109,8 +109,16 @@ wait 11*8
 
 2, (90)
 
-# glider 180 degree l-24 even
-3, 219, 190, 240, 151, 200, 91, (187)
+# glider 180 degree l-24 and follow-ups that help with cleanup
+3, 219, 190, 240, 151, 200, 91,
+432, 95, 205, (90)
+
+
+# beehive l-26 o1
+# boat se l-32
+# 7, 196, 220, 224, 123, 169, 204, (294)
+# block l-33
+# 3, 163, 199, 180, 108, (90)
 
 # block l12
 # wait 0

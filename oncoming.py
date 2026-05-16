@@ -129,6 +129,11 @@ argparser.add_argument(
     default=False,
     help="Use multiple threads for searching."
 )
+argparser.add_argument(
+    "--view-orientations",
+    type=str,
+    default=None
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -532,6 +537,34 @@ def component_info(c, alt=False):
     else:
         # not an object
         return None
+
+if args.view_orientations:
+    if args.view_orientations in friendly_names.values():
+        args.view_orientations = next(k for k,v in friendly_names.items() if v == args.view_orientations)
+    p = lt.pattern(args.view_orientations)
+    results = {}
+    orientations = [p]
+    for o in ["rot270", "rot180", "rot90", "flip_x", "flip_y", "swap_xy", "swap_xy_flip"]:
+        orientations.append(p(o))
+    for oriented in orientations:
+        x, y, w, h = oriented.getrect()
+        oriented = oriented(-x + 1, -y + 1)
+        data = ['.'] * (w+2) * (h*2)
+        for (cx, cy) in oriented.coords():
+            data[cy*(w+2) + cx] = '#'
+        data = ''.join(data)
+        lines = []
+        for i in range(0, h+2):
+            lines.append(data[i*(w+2):(i+1)*(w+2)])
+        lines = '\n'.join(lines)
+        results[pattern_orientation(HashablePattern(oriented, oriented.digest()))] = lines
+    
+    for orientation, view in sorted(results.items()):
+        print(f'o{orientation}')
+        print('==========================')
+        print(view)
+
+    sys.exit(0)
 
 def evaluate(s, patt):
     if patt.population > args.max_population:
