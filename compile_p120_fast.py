@@ -8,6 +8,8 @@ import sys
 import re
 import argparse
 import pathlib
+from dataclasses import dataclass
+import heapq
 
 from recipe_intermediates import RecipeDag
 from gliders import extract_recipe_lanes
@@ -44,6 +46,17 @@ argparser.add_argument(
     type=int,
     choices=[0, 1],
     default=0
+)
+argparser.add_argument(
+    "--optimize",
+    type=str,
+    choices=["time", "population"],
+    default="time",
+)
+argparser.add_argument(
+    "--beam-width",
+    type=int,
+    default=100
 )
 
 args = argparser.parse_args()
@@ -87,25 +100,37 @@ with open(args.salvo, 'r') as file:
     rle = file.read()
     recipe, starting_block = extract_recipe_lanes(lt.pattern(rle), enforce_signed_byte=False, relative_to='first')
 
-    def adjust_recipe(a):
-        lane, phase = a
-        lane = lane + args.color
-        if args.direction == 'SW':
-            lane = lane * -1 + 1
-        phase = phase + args.parity
-        return (lane, phase)
-    
-    recipe = tuple(map(adjust_recipe, recipe))
+    print("Calculating recipe dag, this may take a few seconds...")
+    dag = RecipeDag(recipe, starting_block, keep_order=True)
+
+def adjust_recipe(a):
+    lane, phase = a
+    lane = lane + args.color
+    if args.direction == 'SW':
+        lane = lane * -1 + 1
+    phase = phase + args.parity
+    return (lane, phase)
+
 
 Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow"])
-Partial = collections.namedtuple("Partial", ["nextgl", "time", "emits", "emits_str"])
 
-def score(pos):
-    # return pos.time     # for minimum time
-    return len(pos.emits) # for minimum gliders
+@dataclass
+class Partial:
+    nextgl: int
+    time: int
+    emits: list[int]
+    emits_str: list[str]
+
+    def __lt__(self, other):
+        match args.optimize:
+            case 'time':
+                return (self.time, len(self.emits)) < (other.time, len(other.emits))
+            case 'population':
+                return (len(self.emits), self.time) < (len(other.emits), other.time)
 
 beam = [Partial(0, -float('inf'), [], [])]
 for gli in recipe:
+    gli = adjust_recipe(gli)
     color = gli[0] % 2
     phase = gli[1] % 2
     gli_lane = gli[0]
@@ -159,13 +184,12 @@ for gli in recipe:
             nextgl += PERIOD * rec.consumed
             time = emits[-1] + rec.min_follow
             new = Partial(nextgl, time, emits, emits_str)
-            if best is None or score(new) < score(best):
-                best = new
-        if best is not None:
-            newbeam.append(best)
+            heapq.heappush(newbeam, new)
+            if len(newbeam) > args.beam_width:
+                newbeam.pop()
+
     beam = newbeam
 
-beam.sort(key=score)
 timings = []
 ctime = 0
 for i in beam[0].emits:

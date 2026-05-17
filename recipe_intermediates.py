@@ -45,7 +45,7 @@ class RecipeDag:
                     break
                 new = next
             else:
-                raise "Slow salvo didn't stabilize in 1024 gens!"
+                raise Exception("Slow salvo didn't stabilize in 1024 gens!")
 
             flight_path -= old
             flight_path -= old_periodic
