@@ -18,7 +18,11 @@ from lifetree import lt
 argparser = argparse.ArgumentParser(
     prog="compile_p120_fast.py", description="Compile slow salvos to the p120 arm"
 )
-argparser.add_argument("salvo", type=pathlib.Path)
+argparser.add_argument(
+    "salvo",
+    type=pathlib.Path,
+    help="The rle file for the slow salvo."
+)
 argparser.add_argument(
     "--period",
     type=int,
