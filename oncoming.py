@@ -9,6 +9,7 @@ import os
 from multiprocessing import Pool
 import multiprocessing
 from datetime import timedelta
+import math
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -253,6 +254,14 @@ if args.use_gun_rle:
             ):
                 p -= c
         return p
+
+    if args.use_gun_rle == '120':
+        args.use_gun_rle = '''x = 83, y = 50, rule = B3/S23
+13b3o17$2o$obo$bo64b3o2$17bo6b2o38bo5bo$16bobo5b2o38bo5bo$16bobo45bo5b
+o$17bo$34bo31b3o$9b2o23b3o$8bobo26bo$9bo26b2o5$25b2o5b2o$25b2o5b2o46b
+2o$79bo2bo$29b2o49b2o$24bo4b2o$5b2o16bobo8b2o$5b2o16bobo7bo2bo$24bo7b
+2o$33b2o3bo13b2o$34bo4bo12b2o$37b3o$49b2o5b2o$49b2o5b2o$12bo$6b2o3bobo
+$5bo2bo2b2o$6b2o!'''
 
     gun = lt.pattern(args.use_gun_rle.strip())
     gun_without_gliders = remove_gliders(gun)
@@ -560,6 +569,7 @@ if args.view_orientations:
         results[pattern_orientation(HashablePattern(oriented, oriented.digest()))] = lines
     
     for orientation, view in sorted(results.items()):
+        print()
         print(f'o{orientation}')
         print('==========================')
         print(view)
@@ -655,35 +665,45 @@ if __name__ == "__main__":
         print("Generating jobs...", file=sys.stderr)
         if not args.subtree:
             args.subtree = [SubTreeDef("0-7")]
+        len_all_options = 0
         for subtree in args.subtree:
-            all_options = []
             for depth in range(0, args.depth - len(subtree.options) + 1):
-                for starting_point in itertools.product(*subtree.options):
-                    deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
-                    for d in itertools.product(*map(lambda a: (a,), starting_point), *deeper):
-                        all_options.append(d)
-            multiprocessing.set_start_method('spawn')
-            with Pool(processes=os.cpu_count() - 1) as pool:
-                speedo = Speedometer()
-                print("Starting...", file=sys.stderr)
-                for result in pool.imap_unordered(process_concurrent, all_options, chunksize=256):
-                    if speedo.tick(1):
-                        current_per_s = speedo.get_current_speed_and_reset()
-                        avg_per_s = speedo.overall_speed()
-                        done = speedo.n_finished
-                        percent = done/len(all_options)*100
-                        estimate_s = int((len(all_options) - done)/avg_per_s)
-                        estimate_min = estimate_s // 60
-                        estimate_hr = estimate_min // 60
-                        if estimate_hr > 0:
-                            estimate = f"{estimate_hr}h {estimate_min % 60}m {estimate_s % 60}s"
-                        elif estimate_min > 0:
-                            estimate = f"{estimate_min % 60}m {estimate_s % 60}s"
-                        else:
-                            estimate = f"{estimate_s}s"
-                        print(f"{current_per_s:.2f}/s, {avg_per_s:.2f}/s avg, {done}/{len(all_options)} ({percent:0.2f}%), {estimate} left", file=sys.stderr)
+                deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
+                len_all_options += math.prod(map(len, subtree.options + deeper))
+
+        print('Total:', len_all_options, file=sys.stderr)
+
+        def all_options():
+            for subtree in args.subtree:
+                for depth in range(0, args.depth - len(subtree.options) + 1):
+                    for starting_point in itertools.product(*subtree.options):
+                        deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
+                        for d in itertools.product(*map(lambda a: (a,), starting_point), *deeper):
+                            yield d
+
+        multiprocessing.set_start_method('spawn')
+        with Pool(processes=os.cpu_count() - 1) as pool:
+            speedo = Speedometer()
+            print("Starting...", file=sys.stderr)
+            for result in pool.imap_unordered(process_concurrent, all_options(), chunksize=256):
+                if speedo.tick(1):
+                    current_per_s = speedo.get_current_speed_and_reset()
+                    avg_per_s = speedo.overall_speed()
+                    done = speedo.n_finished
+                    percent = done/len_all_options*100
+                    estimate_s = int((len_all_options - done)/avg_per_s)
+                    estimate_min = estimate_s // 60
+                    estimate_hr = estimate_min // 60
+                    if estimate_hr > 0:
+                        estimate = f"{estimate_hr}h {estimate_min % 60}m {estimate_s % 60}s"
+                    elif estimate_min > 0:
+                        estimate = f"{estimate_min % 60}m {estimate_s % 60}s"
+                    else:
+                        estimate = f"{estimate_s}s"
+                    print(f"{current_per_s:.2f}/s, {avg_per_s:.2f}/s avg, {done}/{len_all_options} ({percent:0.2f}%), {estimate} left", file=sys.stderr)
+                if result:
                     print(*result)
-            pool.join()
+        pool.join()
     else:
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]

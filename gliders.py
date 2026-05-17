@@ -60,11 +60,11 @@ def test():
 test()
 
 
-def extract_recipe_lanes(pattern, enforce_signed_byte = True):
+def extract_recipe_lanes(pattern, enforce_signed_byte = True, relative_to='last'):
     """Extracts a slow-salvo recipe from the given pattern.
     The gliders should travel to the NW and the initial target
-    should be a block. There should be one extra glider at the
-    end, which defines lane 0.
+    should be a block. If relative_to is last, there should be
+    one extra glider at the end, which defines lane 0.
 
     Returns the recipe as Tuple[(lane, phase)], and the starting
     target block in the correct place.
@@ -105,16 +105,21 @@ def extract_recipe_lanes(pattern, enforce_signed_byte = True):
 
         recipe.append((y - x, phase))
 
-    last_glider, _ = recipe.pop()
+    if relative_to == 'last':
+        relative_to_glider, _ = recipe.pop()
+    elif relative_to == 'first':
+        relative_to_glider, _ = recipe[0]
+    else:
+        raise ValueError(f'relative_to must be one of "first", "last". Got {relative_to}')
 
-    shifted = tuple((l - last_glider, p) for l, p in recipe)
+    shifted = tuple((l - relative_to_glider, p) for l, p in recipe)
 
     if enforce_signed_byte:
         for lane, phase in shifted:
             if lane > 127 or lane < -128:
                 raise ValueError(f"Not supported: Recipe contains a glider on {lane}, which is out of range of a signed byte")
 
-    return shifted, starting_block(last_glider, 0)
+    return shifted, starting_block(relative_to_glider, 0)
 
 
 def reconstruct(recipe, starting_block, spacing):
