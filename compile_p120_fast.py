@@ -154,7 +154,8 @@ def get_possible_gliders():
 beam = [Partial(0, -float('inf'), [], [])]
 
 recipe_steps = get_possible_gliders()
-for step in recipe_steps:
+for step_no, step in enumerate(recipe_steps):
+    print(f"Step {step_no}")
     newbeam = []
     for possible_glider in step:
         gli = adjust_recipe((possible_glider.lane, possible_glider.parity))

@@ -29,6 +29,7 @@ class RecipeDag:
         for c in coords(starting_block):
             birthdays[c] = -1
 
+        debug = lt.pattern()
         pattern = starting_block
         for i, (lane, parity) in enumerate(lanes):
             old = pattern
@@ -36,6 +37,7 @@ class RecipeDag:
             old_periodic = old[1] ^ old
 
             new = pattern + mk_glider(lane, 400 - parity)
+            debug += new(i * 400, 0)
             flight_path = lt.pattern()
             for _ in range(0, 1024):
                 next = new[2]
@@ -45,7 +47,9 @@ class RecipeDag:
                     break
                 new = next
             else:
-                raise Exception("Slow salvo didn't stabilize in 1024 gens!")
+                print(debug.rle_string())
+                print(i, lane, parity)
+                raise Exception("Slow salvo didn't stabilize in 2048 gens!")
 
             flight_path -= old
             flight_path -= old_periodic
@@ -185,7 +189,7 @@ class RecipeDag:
             return self.starting_block
         lane, parity, kind = lanes[-1]
         p = self._simulate(lanes[:-1]) + mk_glider(lane, 400 - parity)
-        p = p[1024]
+        p = p[2048]
         if kind == 'rephase':
             p = p[1]
         if p[2] != p:
