@@ -1,3 +1,6 @@
+construct_arm
+
+wait 512
 
 # Offset block l37
 3, 225, 137, 148, (90)
@@ -50,8 +53,21 @@ wait 16
     # Tub l27
     wait 184, 7, 130, 220, 204, 241, (90)
 
+    ######### Add the items that will make the previous copy of the circuitry catch
+    ######### the 180 degree destruction glider
+    wait 240-12*8
+    # blinker l-27 o0
+    3,197,143,255,227,106,(150)
+
+    2, (90)
+    wait 26*8
+
+    # loaf l-24 o1
+    3,91,249,99,144,152,99,176,(688)
+    ########
+
     # Blinker l19
-    wait 5*8
+    wait 6*8
     1, 90, 93, 92, 94, 121, (95)
 
     2, (90)
@@ -182,26 +198,24 @@ wait 16
     # loaf l17 o1
     3, 225, 190, 216, 91, 246, (285)
 
-    2, (90)
-    wait 11*8
+    2, 96, (90)
 
-    # blinker l-27 o0
-    3,197,143,255,227,106,(150)
-
-    2, (90)
-    wait 26*8
-
-    # loaf l-24 o1
-    3,91,249,99,144,152,99,176,(688)
-
-    2, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96, 96 (90)
-
+    # 180 degree glider l-30
     3, 222, 117, 129, 186, 252, 206, 168, 161, 123, 139, (700)
 
-    # cap the stream so the merge circuit doesn't break
-    2, 96, 96, (90) 3,174,138
+    2, (90)
 
-    # 186 (3, 222, 117, 129) ['blinker(l26,d16,o0)', 'blinker(l28,d10,o1)', 'block(l-20,d-6,o0)', 'block(l-8,d-2,o0)', 'g0', 'g1', 'g2', 'g3', 'g4', 'glider(l-30)(ph2)(♗⬂⓪)', 'ship(l-21,d-25,o1)']
-    # 231 (1, 101, 114, 108) ['blinker(l-23,d13,o1)', 'block(l-13,d5,o0)', 'block(l-27,d-15,o0)', 'block(l-33,d-9,o0)', 'block(l-38,d-4,o0)', 'block(l-8,d-12,o0)', 'g0', 'g1', 'g2', 'g3', 'g4', 'glider(l-30)(ph3)(♗⬂①)', 'ship(l-21,d-35,o1)']
+    # destroy simkin arm
+    98 (mod 120), 94, 167, 97, 125, 197, 126, 108, 122, 94, 102, 107, 109, 100, 109, 90, 90, 163, 116,
+    mode sc, (90)
 
-    wait 0
+    # the construct/destroy will pull the block back by 15 hd,
+    # so we need to push by 79.
+
+    # This is the optimal combination (least gliders) of the simeks recipes
+    # push 44
+    0, 109, 90, 93, 91, 90, 95, 91, 91, 138, 157, 96, 90, 120, 91, 97, 107, 90, 90, 93, (188)
+    # push by 22
+    0, 109, 91, 94, 91, 91, 92, 90, 97, 91, 90, 91, 90, 161, 91, 91, 91, 91, 91, 103, (130)
+    # push by 13
+    0, 109, 91, 93, 91, 92, 90, 97, 91, 116, 91, 93, 115, 90, 91, 130, (90)
