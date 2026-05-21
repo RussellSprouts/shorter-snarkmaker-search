@@ -156,7 +156,8 @@ def mk_fake_gun(n):
 
 
 fake_gun = mk_fake_gun(args.n_gun_gliders)
-expected_incoming_gliders = pattern_components(fake_gun[simulate_gens])
+expected_incoming_gliders_pattern = fake_gun[simulate_gens]
+expected_incoming_gliders = pattern_components(expected_incoming_gliders_pattern)
 
 # phase 0 gliders
 canonical_se = mk_glider(0, 0)("rot180").centre()
@@ -579,6 +580,8 @@ if args.view_orientations:
 def evaluate(s, patt):
     if patt.population > args.max_population:
         # print(s, 'too big')
+        return (s, ['too big'])
+    if (patt - expected_incoming_gliders_pattern).population > args.max_population:
         return (s, ['too big'])
 
     infos = set()
