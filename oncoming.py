@@ -135,6 +135,11 @@ argparser.add_argument(
     type=str,
     default=None
 )
+argparser.add_argument(
+    "--tandem-distance",
+    type=int,
+    default=0
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -152,6 +157,11 @@ def mk_fake_gun(n):
         [mk_glider(0, gun_period * x) for x in range(0, n)], start=lt.pattern("")
     )
     fake_gun = fake_gun("rot180")(-10 + args.toolkit.lane_offset, -11)
+    if args.tandem_distance:
+        shift = math.ceil(args.tandem_distance / 4)
+        phase = 4 - (args.tandem_distance % 4)
+        tandem_gliders = fake_gun(-shift, -shift)[phase]
+        fake_gun = fake_gun + tandem_gliders
     return fake_gun
 
 

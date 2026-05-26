@@ -4,6 +4,7 @@ import math
 
 from gliders import single_channel_stream
 from lifetree import lt
+from life_history import write_life_history
 
 with open(sys.argv[1], 'r') as file:
     rle = file.read()
@@ -64,6 +65,7 @@ with open(sys.argv[1], 'r') as file:
                     single = gliders[0]
             if not double or not single:
                 print("fail", dirs, patt.rle_string())
+                return None
             return (double, single)
 
     def has_kickback(double, single):

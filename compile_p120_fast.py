@@ -34,6 +34,11 @@ argparser.add_argument(
     default=pathlib.Path("recipes/sc90b5p120-gliders.txt")
 )
 argparser.add_argument(
+    "--min-follow",
+    type=int,
+    default=90
+)
+argparser.add_argument(
     "--direction",
     type=str,
     choices = ["SW", "NE"],
@@ -175,30 +180,30 @@ for step_no, step in enumerate(recipe_steps):
                 emits_str = list(pos.emits_str)
                 nextgl = pos.nextgl
                 while delay < time + (recipe_parity - ((time + parity_offset) % 8)) % 8:
-                    if delay + PERIOD >= time + (0 - ((time + parity_offset) % 8)) % 8 + 90:
+                    if delay + PERIOD >= time + (0 - ((time + parity_offset) % 8)) % 8 + args.min_follow:
                         nextgl += PERIOD
                         delay += PERIOD
-                        # send a 0, (90) glider
+                        # send a 0 glider
                         time += (0 - ((time + parity_offset) % 8)) % 8
                         emits.append(time)
-                        emits_str.extend(('0', '(90)'))
-                        time += 90
-                    elif delay + PERIOD >= time + (4 - (time % 4)) % 8 + 90:
+                        emits_str.extend(('0', f'({args.min_follow})'))
+                        time += args.min_follow
+                    elif delay + PERIOD >= time + (4 - (time % 4)) % 8 + args.min_follow:
                         nextgl += PERIOD
                         delay += PERIOD
-                        # send a 4, (90) glider
+                        # send a 4 glider
                         time += (4 - ((time + parity_offset) % 8)) % 8
                         emits.append(time)
-                        emits_str.extend(('4', '(90)'))
-                        time += 90
+                        emits_str.extend(('4', f'({args.min_follow})'))
+                        time += args.min_follow
                     else:
                         nextgl += PERIOD * 2
                         delay += PERIOD * 2
-                        # send a 2, (90) glider
+                        # send a 2 glider
                         time += (2 - ((time + parity_offset) % 8)) % 8
                         emits.append(time)
-                        emits_str.extend(('2', '(90)'))
-                        time += 90
+                        emits_str.extend(('2', f'({args.min_follow})'))
+                        time += args.min_follow
 
                 time += (recipe_parity - ((time + parity_offset) % 8)) % 8
                 wait = ((delay - time) // 8) * 8
