@@ -10,7 +10,6 @@ import cProfile
 from component_search import ComponentSearch, PatternCache
 from db import ProcessingDatabase, StreamJob, StreamJobResult, StreamResult
 
-
 def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
     """Wrapper to handle pulling tasks from the queue and applying
     the provided function."""

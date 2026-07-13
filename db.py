@@ -181,7 +181,7 @@ class SavedResult:
         return (
             "SavedResult("
             f"stream=bytes({tuple(self.stream)}), "
-            f"label='{self.label}'"
+            f"label='{self.label}', "
             f"starting_point={self.starting_point}, "
             f"digest={self.digest}, "
             f"before_hit_digest={self.before_hit_digest}, "

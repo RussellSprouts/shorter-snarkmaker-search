@@ -132,11 +132,11 @@ with open(sys.argv[1], 'r') as file:
                 pass
                 # all_results |= other(n_results*128, 128*i)
             elif is_tee(other):
-                pass
-                # all_results |= other(n_results*128, 128*i)
+                # pass
+                all_results |= other(n_results*128, 128*i)
             elif is_eventual_vanish(double, s):
                 pass
-                # all_results |= (other + rewind(double, 120) + rewind(double, 240) + rewind(single, 128))(n_results*128, 128*i)
+                all_results |= (other + rewind(double, 120) + rewind(double, 240) + rewind(single, 128))(n_results*128, 128*i)
                 next_chance =  88+i if i > 1 else 96+i
                 all_results |= (
                     double + single + rewind(single, next_chance) + rewind(single, 304) + rewind(double, 120) + rewind(double, 240) + rewind(double, 360) + rewind(double, 480)

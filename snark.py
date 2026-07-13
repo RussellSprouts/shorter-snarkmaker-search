@@ -1,3 +1,5 @@
+import multiprocessing
+
 import itertools
 import signal
 
@@ -253,7 +255,7 @@ def setup_next_search(
         (
             StartingPoint(
                 id=(next_id := next_id + 1),
-                cost=0 if reset_costs else r.cost,
+                cost=0 if reset_costs else sum(r.stream) + in_db.starting_points[r.starting_point].cost,
                 stream=in_db.starting_points[r.starting_point].stream
                 + (
                     r.stream[0:-truncate_n_gliders]
@@ -266,7 +268,7 @@ def setup_next_search(
             ),
             StreamJob(
                 id=None,
-                cost=0 if reset_costs else r.cost,
+                cost=0 if reset_costs else sum(r.stream) + in_db.starting_points[r.starting_point].cost,
                 starting_point=next_id,
                 stream=b"",
                 follow_up_gen_limit=255,
@@ -414,13 +416,16 @@ class OptimizeArgs:
     recipe_intermediates: Dict[int, Recipe]
     component_search: ComponentSearch
     max_gens: int
-    gen_options: List[int]
+    gen_options: list[int]
     min_offset_block_lane: int
     snark_offsets: Dict[int, Set[int]]
     partial_progress_factor: float
     partial_range: Set[int]
     depth_range: list[int]
     n_results_limit: int
+    n_fast_gen_options: int
+    fast_gen_options: bytes
+    reset_gen_options: bytes
 
 
 def abs_lane(x):
@@ -857,46 +862,42 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                 result.valid_children.append(score)
 
         if added_gens <= max_gens - gen_options[0]:
+            follow_up_gen_limit = min(255, max_gens - added_gens)
+            follow_ups = gen_options
+            if shared_args.n_fast_gen_options:
+                last_gliders = stream[-shared_args.n_fast_gen_options:]
+                if len(last_gliders) < shared_args.n_fast_gen_options:
+                    follow_ups = shared_args.fast_gen_options
+                else:
+                    for i in range(-1, -shared_args.n_fast_gen_options-1, -1):
+                        if last_gliders[i] in shared_args.reset_gen_options or last_gliders[i] == 0:
+                            # one of the last n gliders was a reset, we can continue to
+                            # use fast gen options.
+                            follow_ups = shared_args.fast_gen_options
+                            break
+                    else:
+                        follow_ups = shared_args.reset_gen_options
+
             if just_after_hit == just_after_hit1:
                 # the pattern very quickly stabilized to p1,
                 # only queue the fastest possible next glider
-                queue(
-                    StreamJob(
-                        id=None,
-                        cost=added_gens,
-                        starting_point=job.starting_point,
-                        stream=job.stream + bytes([next_possibility]),
-                        follow_up_gen_limit=gen_options[0],
-                        max_depth=job.max_depth,
-                        follow_ups=None,
-                    )
-                )
+                follow_up_gen_limit = follow_ups[0]
             elif just_after_hit == just_after_hit2:
-                queue(
-                    StreamJob(
-                        id=None,
-                        cost=added_gens,
-                        starting_point=job.starting_point,
-                        stream=job.stream + bytes([next_possibility]),
-                        # todo this assumes that the first two gen_options
-                        # are a mix of odd/even
-                        follow_up_gen_limit=gen_options[1],
-                        max_depth=job.max_depth,
-                        follow_ups=None,
-                    )
+                # todo this assumes that the first two gen_options
+                # are a mix of odd/even
+                follow_up_gen_limit = follow_ups[1]
+
+            queue(
+                StreamJob(
+                    id=None,
+                    cost=added_gens,
+                    starting_point=job.starting_point,
+                    stream=job.stream + bytes([next_possibility]),
+                    follow_up_gen_limit=follow_up_gen_limit,
+                    max_depth=job.max_depth,
+                    follow_ups=follow_ups,
                 )
-            else:
-                queue(
-                    StreamJob(
-                        id=None,
-                        cost=added_gens,
-                        starting_point=job.starting_point,
-                        stream=job.stream + bytes([next_possibility]),
-                        follow_up_gen_limit=min(255, max_gens - added_gens),
-                        max_depth=job.max_depth,
-                        follow_ups=None,
-                    )
-                )
+            )
 
     return result
 
@@ -912,10 +913,21 @@ def optimize(
     n_processes: int,
     live_view_depth: float,
     depth_range: str,
-    n_results_limit: int
+    n_results_limit: int,
+    merged_stream_gen_options: str
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
+    if merged_stream_gen_options:
+        fast_gen_options, reset_gen_options = merged_stream_gen_options.split(';')
+        n_fast_gen_options, fast_gen_options = fast_gen_options.split('x')
+        n_fast_gen_options = int(n_fast_gen_options)
+        fast_gen_options = range_str_to_list(fast_gen_options)
+        reset_gen_options = range_str_to_list(reset_gen_options)
+    else:
+        n_fast_gen_options = 0
+        fast_gen_options = gen_options
+        reset_gen_options = gen_options
     partial_range: Set[int] = set(range_str_to_list(partial_range))
     depth_range = range_str_to_list(depth_range)
     if not output_db.recipe_intermediates:
@@ -953,6 +965,9 @@ def optimize(
         partial_range=partial_range,
         depth_range=depth_range,
         n_results_limit=n_results_limit,
+        n_fast_gen_options=n_fast_gen_options,
+        fast_gen_options=bytes(fast_gen_options),
+        reset_gen_options=bytes(reset_gen_options),
     )
     queue_stats = output_db.queue_stats
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -1046,7 +1061,7 @@ def optimize(
                 )
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_overlapping_population} overlap ({n_best_overlapping_population}), {lowest_population} pop ({n_lowest_population})",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {search.db.n_results:,}/{done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_overlapping_population} overlap ({n_best_overlapping_population}), {lowest_population} pop ({n_lowest_population})",
                     file=sys.stderr,
                 )
 
@@ -1144,7 +1159,8 @@ def autoshrink(
     partial_progress_factor: float,
     partial_range: str,
     live_view_depth: int,
-    n_results_limit: int
+    n_results_limit: int,
+    merged_stream_gen_options: str,
 ):
     if full_or_partial not in ("full", "partial"):
         raise ValueError("--full-or-partial should be 'full' or 'partial'")
@@ -1198,8 +1214,6 @@ def autoshrink(
             )
         last_path = round_output_path
 
-        
-
         print(f"Running search in {round_output_path}...")
         optimize(
             recipe_intermediates_db=recipe_intermediates_db,
@@ -1213,6 +1227,7 @@ def autoshrink(
             partial_range=partial_range,
             live_view_depth=live_view_depth,
             n_results_limit=n_results_limit,
+            merged_stream_gen_options=merged_stream_gen_options,
         )
 
 
@@ -1268,6 +1283,8 @@ def custom_starting_point(output_db, stream, target_rle):
     print("Added starting point.")
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method('spawn')
+
     parser = argparse.ArgumentParser(
         prog="snark.py", description="Searches for an optimized snarkmaker recipe."
     )
@@ -1381,6 +1398,12 @@ if __name__ == "__main__":
         type=int,
         default=float("inf"),
         help="The max depth result to consider for results in the live view.",
+    )
+    parser_optimize.add_argument(
+        "--merged-stream-gen-options",
+        type=str,
+        default=None,
+        help="NxA;B. E.g., '4x35-256;67-256'. This indicates that our construction arm can gliders with 67 tick minimum spacing. Additionally, we may send up to 4 gliders with a spacing as close as 35 ticks before we need to reset with a 67 tick spaced glider."
     )
 
     parser_view_results = subcommand.add_parser(
@@ -1594,6 +1617,12 @@ if __name__ == "__main__":
         default=float("inf"),
         help="The maximum number of results to collect before moving to the next stage.",
     )
+    parser_autoshrink.add_argument(
+        "--merged-stream-gen-options",
+        type=str,
+        default=None,
+        help="NxA;B. E.g., '4x35-256;67-256'. This indicates that our construction arm can gliders with 67 tick minimum spacing. Additionally, we may send up to 4 gliders with a spacing as close as 35 ticks before we need to reset with a 67 tick spaced glider."
+    )
 
 
     parser_custom_starting_point = subcommand.add_parser(
@@ -1646,6 +1675,7 @@ if __name__ == "__main__":
                 live_view_depth=args.live_view_depth,
                 depth_range=args.depth_range,
                 n_results_limit=float('inf'),
+                merged_stream_gen_options=args.merged_stream_gen_options,
             )
         case "view-results":
             print("Show completion", args.show_completion)
@@ -1692,6 +1722,7 @@ if __name__ == "__main__":
                 partial_range=args.partial_range,
                 live_view_depth=args.live_view_depth,
                 n_results_limit=args.n_results_limit,
+                merged_stream_gen_options=args.merged_stream_gen_options,
             )
         case "custom-starting-point":
             custom_starting_point(
