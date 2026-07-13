@@ -119,6 +119,12 @@ argparser.add_argument(
     help="Only process glider recipes",
 )
 argparser.add_argument(
+    "--only-90-degree-gliders",
+    action=argparse.BooleanOptionalAction,
+    default=False,
+    help="Only process glider recipes at 90 degrees",
+)
+argparser.add_argument(
     "--swim-upstream-after",
     action=argparse.BooleanOptionalAction,
     default=False,
@@ -522,6 +528,7 @@ def component_info(c, alt=False):
                 canonical = canonical_nw
                 direction = "⬁"
 
+        phase = 5
         if c.centre() == canonical:
             phase = 0
             phase_mod2 = "⓪"
@@ -588,28 +595,29 @@ if args.view_orientations:
     sys.exit(0)
 
 def evaluate(s, patt):
-    if patt.population > args.max_population:
-        # print(s, 'too big')
-        return (s, ['too big'])
     if (patt - expected_incoming_gliders_pattern).population > args.max_population:
         return (s, ['too big'])
 
     infos = set()
 
     if args.only_gliders:
-        if patt.population % 5 or patt.population >= 5 + 5 * args.n_gun_gliders:
+        if patt.population % 5:
             return
         diff = patt - reference
-        if diff.population != 5:
+        if diff.population % 5 or diff.population < 5:
             return
-        if diff.centre() != diff[4].centre():
+        if diff.centre() != diff[4].centre() or diff == diff[4]:
             return
-        gli_info = component_info(diff)
-        if not gli_info.startswith("glider"):
-            return
-        for i in range(patt.population // 5 - 1):
-            infos.add(f"g{i}")
-        infos.add(gli_info)
+        if args.only_90_degree_gliders:
+            a = tuple(patt.getrect())
+            b = tuple(patt[4].getrect())
+            if (a[0] - b[0], a[1] - b[1]) in ((-1, -1), (1, 1)):
+                return
+        components = pattern_components(patt)
+        for c in components:
+            info = component_info(c, False)
+            if info is not None:
+                infos.add(info)
     else:
         components = pattern_components(patt)
         has_unidentified = False
@@ -646,7 +654,9 @@ def recurse(s, depth=0):
 
     if not args.to_apgluxe:
         patt_n = patt[simulate_gens]
-        print(*evaluate(s, patt_n))
+        v = evaluate(s, patt_n)
+        if v:
+            print(*v)
     else:
         print(patt.rle_string()[len("#CLL state-numbering golly\n") :])
 
@@ -677,7 +687,7 @@ if __name__ == "__main__":
     if args.concurrent:
         print("Generating jobs...", file=sys.stderr)
         if not args.subtree:
-            args.subtree = [SubTreeDef("0-7")]
+            args.subtree = [SubtreeDef("0-7")]
         len_all_options = 0
         for subtree in args.subtree:
             for depth in range(0, args.depth - len(subtree.options) + 1):
