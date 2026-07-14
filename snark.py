@@ -830,11 +830,11 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         end_pattern1 = end_pattern[1]
         end_pattern2 = end_pattern1[1]
 
-        if shared_args.must_contain:
-            if not end_pattern.component_containing(rle_to_pattern(shared_args.must_contain)).nonempty():
-                break
-
         if end_pattern == end_pattern1:
+            if shared_args.must_contain:
+                if not end_pattern.match(rle_to_pattern(shared_args.must_contain)).nonempty():
+                    continue
+
             score = score_pattern(
                 job=job,
                 follow_up=next_possibility,
@@ -846,6 +846,10 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
             if score:
                 result.valid_children.append(score)
         elif end_pattern == end_pattern2:
+            if shared_args.must_contain:
+                if not end_pattern.match(rle_to_pattern(shared_args.must_contain)).nonempty():
+                    continue
+
             score1 = score_pattern(
                 job=job,
                 follow_up=next_possibility,
