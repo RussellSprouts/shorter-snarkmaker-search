@@ -1,3 +1,4 @@
+import functools
 import multiprocessing
 
 import itertools
@@ -426,6 +427,7 @@ class OptimizeArgs:
     n_fast_gen_options: int
     fast_gen_options: bytes
     reset_gen_options: bytes
+    must_contain: str
 
 
 def abs_lane(x):
@@ -784,7 +786,6 @@ def combine_score(
         ),
     )
 
-
 def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
     starting_points = shared_args.starting_points
     max_gens = shared_args.max_gens
@@ -828,6 +829,10 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         end_pattern = just_after_hit2[1024 - 22]
         end_pattern1 = end_pattern[1]
         end_pattern2 = end_pattern1[1]
+
+        if shared_args.must_contain:
+            if not end_pattern.component_containing(rle_to_pattern(shared_args.must_contain)).nonempty():
+                break
 
         if end_pattern == end_pattern1:
             score = score_pattern(
@@ -914,7 +919,8 @@ def optimize(
     live_view_depth: float,
     depth_range: str,
     n_results_limit: int,
-    merged_stream_gen_options: str
+    merged_stream_gen_options: str,
+    must_contain: str,
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -968,6 +974,7 @@ def optimize(
         n_fast_gen_options=n_fast_gen_options,
         fast_gen_options=bytes(fast_gen_options),
         reset_gen_options=bytes(reset_gen_options),
+        must_contain=must_contain,
     )
     queue_stats = output_db.queue_stats
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -1231,6 +1238,10 @@ def autoshrink(
         )
 
 
+@functools.lru_cache(maxsize=None)
+def rle_to_pattern(rle):
+    return lt.pattern(rle)
+
 def recipe_tree(recipe_intermediates_db, start):
     recipes_db = ProcessingDatabase(recipe_intermediates_db)
     intermediates = recipes_db.recipe_intermediates
@@ -1404,6 +1415,12 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="NxA;B. E.g., '4x35-256;67-256'. This indicates that our construction arm can gliders with 67 tick minimum spacing. Additionally, we may send up to 4 gliders with a spacing as close as 35 ticks before we need to reset with a 67 tick spaced glider."
+    )
+    parser_optimize.add_argument(
+        "--must-contain",
+        type=str,
+        default=None,
+        help="Rle for a pattern that must be included in a result for it to be processed."
     )
 
     parser_view_results = subcommand.add_parser(
@@ -1676,6 +1693,7 @@ if __name__ == "__main__":
                 depth_range=args.depth_range,
                 n_results_limit=float('inf'),
                 merged_stream_gen_options=args.merged_stream_gen_options,
+                must_contain=args.must_contain,
             )
         case "view-results":
             print("Show completion", args.show_completion)

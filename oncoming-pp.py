@@ -175,6 +175,19 @@ def parse_objects(objs):
         'objects': results
     }
 
+class Result:
+    def __init__(self, rec, min_follow, total_time, consumed, glider):
+        self.rec = rec
+        self.min_follow = min_follow
+        self.total_time = total_time
+        self.consumed = consumed
+        self.glider = glider
+
+    def __repr__(self):
+        return (self.rec +
+            f', ({self.min_follow}) {{total: {self.total_time}}} {{consumed: {self.consumed}}}' +
+            (' glider' + self.glider))
+
 seen = set()
 types = [(i[0]+j[0]+k[0], j[1]+' '+i[1]+' '+k[1]) for j in [('⬀', 'NE'), ('⬃', 'SW')]
                    for i in [('♗', 'black'), ('♝', 'white')]
@@ -203,9 +216,13 @@ with args.recipes.open() as results_file:
                 minimum_follow = find_minimum_follow(m.group(1), info['consumed'])
                 if not minimum_follow: continue
                 total_time = sum(stream[1:]) + minimum_follow
-                desc = m.group(1) + \
-                    f', ({minimum_follow}) {{total: {total_time}}} {{consumed: {info['consumed']}}}' + \
-                    (' glider' + info['objects'][0]['info'] if info['objects'] else '')
+                desc = Result(
+                    m.group(1),
+                    minimum_follow,
+                    total_time,
+                    info['consumed'],
+                    info['objects'][0]['info'] if info['objects'] else ''
+                )
                 print(desc)
                 recs[info['objects'][0]['info'].split('(')[-1][:-1]].append(desc)
 
@@ -214,5 +231,5 @@ print(args.toolkit.name)
 for a, b in types:
     print()
     print(b)
-    for i in recs[a]:
+    for i in sorted(recs[a], key=lambda a: (a.total_time, a.consumed)):
         print(i)

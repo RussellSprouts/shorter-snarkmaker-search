@@ -1,0 +1,402 @@
+sc43b1p46
+
+NE black even
+1, 52, 45, 57, (43) {total: 197} {consumed: 3} glider(d-12)(ph2)(♗⬀⓪)
+7, 52, 60, 88, (43) {total: 243} {consumed: 4} glider(d18)(ph0)(♗⬀⓪)
+1, 102, 65, 61, (43) {total: 271} {consumed: 5} glider(d0)(ph0)(♗⬀⓪)
+1, 118, 45, 97, (43) {total: 303} {consumed: 6} glider(d10)(ph0)(♗⬀⓪)
+1, 56, 63, 55, (141) {total: 315} {consumed: 7} glider(d2)(ph2)(♗⬀⓪)
+7, 103, 47, 64, (103) {total: 317} {consumed: 8} glider(d10)(ph0)(♗⬀⓪)
+1, 87, 89, 56, (93) {total: 325} {consumed: 7} glider(d10)(ph2)(♗⬀⓪)
+1, 115, 60, 53, (138) {total: 366} {consumed: 9} glider(d-4)(ph0)(♗⬀⓪)
+
+NE black odd
+1, 79, 51, 58, (43) {total: 231} {consumed: 5} glider(d-16)(ph1)(♗⬀①)
+1, 86, 121, (43) {total: 250} {consumed: 6} glider(d-16)(ph1)(♗⬀①)
+0, 45, 103, 71, (43) {total: 262} {consumed: 7} glider(d-18)(ph3)(♗⬀①)
+0, 45, 103, 99, (43) {total: 290} {consumed: 8} glider(d-18)(ph3)(♗⬀①)
+0, 53, 82, 91, (124) {total: 350} {consumed: 9} glider(d-16)(ph3)(♗⬀①)
+0, 45, 103, 95, (117) {total: 360} {consumed: 10} glider(d-18)(ph3)(♗⬀①)
+
+NE white even
+1, 55, 64, (50) {total: 169} {consumed: 4} glider(d13)(ph0)(♝⬀⓪)
+1, 72, 45, 45, (43) {total: 205} {consumed: 3} glider(d17)(ph0)(♝⬀⓪)
+1, 55, 64, 51, (43) {total: 213} {consumed: 5} glider(d13)(ph0)(♝⬀⓪)
+0, 53, 55, 64, (50) {total: 222} {consumed: 6} glider(d3)(ph0)(♝⬀⓪)
+1, 86, 90, 70, (49) {total: 295} {consumed: 7} glider(d3)(ph2)(♝⬀⓪)
+1, 111, 73, 64, (57) {total: 305} {consumed: 8} glider(d-1)(ph2)(♝⬀⓪)
+
+NE white odd
+1, 82, 96, 53, (44) {total: 275} {consumed: 8} glider(d-17)(ph3)(♝⬀①)
+1, 87, 80, 55, (58) {total: 280} {consumed: 6} glider(d-1)(ph3)(♝⬀①)
+2, 64, 50, 111, (57) {total: 282} {consumed: 7} glider(d-15)(ph1)(♝⬀①)
+
+SW black even
+6, 59, 72, (47) {total: 178} {consumed: 6} glider(d6)(ph0)(♗⬃⓪)
+1, 46, 69, 63, (43) {total: 221} {consumed: 5} glider(d0)(ph0)(♗⬃⓪)
+0, 50, 59, 72, (47) {total: 228} {consumed: 8} glider(d-6)(ph0)(♗⬃⓪)
+1, 115, 117, 74, (43) {total: 349} {consumed: 9} glider(d-6)(ph0)(♗⬃⓪)
+0, 69, 115, 117, (73) {total: 374} {consumed: 10} glider(d-12)(ph0)(♗⬃⓪)
+
+SW black odd
+1, 79, 57, 47, (49) {total: 232} {consumed: 5} glider(d-4)(ph1)(♗⬃①)
+2, 72, 69, 60, (44) {total: 245} {consumed: 4} glider(d10)(ph3)(♗⬃①)
+1, 112, 58, 51, (43) {total: 264} {consumed: 6} glider(d-8)(ph1)(♗⬃①)
+1, 78, 45, 111, (75) {total: 309} {consumed: 7} glider(d16)(ph1)(♗⬃①)
+1, 87, 109, 55, (70) {total: 321} {consumed: 8} glider(d12)(ph3)(♗⬃①)
+
+SW white even
+1, 55, 44, 62, (43) {total: 204} {consumed: 4} glider(d15)(ph2)(♝⬃⓪)
+2, 72, 43, (99) {total: 214} {consumed: 6} glider(d-17)(ph0)(♝⬃⓪)
+3, 45, 72, 43, (99) {total: 259} {consumed: 7} glider(d-17)(ph2)(♝⬃⓪)
+0, 54, 72, 43, (99) {total: 268} {consumed: 8} glider(d-27)(ph0)(♝⬃⓪)
+1, 104, 86, 77, (121) {total: 388} {consumed: 9} glider(d13)(ph2)(♝⬃⓪)
+
+SW white odd
+1, 53, 43, 52, (43) {total: 191} {consumed: 2} glider(d9)(ph3)(♝⬃①)
+1, 44, 59, 48, (43) {total: 194} {consumed: 3} glider(d3)(ph1)(♝⬃①)
+1, 55, 75, 43, (67) {total: 240} {consumed: 5} glider(d-1)(ph3)(♝⬃①)
+1, 75, 62, 45, (58) {total: 240} {consumed: 6} glider(d-15)(ph1)(♝⬃①)
+1, 76, 107, 45, (58) {total: 286} {consumed: 7} glider(d-15)(ph3)(♝⬃①)
+1, 86, 71, 59, (84) {total: 300} {consumed: 9} glider(d1)(ph1)(♝⬃①)
+0, 54, 102, 48, (190) {total: 394} {consumed: 10} glider(d1)(ph1)(♝⬃①)
+
+
+sc43b2p46
+
+NE black even
+2, 79, 61, 55, (43) {total: 238} {consumed: 5} glider(d0)(ph2)(♗⬀⓪)
+6, 78, 59, 76, (43) {total: 256} {consumed: 6} glider(d-6)(ph0)(♗⬀⓪)
+6, 56, 91, 80, (43) {total: 270} {consumed: 7} glider(d-2)(ph0)(♗⬀⓪)
+6, 72, 75, 53, (95) {total: 295} {consumed: 8} glider(d-8)(ph2)(♗⬀⓪)
+2, 112, 91, 95, (45) {total: 343} {consumed: 10} glider(d-36)(ph0)(♗⬀⓪)
+
+NE black odd
+6, 61, 48, 62, (43) {total: 214} {consumed: 6} glider(d-10)(ph3)(♗⬀①)
+2, 95, 62, 63, (43) {total: 263} {consumed: 5} glider(d2)(ph3)(♗⬀①)
+0, 48, 86, 83, (53) {total: 270} {consumed: 7} glider(d-10)(ph3)(♗⬀①)
+6, 115, 46, 86, (62) {total: 309} {consumed: 8} glider(d-6)(ph1)(♗⬀①)
+6, 86, 90, 81, (98) {total: 355} {consumed: 9} glider(d-12)(ph1)(♗⬀①)
+
+NE white even
+6, 72, 67, 50, (43) {total: 232} {consumed: 5} glider(d5)(ph0)(♝⬀⓪)
+6, 48, 76, 79, (43) {total: 246} {consumed: 4} glider(d13)(ph0)(♝⬀⓪)
+2, 100, 44, 48, (61) {total: 253} {consumed: 6} glider(d11)(ph0)(♝⬀⓪)
+6, 54, 115, (96) {total: 265} {consumed: 7} glider(d-21)(ph2)(♝⬀⓪)
+6, 54, 115, 95, (43) {total: 307} {consumed: 8} glider(d-21)(ph2)(♝⬀⓪)
+6, 78, 108, 82, (43) {total: 311} {consumed: 9} glider(d-23)(ph2)(♝⬀⓪)
+2, 92, 98, 128, (54) {total: 372} {consumed: 10} glider(d9)(ph0)(♝⬀⓪)
+
+NE white odd
+6, 115, 52, (43) {total: 210} {consumed: 6} glider(d-23)(ph1)(♝⬀①)
+2, 86, 43, 60, (43) {total: 232} {consumed: 5} glider(d-7)(ph3)(♝⬀①)
+6, 115, 52, 43, (43) {total: 253} {consumed: 7} glider(d-23)(ph1)(♝⬀①)
+6, 78, 107, 49, (65) {total: 299} {consumed: 8} glider(d-19)(ph3)(♝⬀①)
+6, 86, 97, 48, (94) {total: 325} {consumed: 9} glider(d-9)(ph1)(♝⬀①)
+2, 107, 108, 128, (43) {total: 386} {consumed: 10} glider(d-11)(ph3)(♝⬀①)
+
+SW black even
+6, 49, 59, 47, (55) {total: 210} {consumed: 6} glider(d-6)(ph2)(♗⬃⓪)
+6, 72, 79, 43, (43) {total: 237} {consumed: 4} glider(d-2)(ph2)(♗⬃⓪)
+2, 91, 67, 44, (43) {total: 245} {consumed: 5} glider(d4)(ph2)(♗⬃⓪)
+6, 94, 66, 81, (43) {total: 284} {consumed: 7} glider(d-10)(ph2)(♗⬃⓪)
+6, 82, 56, 95, (71) {total: 304} {consumed: 10} glider(d-44)(ph0)(♗⬃⓪)
+
+SW black odd
+2, 48, 59, 44, (56) {total: 207} {consumed: 3} glider(d4)(ph1)(♗⬃①)
+6, 49, 63, 59, (43) {total: 214} {consumed: 5} glider(d-2)(ph1)(♗⬃①)
+2, 43, 71, 51, (49) {total: 214} {consumed: 7} glider(d-6)(ph3)(♗⬃①)
+6, 121, 100, 48, (50) {total: 319} {consumed: 8} glider(d-2)(ph3)(♗⬃①)
+6, 122, 105, 55, (43) {total: 325} {consumed: 9} glider(d-20)(ph1)(♗⬃①)
+6, 53, 117, 76, (107) {total: 353} {consumed: 10} glider(d2)(ph3)(♗⬃①)
+
+SW white even
+6, 52, 48, (43) {total: 143} {consumed: 3} glider(d-5)(ph0)(♝⬃⓪)
+0, 44, 52, 48, (43) {total: 187} {consumed: 4} glider(d-7)(ph2)(♝⬃⓪)
+6, 52, 46, 43, (79) {total: 220} {consumed: 5} glider(d-5)(ph0)(♝⬃⓪)
+6, 78, 45, 54, (43) {total: 220} {consumed: 6} glider(d-21)(ph2)(♝⬃⓪)
+6, 73, 69, 74, (43) {total: 259} {consumed: 7} glider(d-19)(ph2)(♝⬃⓪)
+2, 45, 51, 75, (101) {total: 272} {consumed: 8} glider(d-7)(ph0)(♝⬃⓪)
+6, 90, 67, 88, (61) {total: 306} {consumed: 9} glider(d-11)(ph2)(♝⬃⓪)
+6, 54, 100, 59, (142) {total: 355} {consumed: 10} glider(d-11)(ph0)(♝⬃⓪)
+
+SW white odd
+2, 91, 76, 43, (61) {total: 271} {consumed: 4} glider(d25)(ph3)(♝⬃①)
+2, 48, 69, 50, (107) {total: 274} {consumed: 6} glider(d15)(ph3)(♝⬃①)
+6, 124, 63, 61, (43) {total: 291} {consumed: 8} glider(d-21)(ph1)(♝⬃①)
+2, 98, 54, 93, (51) {total: 296} {consumed: 7} glider(d-3)(ph1)(♝⬃①)
+2, 112, 57, 64, (107) {total: 340} {consumed: 10} glider(d-5)(ph1)(♝⬃①)
+6, 124, 74, 62, (89) {total: 349} {consumed: 9} glider(d-21)(ph1)(♝⬃①)
+
+
+sc43b3p46
+
+NE black even
+5, 47, 56, 56, (49) {total: 208} {consumed: 4} glider(d0)(ph0)(♗⬀⓪)
+2, 56, 63, 56, (43) {total: 218} {consumed: 5} glider(d-6)(ph0)(♗⬀⓪)
+6, 45, 65, 75, (43) {total: 228} {consumed: 6} glider(d-14)(ph2)(♗⬀⓪)
+2, 46, 62, 113, (50) {total: 271} {consumed: 7} glider(d-2)(ph0)(♗⬀⓪)
+7, 49, 128, 56, (96) {total: 329} {consumed: 8} glider(d4)(ph0)(♗⬀⓪)
+3, 43, 69, 47, (227) {total: 386} {consumed: 10} glider(d-28)(ph0)(♗⬀⓪)
+6, 58, 112, 128, (91) {total: 389} {consumed: 9} glider(d18)(ph0)(♗⬀⓪)
+
+NE black odd
+3, 48, 44, (43) {total: 135} {consumed: 6} glider(d-24)(ph3)(♗⬀①)
+5, 78, 55, (43) {total: 176} {consumed: 3} glider(d10)(ph1)(♗⬀①)
+6, 54, 82, (43) {total: 179} {consumed: 5} glider(d-2)(ph3)(♗⬀①)
+3, 43, 49, 45, (43) {total: 180} {consumed: 7} glider(d-24)(ph3)(♗⬀①)
+1, 54, 49, 43, (43) {total: 189} {consumed: 8} glider(d-34)(ph3)(♗⬀①)
+5, 106, 110, 44, (43) {total: 303} {consumed: 9} glider(d-16)(ph1)(♗⬀①)
+1, 61, 53, 117, (87) {total: 318} {consumed: 10} glider(d-16)(ph3)(♗⬀①)
+
+NE white even
+2, 56, 64, (43) {total: 163} {consumed: 4} glider(d-1)(ph2)(♝⬀⓪)
+5, 54, 56, 52, (43) {total: 205} {consumed: 3} glider(d13)(ph0)(♝⬀⓪)
+2, 56, 64, 46, (43) {total: 209} {consumed: 5} glider(d-1)(ph2)(♝⬀⓪)
+1, 53, 56, 64, (43) {total: 216} {consumed: 6} glider(d-11)(ph2)(♝⬀⓪)
+6, 54, 59, 77, (43) {total: 233} {consumed: 7} glider(d-27)(ph0)(♝⬀⓪)
+6, 46, 61, 90, (65) {total: 262} {consumed: 8} glider(d-21)(ph2)(♝⬀⓪)
+5, 113, 73, 90, (65) {total: 341} {consumed: 9} glider(d-13)(ph0)(♝⬀⓪)
+2, 79, 110, 96, (65) {total: 350} {consumed: 10} glider(d-23)(ph2)(♝⬀⓪)
+
+NE white odd
+7, 61, 44, (61) {total: 166} {consumed: 3} glider(d1)(ph3)(♝⬀①)
+2, 61, 87, (43) {total: 191} {consumed: 4} glider(d1)(ph3)(♝⬀①)
+1, 58, 61, 44, (61) {total: 224} {consumed: 5} glider(d-9)(ph3)(♝⬀①)
+5, 65, 83, (83) {total: 231} {consumed: 6} glider(d21)(ph3)(♝⬀①)
+2, 77, 63, 56, (43) {total: 239} {consumed: 7} glider(d-23)(ph1)(♝⬀①)
+1, 72, 65, 83, (83) {total: 303} {consumed: 8} glider(d15)(ph3)(♝⬀①)
+2, 76, 101, 88, (78) {total: 343} {consumed: 9} glider(d-15)(ph3)(♝⬀①)
+6, 45, 93, (255) {total: 393} {consumed: 10} glider(d-7)(ph3)(♝⬀①)
+
+SW black even
+6, 55, 80, (43) {total: 178} {consumed: 4} glider(d-8)(ph0)(♗⬃⓪)
+5, 83, 69, (47) {total: 199} {consumed: 5} glider(d8)(ph2)(♗⬃⓪)
+6, 55, 106, (64) {total: 225} {consumed: 6} glider(d-8)(ph0)(♗⬃⓪)
+1, 44, 71, 80, (53) {total: 248} {consumed: 7} glider(d-10)(ph0)(♗⬃⓪)
+1, 57, 55, 106, (64) {total: 282} {consumed: 8} glider(d-18)(ph0)(♗⬃⓪)
+1, 53, 120, 90, (43) {total: 306} {consumed: 9} glider(d-18)(ph2)(♗⬃⓪)
+
+SW black odd
+6, 82, 54, (64) {total: 200} {consumed: 4} glider(d-6)(ph3)(♗⬃①)
+1, 49, 58, 61, (59) {total: 227} {consumed: 5} glider(d-4)(ph3)(♗⬃①)
+1, 57, 82, 54, (64) {total: 257} {consumed: 6} glider(d-16)(ph3)(♗⬃①)
+2, 71, 54, 106, (63) {total: 294} {consumed: 7} glider(d-12)(ph3)(♗⬃①)
+2, 46, 115, 65, (89) {total: 315} {consumed: 8} glider(d8)(ph3)(♗⬃①)
+2, 120, 98, 55, (96) {total: 369} {consumed: 9} glider(d-6)(ph3)(♗⬃①)
+
+SW white even
+3, 43, 57, 44, (43) {total: 187} {consumed: 6} glider(d-25)(ph2)(♝⬃⓪)
+5, 45, 68, 43, (43) {total: 199} {consumed: 4} glider(d-3)(ph0)(♝⬃⓪)
+5, 64, 56, 55, (43) {total: 218} {consumed: 3} glider(d17)(ph0)(♝⬃⓪)
+6, 55, 74, 49, (43) {total: 221} {consumed: 5} glider(d-3)(ph0)(♝⬃⓪)
+6, 63, 98, (91) {total: 252} {consumed: 7} glider(d1)(ph0)(♝⬃⓪)
+7, 63, 78, 60, (62) {total: 263} {consumed: 8} glider(d-41)(ph2)(♝⬃⓪)
+1, 57, 63, 98, (91) {total: 309} {consumed: 9} glider(d-9)(ph0)(♝⬃⓪)
+
+SW white odd
+2, 50, 52, 52, (43) {total: 197} {consumed: 5} glider(d-5)(ph3)(♝⬃①)
+2, 54, 47, 55, (43) {total: 199} {consumed: 4} glider(d7)(ph1)(♝⬃①)
+5, 56, 56, 46, (43) {total: 201} {consumed: 3} glider(d11)(ph1)(♝⬃①)
+6, 54, 53, 58, (68) {total: 233} {consumed: 6} glider(d-3)(ph1)(♝⬃①)
+2, 54, 44, 54, (94) {total: 246} {consumed: 7} glider(d-7)(ph3)(♝⬃①)
+2, 93, 94, 73, (43) {total: 303} {consumed: 8} glider(d-13)(ph1)(♝⬃①)
+2, 45, 114, 63, (102) {total: 324} {consumed: 9} glider(d-9)(ph3)(♝⬃①)
+7, 58, 75, 74, (151) {total: 358} {consumed: 10} glider(d-27)(ph3)(♝⬃①)
+
+
+sc43b4p46
+
+NE black even
+1, 46, 62, 65, (43) {total: 216} {consumed: 7} glider(d0)(ph2)(♗⬀⓪)
+1, 46, 60, 68, (45) {total: 219} {consumed: 8} glider(d0)(ph2)(♗⬀⓪)
+5, 46, 50, 98, (53) {total: 247} {consumed: 4} glider(d12)(ph0)(♗⬀⓪)
+1, 109, 56, 62, (43) {total: 270} {consumed: 6} glider(d-4)(ph0)(♗⬀⓪)
+
+NE black odd
+5, 61, 64, 51, (43) {total: 219} {consumed: 5} glider(d18)(ph1)(♗⬀①)
+5, 65, 72, 46, (43) {total: 226} {consumed: 4} glider(d24)(ph3)(♗⬀①)
+5, 50, 78, 45, (106) {total: 279} {consumed: 6} glider(d2)(ph1)(♗⬀①)
+1, 126, 52, 54, (75) {total: 307} {consumed: 8} glider(d6)(ph1)(♗⬀①)
+1, 57, 65, 47, (164) {total: 333} {consumed: 7} glider(d-30)(ph3)(♗⬀①)
+
+NE white even
+7, 53, 68, 46, (43) {total: 210} {consumed: 4} glider(d-1)(ph2)(♝⬀⓪)
+7, 53, 61, 95, (43) {total: 252} {consumed: 5} glider(d5)(ph0)(♝⬀⓪)
+1, 92, 44, 84, (67) {total: 287} {consumed: 7} glider(d-3)(ph2)(♝⬀⓪)
+1, 92, 44, 110, (43) {total: 289} {consumed: 6} glider(d-3)(ph0)(♝⬀⓪)
+5, 48, 108, 110, (97) {total: 363} {consumed: 8} glider(d5)(ph2)(♝⬀⓪)
+
+NE white odd
+5, 65, 73, (44) {total: 182} {consumed: 3} glider(d19)(ph1)(♝⬀①)
+1, 102, 54, (43) {total: 199} {consumed: 5} glider(d-5)(ph3)(♝⬀①)
+0, 43, 65, 73, (44) {total: 225} {consumed: 4} glider(d17)(ph3)(♝⬀①)
+0, 47, 102, 54, (43) {total: 246} {consumed: 6} glider(d-5)(ph1)(♝⬀①)
+7, 60, 102, 54, (43) {total: 259} {consumed: 8} glider(d-23)(ph1)(♝⬀①)
+1, 115, 53, 46, (84) {total: 298} {consumed: 7} glider(d5)(ph3)(♝⬀①)
+
+SW black even
+5, 62, 61, (87) {total: 210} {consumed: 4} glider(d-6)(ph0)(♗⬃⓪)
+1, 63, 71, 48, (47) {total: 229} {consumed: 5} glider(d2)(ph0)(♗⬃⓪)
+5, 48, 74, 86, (43) {total: 251} {consumed: 6} glider(d0)(ph2)(♗⬃⓪)
+5, 62, 61, 87, (61) {total: 271} {consumed: 7} glider(d-6)(ph0)(♗⬃⓪)
+5, 62, 79, 124, (114) {total: 379} {consumed: 8} glider(d-6)(ph0)(♗⬃⓪)
+1, 85, 90, 117, (97) {total: 389} {consumed: 9} glider(d2)(ph0)(♗⬃⓪)
+
+SW black odd
+1, 54, 46, 43, (43) {total: 186} {consumed: 4} glider(d-4)(ph3)(♗⬃①)
+1, 84, 61, 47, (45) {total: 237} {consumed: 5} glider(d6)(ph1)(♗⬃①)
+1, 103, 63, (79) {total: 245} {consumed: 6} glider(d-18)(ph1)(♗⬃①)
+1, 87, 43, 58, (79) {total: 267} {consumed: 7} glider(d-24)(ph3)(♗⬃①)
+1, 84, 61, 99, (61) {total: 305} {consumed: 8} glider(d6)(ph1)(♗⬃①)
+7, 60, 103, 63, (79) {total: 305} {consumed: 9} glider(d-36)(ph3)(♗⬃①)
+7, 60, 84, 103, (98) {total: 345} {consumed: 10} glider(d-12)(ph3)(♗⬃①)
+
+SW white even
+1, 74, 53, 47, (43) {total: 217} {consumed: 4} glider(d-5)(ph2)(♝⬃⓪)
+1, 72, 55, 52, (46) {total: 225} {consumed: 5} glider(d7)(ph2)(♝⬃⓪)
+1, 74, 55, 55, (43) {total: 227} {consumed: 6} glider(d-5)(ph2)(♝⬃⓪)
+1, 74, 52, 48, (86) {total: 260} {consumed: 7} glider(d-5)(ph2)(♝⬃⓪)
+1, 94, 46, 64, (168) {total: 372} {consumed: 8} glider(d-15)(ph0)(♝⬃⓪)
+
+SW white odd
+7, 53, 46, 69, (44) {total: 212} {consumed: 4} glider(d-3)(ph1)(♝⬃①)
+5, 65, 52, 82, (75) {total: 274} {consumed: 5} glider(d31)(ph1)(♝⬃①)
+2, 53, 128, 95, (44) {total: 320} {consumed: 8} glider(d9)(ph1)(♝⬃①)
+5, 57, 123, 62, (106) {total: 348} {consumed: 6} glider(d35)(ph3)(♝⬃①)
+
+
+sc43b5p46
+
+NE black even
+3, 53, 48, (43) {total: 144} {consumed: 3} glider(d-10)(ph2)(♗⬀⓪)
+3, 53, (93) {total: 146} {consumed: 4} glider(d-10)(ph2)(♗⬀⓪)
+1, 46, 53, 48, (43) {total: 190} {consumed: 5} glider(d-22)(ph2)(♗⬀⓪)
+1, 46, 53, (93) {total: 192} {consumed: 6} glider(d-22)(ph2)(♗⬀⓪)
+3, 90, 53, (93) {total: 236} {consumed: 7} glider(d-22)(ph0)(♗⬀⓪)
+1, 44, 46, 53, (93) {total: 236} {consumed: 8} glider(d-34)(ph2)(♗⬀⓪)
+1, 46, 90, 53, (93) {total: 282} {consumed: 9} glider(d-34)(ph0)(♗⬀⓪)
+3, 90, 90, 53, (93) {total: 326} {consumed: 10} glider(d-34)(ph2)(♗⬀⓪)
+
+NE black odd
+7, 56, 72, 45, (43) {total: 216} {consumed: 5} glider(d-6)(ph1)(♗⬀①)
+3, 82, 53, 70, (55) {total: 260} {consumed: 7} glider(d0)(ph1)(♗⬀①)
+3, 52, 51, 84, (86) {total: 273} {consumed: 8} glider(d8)(ph3)(♗⬀①)
+2, 93, 117, 64, (89) {total: 363} {consumed: 10} glider(d-10)(ph1)(♗⬀①)
+2, 69, 55, 117, (158) {total: 399} {consumed: 9} glider(d-2)(ph3)(♗⬀①)
+
+NE white even
+3, 73, 61, (60) {total: 194} {consumed: 6} glider(d-17)(ph0)(♝⬀⓪)
+7, 66, 80, (57) {total: 203} {consumed: 5} glider(d-9)(ph0)(♝⬀⓪)
+7, 58, 86, 52, (43) {total: 239} {consumed: 4} glider(d11)(ph0)(♝⬀⓪)
+1, 46, 73, 61, (60) {total: 240} {consumed: 8} glider(d-29)(ph0)(♝⬀⓪)
+0, 49, 73, 61, (60) {total: 243} {consumed: 7} glider(d-17)(ph2)(♝⬀⓪)
+3, 90, 73, 61, (60) {total: 284} {consumed: 9} glider(d-29)(ph2)(♝⬀⓪)
+1, 46, 73, 104, (135) {total: 358} {consumed: 10} glider(d-29)(ph0)(♝⬀⓪)
+
+NE white odd
+3, 48, 61, 49, (43) {total: 201} {consumed: 4} glider(d3)(ph1)(♝⬀①)
+3, 77, 43, 55, (70) {total: 245} {consumed: 5} glider(d1)(ph1)(♝⬀①)
+2, 50, 77, 94, (43) {total: 264} {consumed: 8} glider(d-31)(ph1)(♝⬀①)
+3, 67, 85, 83, (45) {total: 280} {consumed: 7} glider(d1)(ph3)(♝⬀①)
+5, 68, 115, 55, (43) {total: 281} {consumed: 6} glider(d7)(ph3)(♝⬀①)
+3, 82, 80, 60, (98) {total: 320} {consumed: 9} glider(d-7)(ph3)(♝⬀①)
+
+SW black even
+3, 48, 47, 43, (43) {total: 181} {consumed: 3} glider(d-10)(ph0)(♗⬃⓪)
+2, 50, 97, (43) {total: 190} {consumed: 5} glider(d-12)(ph2)(♗⬃⓪)
+3, 50, 43, 62, (43) {total: 198} {consumed: 4} glider(d0)(ph2)(♗⬃⓪)
+3, 50, 95, 43, (43) {total: 231} {consumed: 6} glider(d10)(ph0)(♗⬃⓪)
+1, 45, 50, 97, (43) {total: 235} {consumed: 7} glider(d-24)(ph2)(♗⬃⓪)
+2, 50, 97, 44, (88) {total: 279} {consumed: 8} glider(d-12)(ph2)(♗⬃⓪)
+1, 50, 56, 45, (162) {total: 313} {consumed: 9} glider(d-6)(ph0)(♗⬃⓪)
+3, 94, 56, 45, (162) {total: 357} {consumed: 10} glider(d-6)(ph2)(♗⬃⓪)
+
+SW black odd
+6, 45, 58, 43, (43) {total: 189} {consumed: 2} glider(d12)(ph1)(♗⬃①)
+7, 76, 45, 65, (43) {total: 229} {consumed: 5} glider(d2)(ph3)(♗⬃①)
+2, 100, 50, 45, (43) {total: 238} {consumed: 7} glider(d-34)(ph1)(♗⬃①)
+5, 65, 53, 83, (43) {total: 244} {consumed: 6} glider(d8)(ph1)(♗⬃①)
+2, 113, 46, 52, (46) {total: 257} {consumed: 8} glider(d-10)(ph3)(♗⬃①)
+7, 90, 61, 94, (143) {total: 388} {consumed: 9} glider(d-2)(ph1)(♗⬃①)
+
+SW white even
+3, 60, 112, (43) {total: 215} {consumed: 4} glider(d-5)(ph2)(♝⬃⓪)
+3, 50, 45, 88, (43) {total: 226} {consumed: 5} glider(d7)(ph2)(♝⬃⓪)
+2, 55, 72, 57, (47) {total: 231} {consumed: 6} glider(d-23)(ph0)(♝⬃⓪)
+2, 95, 50, 49, (43) {total: 237} {consumed: 7} glider(d1)(ph0)(♝⬃⓪)
+3, 82, 84, 65, (85) {total: 316} {consumed: 8} glider(d9)(ph2)(♝⬃⓪)
+7, 68, 61, 89, (134) {total: 352} {consumed: 10} glider(d-1)(ph0)(♝⬃⓪)
+3, 60, 57, 50, (192) {total: 359} {consumed: 9} glider(d-5)(ph0)(♝⬃⓪)
+
+SW white odd
+5, 64, 48, (57) {total: 169} {consumed: 4} glider(d-1)(ph3)(♝⬃①)
+0, 43, 64, 48, (57) {total: 212} {consumed: 5} glider(d-3)(ph1)(♝⬃①)
+1, 48, 64, 48, (57) {total: 217} {consumed: 6} glider(d-13)(ph3)(♝⬃①)
+3, 92, 64, 48, (57) {total: 261} {consumed: 7} glider(d-13)(ph1)(♝⬃①)
+5, 97, 43, 108, (43) {total: 291} {consumed: 8} glider(d-3)(ph3)(♝⬃①)
+5, 64, 61, 78, (118) {total: 321} {consumed: 9} glider(d-1)(ph3)(♝⬃①)
+5, 62, 50, 95, (150) {total: 357} {consumed: 10} glider(d-9)(ph3)(♝⬃①)
+
+
+sc43b6p46
+
+NE black even
+7, 105, 53, 46, (52) {total: 256} {consumed: 7} glider(d-14)(ph0)(♗⬀⓪)
+7, 76, 46, 112, (43) {total: 277} {consumed: 5} glider(d20)(ph0)(♗⬀⓪)
+7, 76, 46, 113, (43) {total: 278} {consumed: 6} glider(d20)(ph0)(♗⬀⓪)
+1, 43, 125, 75, (145) {total: 388} {consumed: 10} glider(d-22)(ph0)(♗⬀⓪)
+7, 102, 68, 44, (178) {total: 392} {consumed: 8} glider(d0)(ph0)(♗⬀⓪)
+
+NE black odd
+7, 65, 68, (89) {total: 222} {consumed: 5} glider(d2)(ph1)(♗⬀①)
+7, 65, 68, 93, (43) {total: 269} {consumed: 6} glider(d2)(ph1)(♗⬀①)
+1, 50, 65, 68, (89) {total: 272} {consumed: 7} glider(d-10)(ph1)(♗⬀①)
+7, 85, 101, 83, (43) {total: 312} {consumed: 10} glider(d-12)(ph3)(♗⬀①)
+7, 103, 128, 93, (43) {total: 367} {consumed: 9} glider(d2)(ph1)(♗⬀①)
+0, 122, 48, 108, (104) {total: 382} {consumed: 8} glider(d2)(ph1)(♗⬀①)
+
+NE white even
+0, 43, 119, 52, (43) {total: 257} {consumed: 6} glider(d-9)(ph0)(♝⬀⓪)
+0, 114, 46, 60, (58) {total: 278} {consumed: 7} glider(d-15)(ph2)(♝⬀⓪)
+0, 116, 44, 98, (58) {total: 316} {consumed: 8} glider(d-17)(ph0)(♝⬀⓪)
+0, 127, 54, 63, (106) {total: 350} {consumed: 9} glider(d3)(ph2)(♝⬀⓪)
+
+NE white odd
+7, 85, 46, 64, (43) {total: 238} {consumed: 7} glider(d-17)(ph1)(♝⬀①)
+7, 94, 79, 83, (43) {total: 299} {consumed: 5} glider(d3)(ph3)(♝⬀①)
+0, 127, 49, 83, (43) {total: 302} {consumed: 9} glider(d-17)(ph1)(♝⬀①)
+7, 81, 112, 67, (43) {total: 303} {consumed: 8} glider(d-19)(ph1)(♝⬀①)
+
+SW black even
+7, 85, 67, 66, (43) {total: 261} {consumed: 5} glider(d16)(ph0)(♗⬃⓪)
+7, 87, 64, 70, (43) {total: 264} {consumed: 6} glider(d-4)(ph2)(♗⬃⓪)
+0, 116, 69, 57, (55) {total: 297} {consumed: 7} glider(d-6)(ph2)(♗⬃⓪)
+0, 127, 56, 74, (43) {total: 300} {consumed: 9} glider(d2)(ph2)(♗⬃⓪)
+0, 122, 53, 69, (58) {total: 302} {consumed: 8} glider(d8)(ph0)(♗⬃⓪)
+0, 127, 56, (205) {total: 388} {consumed: 10} glider(d2)(ph2)(♗⬃⓪)
+
+SW black odd
+7, 66, 48, (52) {total: 166} {consumed: 4} glider(d4)(ph3)(♗⬃①)
+7, 66, 48, 51, (43) {total: 208} {consumed: 5} glider(d4)(ph3)(♗⬃①)
+1, 50, 66, 48, (52) {total: 216} {consumed: 6} glider(d-8)(ph3)(♗⬃①)
+7, 79, 49, 87, (43) {total: 258} {consumed: 7} glider(d-12)(ph3)(♗⬃①)
+7, 68, 60, 45, (122) {total: 295} {consumed: 8} glider(d2)(ph3)(♗⬃①)
+0, 127, 65, 82, (68) {total: 342} {consumed: 9} glider(d-18)(ph3)(♗⬃①)
+
+SW white even
+7, 68, 51, 46, (46) {total: 211} {consumed: 5} glider(d5)(ph2)(♝⬃⓪)
+7, 105, 44, 43, (43) {total: 235} {consumed: 4} glider(d1)(ph0)(♝⬃⓪)
+0, 43, 118, 48, (67) {total: 276} {consumed: 6} glider(d-1)(ph2)(♝⬃⓪)
+0, 119, 53, 71, (43) {total: 286} {consumed: 7} glider(d7)(ph0)(♝⬃⓪)
+7, 68, 77, 109, (43) {total: 297} {consumed: 8} glider(d7)(ph0)(♝⬃⓪)
+1, 50, 78, 109, (136) {total: 373} {consumed: 9} glider(d-13)(ph0)(♝⬃⓪)
+0, 119, 43, 49, (166) {total: 377} {consumed: 10} glider(d-1)(ph0)(♝⬃⓪)
+
+SW white odd
+7, 74, (74) {total: 148} {consumed: 3} glider(d1)(ph1)(♝⬃①)
+7, 74, 76, (43) {total: 193} {consumed: 4} glider(d1)(ph1)(♝⬃①)
+1, 50, 74, (74) {total: 198} {consumed: 5} glider(d-11)(ph1)(♝⬃①)
+1, 44, 50, 74, (74) {total: 242} {consumed: 7} glider(d-23)(ph1)(♝⬃①)
+1, 50, 74, 76, (43) {total: 243} {consumed: 6} glider(d-11)(ph1)(♝⬃①)
+0, 127, 107, 43, (43) {total: 320} {consumed: 8} glider(d1)(ph1)(♝⬃①)
