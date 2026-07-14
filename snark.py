@@ -968,7 +968,7 @@ def optimize(
         recipe_intermediates=output_db.recipe_intermediates,
         component_search=None,
         max_gens=max_gens,
-        gen_options=gen_options,
+        gen_options=bytes(gen_options),
         min_offset_block_lane=min_offset_block_lane,
         snark_offsets=snark_offsets,
         partial_progress_factor=partial_progress_factor,
@@ -1239,6 +1239,7 @@ def autoshrink(
             live_view_depth=live_view_depth,
             n_results_limit=n_results_limit,
             merged_stream_gen_options=merged_stream_gen_options,
+            must_contain=None
         )
 
 
