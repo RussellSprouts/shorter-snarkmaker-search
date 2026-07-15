@@ -427,7 +427,7 @@ class OptimizeArgs:
     n_fast_gen_options: int
     fast_gen_options: bytes
     reset_gen_options: bytes
-    must_contain: str
+    must_contain: list[str]
 
 
 def abs_lane(x):
@@ -786,6 +786,21 @@ def combine_score(
         ),
     )
 
+def process_must_contain(end_pattern, must_contain):
+    if not must_contain:
+        return True
+    for m in must_contain:
+        found_one = False
+        for alternate in m.split('|'):
+            match_pat = end_pattern.match(rle_to_pattern(alternate))
+            if match_pat.nonempty():
+                # found one of the alternates
+                found_one = True
+                break
+        if not found_one:
+            return False
+    return True
+
 def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
     starting_points = shared_args.starting_points
     max_gens = shared_args.max_gens
@@ -831,9 +846,8 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         end_pattern2 = end_pattern1[1]
 
         if end_pattern == end_pattern1:
-            if shared_args.must_contain:
-                if not end_pattern.match(rle_to_pattern(shared_args.must_contain)).nonempty():
-                    continue
+            if not process_must_contain(end_pattern, shared_args.must_contain):
+                continue
 
             score = score_pattern(
                 job=job,
@@ -846,9 +860,8 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
             if score:
                 result.valid_children.append(score)
         elif end_pattern == end_pattern2:
-            if shared_args.must_contain:
-                if not end_pattern.match(rle_to_pattern(shared_args.must_contain)).nonempty():
-                    continue
+            if not process_must_contain(end_pattern, shared_args.must_contain):
+                continue
 
             score1 = score_pattern(
                 job=job,
@@ -924,7 +937,7 @@ def optimize(
     depth_range: str,
     n_results_limit: int,
     merged_stream_gen_options: str,
-    must_contain: str,
+    must_contain: list[str],
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     gen_options: List[int] = range_str_to_list(gen_options)
@@ -1425,7 +1438,8 @@ if __name__ == "__main__":
         "--must-contain",
         type=str,
         default=None,
-        help="Rle for a pattern that must be included in a result for it to be processed."
+        help="Rle for a pattern that must be included in a result for it to be processed. Use | to separate multiple valid options",
+        action="append",
     )
 
     parser_view_results = subcommand.add_parser(
