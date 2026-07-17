@@ -146,6 +146,12 @@ argparser.add_argument(
     type=int,
     default=0
 )
+argparser.add_argument(
+    "--actually-not-oncoming",
+    action=argparse.BooleanOptionalAction,
+    default=False,
+    help="Check 90 degree gliders",
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -162,7 +168,10 @@ def mk_fake_gun(n):
     fake_gun = sum(
         [mk_glider(0, gun_period * x) for x in range(0, n)], start=lt.pattern("")
     )
-    fake_gun = fake_gun("rot180")(-10 + args.toolkit.lane_offset, -11)
+    if args.actually_not_oncoming:
+        fake_gun = fake_gun('rot90')(5, -5)
+    else:
+        fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
     if args.tandem_distance:
         shift = math.ceil(args.tandem_distance / 4)
         phase = 4 - (args.tandem_distance % 4)
