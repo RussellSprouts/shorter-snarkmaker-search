@@ -147,6 +147,11 @@ argparser.add_argument(
     default=0
 )
 argparser.add_argument(
+    "--tandem-offset",
+    type=int,
+    default=0
+)
+argparser.add_argument(
     "--actually-not-oncoming",
     action=argparse.BooleanOptionalAction,
     default=False,
@@ -172,10 +177,10 @@ def mk_fake_gun(n):
         fake_gun = fake_gun('rot90')(5, -5)
     else:
         fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
-    if args.tandem_distance:
+    if args.tandem_distance or args.tandem_offset:
         shift = math.ceil(args.tandem_distance / 4)
         phase = 4 - (args.tandem_distance % 4)
-        tandem_gliders = fake_gun(-shift, -shift)[phase]
+        tandem_gliders = fake_gun(-shift + args.tandem_offset, -shift)[phase]
         fake_gun = fake_gun + tandem_gliders
     return fake_gun
 
