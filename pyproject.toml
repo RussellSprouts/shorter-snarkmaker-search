@@ -7,5 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "gprof2dot>=2025.4.14",
     "nuitka>=4.0.5",
+    "prompt-toolkit>=3.0.52",
     "python-lifelib>=2.5.6",
 ]

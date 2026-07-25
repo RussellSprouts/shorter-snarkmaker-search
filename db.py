@@ -306,6 +306,7 @@ class Recipe:
 
 class ProcessingDatabase:
     def __init__(self, filename):
+        self.path = filename
         self.conn = sqlite3.connect(filename)
         self.conn.autocommit = False
         self.conn.row_factory = sqlite3.Row

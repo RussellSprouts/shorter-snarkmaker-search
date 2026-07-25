@@ -1,6 +1,6 @@
 import functools
 import multiprocessing
-
+import asyncio
 import itertools
 import signal
 
@@ -16,6 +16,9 @@ import argparse
 import math
 import pathlib
 import traceback
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 
 from speedometer import Speedometer
 from font import write_text
@@ -294,18 +297,23 @@ def row_to_string(row):
     return f'Row({', '.join([f"{k}={row[k]}" for k in row.keys()])})'
 
 
-def view_results(input_results_db, show_completion):
-    db = ProcessingDatabase(input_results_db)
-
-    [sample_row] = db.conn.execute("select * from results limit 1").fetchall()
-    expected_keys = set(sample_row.keys())
-
-    import readline
+async def view_results(input_results_db, show_completion):
+    print('viewing results?')
+    if isinstance(input_results_db, str):
+        db = ProcessingDatabase(input_results_db)
+    else:
+        db = input_results_db
+    sample_row = None
+    prompt_session = PromptSession()
 
     try:
         while True:
-            query = input("> ")
             try:
+                with patch_stdout():
+                    query = await prompt_session.prompt_async("> ")
+                if sample_row is None:
+                    [sample_row] = db.conn.execute("select * from results limit 1").fetchall()
+                    expected_keys = set(sample_row.keys())
                 cursor = db.conn.execute(query)
                 pattern = lt.pattern()
                 red_pattern = lt.pattern()
@@ -395,7 +403,7 @@ def view_results(input_results_db, show_completion):
 
                 if is_results:
                     red_pattern = red_pattern + write_text(
-                        input_results_db.name.replace("_", "-")
+                        db.path.name.replace("_", "-")
                     )(-300, 0)
                     print(
                         write_life_history(
@@ -841,47 +849,43 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         just_after_hit = before_hit[20]
         just_after_hit1 = just_after_hit[1]
         just_after_hit2 = just_after_hit1[1]
-        end_pattern = just_after_hit2[1024 - 22]
+        end_pattern = just_after_hit2[4096 - 22]
         end_pattern1 = end_pattern[1]
         end_pattern2 = end_pattern1[1]
 
         if end_pattern == end_pattern1:
-            if not process_must_contain(end_pattern, shared_args.must_contain):
-                continue
-
-            score = score_pattern(
-                job=job,
-                follow_up=next_possibility,
-                before_hit_digest=before_hit_digest,
-                end_pattern=end_pattern,
-                shared_args=shared_args,
-                recursed=False,
-            )
-            if score:
-                result.valid_children.append(score)
+            if process_must_contain(end_pattern, shared_args.must_contain):
+                score = score_pattern(
+                    job=job,
+                    follow_up=next_possibility,
+                    before_hit_digest=before_hit_digest,
+                    end_pattern=end_pattern,
+                    shared_args=shared_args,
+                    recursed=False,
+                )
+                if score:
+                    result.valid_children.append(score)
         elif end_pattern == end_pattern2:
-            if not process_must_contain(end_pattern, shared_args.must_contain):
-                continue
-
-            score1 = score_pattern(
-                job=job,
-                follow_up=next_possibility,
-                before_hit_digest=before_hit_digest,
-                end_pattern=end_pattern,
-                shared_args=shared_args,
-                recursed=False,
-            )
-            score2 = score_pattern(
-                job=job,
-                follow_up=next_possibility,
-                before_hit_digest=before_hit_digest,
-                end_pattern=end_pattern,
-                shared_args=shared_args,
-                recursed=False,
-            )
-            score = combine_score(score1, score2, shared_args)
-            if score:
-                result.valid_children.append(score)
+            if process_must_contain(end_pattern, shared_args.must_contain):
+                score1 = score_pattern(
+                    job=job,
+                    follow_up=next_possibility,
+                    before_hit_digest=before_hit_digest,
+                    end_pattern=end_pattern,
+                    shared_args=shared_args,
+                    recursed=False,
+                )
+                score2 = score_pattern(
+                    job=job,
+                    follow_up=next_possibility,
+                    before_hit_digest=before_hit_digest,
+                    end_pattern=end_pattern,
+                    shared_args=shared_args,
+                    recursed=False,
+                )
+                score = combine_score(score1, score2, shared_args)
+                if score:
+                    result.valid_children.append(score)
 
         if added_gens <= max_gens - gen_options[0]:
             follow_up_gen_limit = min(255, max_gens - added_gens)
@@ -924,7 +928,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
     return result
 
 
-def optimize(
+async def optimize(
     recipe_intermediates_db: pathlib.Path,
     output_db: pathlib.Path,
     max_gens: int,
@@ -940,6 +944,8 @@ def optimize(
     must_contain: list[str],
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
+    results_prompt = asyncio.create_task(view_results(output_db, False))
+
     gen_options: List[int] = range_str_to_list(gen_options)
     if merged_stream_gen_options:
         fast_gen_options, reset_gen_options = merged_stream_gen_options.split(';')
@@ -1007,6 +1013,8 @@ def optimize(
     n_best_area = 0
     lowest_population = float("inf")
     n_lowest_population = 0
+    best_far_depth = float('-inf')
+    n_best_far_depth = 0
 
     best_overlapping_population = float("inf")
     n_best_overlapping_population = 0
@@ -1018,6 +1026,7 @@ def optimize(
         n_processes=n_processes,
     ) as search:
         for job, result, new_jobs in search:
+            await asyncio.sleep(0)
             if isinstance(result, Exception):
                 raise Exception("error in child process") from result
             for r in result.valid_children:
@@ -1068,6 +1077,12 @@ def optimize(
                 elif r.population == lowest_population:
                     n_lowest_population += 1
 
+                if r.far_depth > best_far_depth:
+                    best_far_depth = r.far_depth
+                    n_best_far_depth = 1
+                elif r.far_depth == best_far_depth:
+                    n_best_far_depth += 1
+
             streams_in_job = job.follow_up_gen_limit - gen_options[0] + 1
             if speedo.tick(streams_in_job):
                 current_per_s = speedo.get_current_speed_and_reset()
@@ -1085,7 +1100,7 @@ def optimize(
                 )
                 total = search.n_streams_queued()
                 print(
-                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {search.db.n_results:,}/{done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_overlapping_population} overlap ({n_best_overlapping_population}), {lowest_population} pop ({n_lowest_population})",
+                    f"{current_per_s:.2f}/s, {avg_per_s:.2f} avg/s, {search.db.n_results:,}/{done:,} done, {gens[0]}-{gens[1]} gens, {remaining:,}/{total:,} pending, {best_full_intermediate}x{n_best}, {best_log_prob:.2f}x{n_best_p}, {best_area_str} ({n_best_area}), {best_far_depth} ({n_best_far_depth}) fd, {best_overlapping_population} overlap ({n_best_overlapping_population}), {lowest_population} pop ({n_lowest_population})",
                     file=sys.stderr,
                 )
 
@@ -1104,6 +1119,9 @@ def optimize(
             search.queue(
                 [x for x in new_jobs if x.stream[-1] not in follow_ups_to_filter]
             )
+
+    results_prompt.cancel()
+    await results_prompt
 
 
 def reprocess(input_db, output_db, queries):
@@ -1168,7 +1186,7 @@ def reprocess(input_db, output_db, queries):
     print(f"Wrote queue to {output_db}. Run optimize with max-gens 0 to process.")
 
 
-def autoshrink(
+async def autoshrink(
     input_db: pathlib.Path,
     output_db: pathlib.Path,
     queries: list[list[str]],
@@ -1239,7 +1257,7 @@ def autoshrink(
         last_path = round_output_path
 
         print(f"Running search in {round_output_path}...")
-        optimize(
+        await optimize(
             recipe_intermediates_db=recipe_intermediates_db,
             output_db=round_output_path,
             max_gens=gens_per_round,
@@ -1311,7 +1329,7 @@ def custom_starting_point(output_db, stream, target_rle):
     output_db.close()
     print("Added starting point.")
 
-if __name__ == "__main__":
+async def main():
     multiprocessing.set_start_method('spawn')
 
     parser = argparse.ArgumentParser(
@@ -1699,7 +1717,7 @@ if __name__ == "__main__":
                 max_pool=args.max_pool,
             )
         case "optimize":
-            optimize(
+            await optimize(
                 recipe_intermediates_db=args.recipe_intermediates_db,
                 output_db=args.output_db,
                 max_gens=args.max_gens,
@@ -1716,7 +1734,7 @@ if __name__ == "__main__":
             )
         case "view-results":
             print("Show completion", args.show_completion)
-            view_results(
+            await view_results(
                 input_results_db=args.input_results_db,
                 show_completion=args.show_completion,
             )
@@ -1743,7 +1761,7 @@ if __name__ == "__main__":
                 recipe_intermediates_db=args.recipe_intermediates_db, start=args.start
             )
         case "autoshrink":
-            autoshrink(
+            await autoshrink(
                 input_db=args.input_db,
                 output_db=args.output_db,
                 queries=args.query,
@@ -1767,3 +1785,5 @@ if __name__ == "__main__":
                 stream=args.stream,
                 target_rle=args.target_rle
             )
+if __name__ == "__main__":
+    asyncio.run(main())
