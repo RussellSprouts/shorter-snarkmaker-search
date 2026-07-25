@@ -298,7 +298,6 @@ def row_to_string(row):
 
 
 async def view_results(input_results_db, show_completion):
-    print('viewing results?')
     if isinstance(input_results_db, pathlib.Path):
         db = ProcessingDatabase(input_results_db)
     else:
