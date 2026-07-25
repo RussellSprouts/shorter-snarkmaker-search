@@ -179,8 +179,8 @@ def mk_fake_gun(n):
         fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
     if args.tandem_distance or args.tandem_offset:
         shift = math.ceil(args.tandem_distance / 4)
-        phase = 4 - (args.tandem_distance % 4)
-        tandem_gliders = fake_gun(-shift + args.tandem_offset, -shift)[phase]
+        phase = (4 - (args.tandem_distance % 4)) % 4
+        tandem_gliders = fake_gun(-shift, -shift - args.tandem_offset)[phase]
         fake_gun = fake_gun + tandem_gliders
     return fake_gun
 
