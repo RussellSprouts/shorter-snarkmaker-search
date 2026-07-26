@@ -194,4 +194,14 @@ Transferred 3 results as starting_points.
 
 $ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-8.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!'
 
+# This found some results which remove the blinker in the back.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-8.sqlite -o results/35/p46-back-block-best-9.sqlite -q 'r.digest = -1578095558570826349'
+
+...
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-9.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!' --max-allowed-population=314 --must-contain='not 3o3$28bo$26b3o$25bo$25b2o!' --must-contain='not o$o$o2$27bo$25b3o$24bo$24b2o!'
+
+
 ```

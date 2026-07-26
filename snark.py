@@ -800,6 +800,7 @@ def process_must_contain(end_pattern, must_contain):
     for m in must_contain:
         found_one = False
         for alternate in m.split('|'):
+            alternate = alternate.strip()
             positive = True
             if alternate.startswith('not '):
                 alternate = alternate[4:]
