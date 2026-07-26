@@ -800,8 +800,12 @@ def process_must_contain(end_pattern, must_contain):
     for m in must_contain:
         found_one = False
         for alternate in m.split('|'):
+            positive = True
+            if alternate.startswith('not '):
+                alternate = alternate[4:]
+                positive = False
             match_pat = end_pattern.match(rle_to_pattern(alternate))
-            if match_pat.nonempty():
+            if match_pat.nonempty() == positive:
                 # found one of the alternates
                 found_one = True
                 break
