@@ -435,6 +435,7 @@ class OptimizeArgs:
     fast_gen_options: bytes
     reset_gen_options: bytes
     must_contain: list[str]
+    max_allowed_population: int
 
 
 def abs_lane(x):
@@ -852,8 +853,15 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
         end_pattern1 = end_pattern[1]
         end_pattern2 = end_pattern1[1]
 
-        if end_pattern == end_pattern1:
-            if process_must_contain(end_pattern, shared_args.must_contain):
+        # start a single iteration loop so that we can break
+        for _ in range(1):
+            if shared_args.max_allowed_population >= 0 and end_pattern1.population > shared_args.max_allowed_population:
+                break
+
+            if not process_must_contain(end_pattern, shared_args.must_contain):
+                break
+
+            if end_pattern == end_pattern1:
                 score = score_pattern(
                     job=job,
                     follow_up=next_possibility,
@@ -864,8 +872,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                 )
                 if score:
                     result.valid_children.append(score)
-        elif end_pattern == end_pattern2:
-            if process_must_contain(end_pattern, shared_args.must_contain):
+            elif end_pattern == end_pattern2:
                 score1 = score_pattern(
                     job=job,
                     follow_up=next_possibility,
@@ -941,6 +948,7 @@ async def optimize(
     n_results_limit: int,
     merged_stream_gen_options: str,
     must_contain: list[str],
+    max_allowed_population: int
 ):
     output_db: ProcessingDatabase = ProcessingDatabase(output_db)
     results_prompt = asyncio.create_task(view_results(output_db, False))
@@ -997,6 +1005,7 @@ async def optimize(
         fast_gen_options=bytes(fast_gen_options),
         reset_gen_options=bytes(reset_gen_options),
         must_contain=must_contain,
+        max_allowed_population=max_allowed_population,
     )
     queue_stats = output_db.queue_stats
     print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
@@ -1202,6 +1211,7 @@ async def autoshrink(
     live_view_depth: int,
     n_results_limit: int,
     merged_stream_gen_options: str,
+    max_allowed_population: int,
 ):
     if full_or_partial not in ("full", "partial"):
         raise ValueError("--full-or-partial should be 'full' or 'partial'")
@@ -1269,7 +1279,8 @@ async def autoshrink(
             live_view_depth=live_view_depth,
             n_results_limit=n_results_limit,
             merged_stream_gen_options=merged_stream_gen_options,
-            must_contain=None
+            must_contain=None,
+            max_allowed_population=max_allowed_population,
         )
 
 
@@ -1457,6 +1468,12 @@ async def main():
         default=None,
         help="Rle for a pattern that must be included in a result for it to be processed. Use | to separate multiple valid options",
         action="append",
+    )
+    parser_optimize.add_argument(
+        "--max-allowed-population",
+        type=int,
+        default=-1,
+        help="The maximum allowed population of patterns to analyze. Stable patterns larger than this will be discarded."
     )
 
     parser_view_results = subcommand.add_parser(
@@ -1676,6 +1693,12 @@ async def main():
         default=None,
         help="NxA;B. E.g., '4x35-256;67-256'. This indicates that our construction arm can gliders with 67 tick minimum spacing. Additionally, we may send up to 4 gliders with a spacing as close as 35 ticks before we need to reset with a 67 tick spaced glider."
     )
+    parser_autoshrink.add_argument(
+        "--max-allowed-population",
+        type=int,
+        default=-1,
+        help="The maximum allowed population of patterns to analyze. Stable patterns larger than this will be discarded."
+    )
 
 
     parser_custom_starting_point = subcommand.add_parser(
@@ -1730,6 +1753,7 @@ async def main():
                 n_results_limit=float('inf'),
                 merged_stream_gen_options=args.merged_stream_gen_options,
                 must_contain=args.must_contain,
+                max_allowed_population=args.max_allowed_population,
             )
         case "view-results":
             print("Show completion", args.show_completion)
@@ -1777,6 +1801,7 @@ async def main():
                 live_view_depth=args.live_view_depth,
                 n_results_limit=args.n_results_limit,
                 merged_stream_gen_options=args.merged_stream_gen_options,
+                max_allowed_population=args.max_allowed_population,
             )
         case "custom-starting-point":
             custom_starting_point(

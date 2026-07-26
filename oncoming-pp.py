@@ -5,6 +5,7 @@ import re
 import itertools
 import functools
 import pathlib
+import math
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -62,14 +63,37 @@ argparser.add_argument(
     type=pathlib.Path,
     help="Recipes to process"
 )
+argparser.add_argument(
+    "--tandem-delay",
+    "--tandem-distance",
+    type=int,
+    default=0
+)
+argparser.add_argument(
+    "--tandem-offset",
+    type=int,
+    default=0
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 gun_period = args.toolkit.period
 def mk_fake_gun(n):
-    fake_gun = sum([mk_glider(0, gun_period*x) for x in range(0, n)], start=lt.pattern(''))
+    fake_gun = sum(
+        [mk_glider(0, gun_period * x) for x in range(0, n)], start=lt.pattern("")
+    )
     fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
+    if args.tandem_delay or args.tandem_offset:
+        shift = math.ceil(args.tandem_delay / 4)
+        phase = (4 - (args.tandem_delay % 4)) % 4
+        if args.tandem_offset >= 0:
+            tandem_gliders = fake_gun(-shift, -shift - args.tandem_offset)[phase]
+        else:
+            tandem_gliders = fake_gun(-shift + args.tandem_offset, -shift)[phase]
+
+        fake_gun = fake_gun + tandem_gliders
     return fake_gun
+
 fake_gun = mk_fake_gun(args.n_gun_gliders)
 expected_incoming_gliders = pattern_components(fake_gun[simulate_gens])
 
@@ -96,6 +120,10 @@ def recipe_stream_to_delays(stream):
     return result
 
 def find_minimum_follow(r, consumed):
+    if args.tandem_offset or args.tandem_delay:
+        if consumed % 2 == 1:
+            return
+        consumed //= 2
     delays = recipe_stream_to_delays(r)
     total = sum(delays)
     envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
@@ -150,8 +178,10 @@ def parse_object(obj):
         'info': info
     }
 
+n_gun_gliders = 2 * args.n_gun_gliders if args.tandem_offset or args.tandem_delay else args.n_gun_gliders
+
 gun_glider_names = set()
-for i in range(0, args.n_gun_gliders):
+for i in range(0, n_gun_gliders):
     gun_glider_names.add(f"g{i}")
 
 def parse_objects(objs):
@@ -166,10 +196,12 @@ def parse_objects(objs):
             gun_gliders.add(obj['name'])
         else:
             results.append(obj)        
-    for i in range(0, args.n_gun_gliders):
+    for i in range(0, n_gun_gliders):
         if not f"g{i}" in gun_gliders:
             break
-    consumed = args.n_gun_gliders - i
+    if i != len(gun_gliders):
+        return {'objects': [], 'consumed': 0}
+    consumed = n_gun_gliders - i
     return {
         'consumed': consumed,
         'objects': results

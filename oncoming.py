@@ -142,6 +142,7 @@ argparser.add_argument(
     default=None
 )
 argparser.add_argument(
+    "--tandem-delay",
     "--tandem-distance",
     type=int,
     default=0
@@ -177,10 +178,14 @@ def mk_fake_gun(n):
         fake_gun = fake_gun('rot90')(5, -5)
     else:
         fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
-    if args.tandem_distance or args.tandem_offset:
-        shift = math.ceil(args.tandem_distance / 4)
-        phase = (4 - (args.tandem_distance % 4)) % 4
-        tandem_gliders = fake_gun(-shift, -shift - args.tandem_offset)[phase]
+    if args.tandem_delay or args.tandem_offset:
+        shift = math.ceil(args.tandem_delay / 4)
+        phase = (4 - (args.tandem_delay % 4)) % 4
+        if args.tandem_offset >= 0:
+            tandem_gliders = fake_gun(-shift, -shift - args.tandem_offset)[phase]
+        else:
+            tandem_gliders = fake_gun(-shift + args.tandem_offset, -shift)[phase]
+
         fake_gun = fake_gun + tandem_gliders
     return fake_gun
 
@@ -188,6 +193,7 @@ def mk_fake_gun(n):
 fake_gun = mk_fake_gun(args.n_gun_gliders)
 expected_incoming_gliders_pattern = fake_gun[simulate_gens]
 expected_incoming_gliders = pattern_components(expected_incoming_gliders_pattern)
+expected_incoming_gliders.sort(key=lambda p: sum(p.getrect()))
 
 # phase 0 gliders
 canonical_se = mk_glider(0, 0)("rot180").centre()

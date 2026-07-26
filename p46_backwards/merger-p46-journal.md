@@ -148,4 +148,50 @@ Transferred 21 results as starting_points.
 $ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-4.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o6$2o$2o!'
 
 # ^ Those results separated the bi block using recipe gliders, which left the center lane empty and was hard to recover from. Let's go back to p46-back-block-best-3.sqlite and look for more results.
+
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-3.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o6$2o$2o!'
+
+...
+2212.42/s, 2363.58 avg/s, 3,661,557/59,650,331 done, 220-340 gens, 808,643/1,328,603,474 pending, 0x0, -10.89x4, 37x115 A (5), -43 (210) fd, inf overlap (0), 99 pop (1)
+
+# There were the 4 results which placed the traffic light correctly, but none that placed any of the components in the back which we should find next. Instead, let's take the results which clean up the debris that will be a problem when we activate the seed.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-3.sqlite -o results/35/p46-back-block-best-5.sqlite -q 'partial_intermediate_overlapping_digest in (-8592021874893328463, 2193059085553206319, 7192494522526623559, -2347119336435635957, -8159052946573997904, -7201514928430881584, -5626584095067936541, 8945156716543295453, 2857296542224393783, 712970560282915865, 3217030953054209394, -8361844669889289274, -1944986172592249435, -1269579691009731524, -160865320173527766)'
+
+...
+Filtered 77 duplicate results
+Transferred 151 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-5.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o6$2o$2o!'
+
+...
+507.75/s, 810.65 avg/s, 314,129/2,627,483 done, 121-241 gens, 110,352/119,467,656 pending, 0x0, -11.53x1, 40x127 A (1), -39 (14) fd, inf overlap (0), 109 pop (3)
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-5.sqlite -o results/35/p46-back-block-best-6.sqlite -q 'partial_intermediate_digest=916236986069170144'
+
+...
+Filtered 2 duplicate results
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-6.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!'
+
+...
+652.76/s, 773.59 avg/s, 1,600,287/11,955,823 done, 149-269 gens, 464,761/674,564,836 pending, 0x0, -11.53x1, 37x115 A (3), -39 (4) fd, inf overlap (0), 105 pop (1)
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-5.sqlite -o results/35/p46-back-block-best-7.sqlite -q 'r.digest = -2080942547926822647'
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-7.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!'
+
+# ^ I ran this for a bit, and found results as low as 280 population (-100),
+# but went back to 5 and ran it overnight. It found a new class of results which
+# is much cleaner.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-5.sqlite -o results/35/p46-back-block-best-8.sqlite -q 'partial_intermediate_digest = 916236986069170144 order by lane_width limit 3'
+
+...
+Transferred 3 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-8.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!'
+
 ```
