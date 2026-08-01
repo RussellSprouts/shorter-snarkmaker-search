@@ -203,5 +203,98 @@ Transferred 1 results as starting_points.
 
 $ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-9.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!' --max-allowed-population=314 --must-contain='not 3o3$28bo$26b3o$25bo$25b2o!' --must-contain='not o$o$o2$27bo$25b3o$24bo$24b2o!'
 
+...
+1353.96/s, 1616.04 avg/s, 67,052/20,193,980 done, 208-328 gens, 83,490/861,278,847 pending, 0x0, -13.46x62766, 68x168 A (2), -39 (1) fd, inf overlap (0), 208 pop (1)
+
+# There were three results which remove the extra block from the bi block 
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-9.sqlite -o results/35/p46-back-block-best-10.sqlite -q 'partial_intermediate_overlapping_digest in (-533415218630714179, -3072008839902628384, 5533622547071292622)'
+
+...
+Transferred 3 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-10.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!' --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o6bo$2o5bobo$7b
+obo$8bo!|24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=311 --must-contain='not 3o3$28bo$26b3o$25bo$25b2o!' --must-contain='not o$o$o2$27bo$25b3o$24bo$24b2o!' --must-contain='not 2b2o$2b2o$14bo$12b3o$2ob2o6bo$2ob2o6b2o!'
+
+# TO INVESTIGATE: select * from r where partial_intermediate_overlapping_digest = 731635527154440752 (does a difficult cleanup) + ONE added beehive.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-10.sqlite -o results/35/p46-back-block-best-11.sqlite -q 'partial_intermediate_overlapping_digest = 731365527154440752'
+
+...
+Filtered 8 duplicate results
+Transferred 2 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-11.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o$2o!' --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o2$9b2o$9b2o3$2o6bo$2o5bobo$7b
+obo$8bo!|24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=311 --must-contain='not 24b2o$24b2o$36bo$34b3o$33bo$33b2o2$9b2o$9b2o3$2o$2o2$3bo$2bobo$bo2bo$
+2b2o!'
+
+...
+1586.09/s, 2124.43 avg/s, 0/7,263,345 done, 202-322 gens, 127,897/271,425,748 pending, 0x0, -infx0, infxinf A (0), -inf (0) fd, inf overlap (0), inf pop (0)
+
+# Since we know that the loaf can be cleaned up, let's search with the best
+# log prob result.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-10.sqlite -o results/35/p46-back-block-best-12.sqlite -q '1=1 order by partial_intermediate_log_prob desc limit 1'
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-12.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=311
+
+...
+2034.84/s, 1943.18 avg/s, 15,041/104,896,585 done, 234-354 gens, 3,176,008/4,328,331,414 pending, 0x0, -11.65x15041, 91x187 A (2), -48 (15041) fd, inf overlap (0), 285 pop (1)
+
+# We only found 15k results out of 100 million that preserved the result.
+# Let's filter to just those.
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-12.sqlite -o results/35/p46-back-block-best-13.sqlite -q '1=1'
+
+...
+Filtered 10433 duplicate results
+Transferred 4608 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-13.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=311
+
+...
+1218.29/s, 1400.36 avg/s, 1,548,930/26,971,735 done, 131-251 gens, 1,217,502/2,400,098,525 pending, 0x0, -11.65x608064, 91x180 A (1), -46 (3) fd, inf overlap (0), 247 pop (1)
+
+# No better results here, let's try running the setup-next-search portion of an autoshrink command, which will pick the best compact patterns of the 1.5 million we've found.
+
+$ uv run snark.py autoshrink -r results/35/p46-stages.sqlite -i results/35/p46-back-block-best-13.sqlite -o results/35/p46-back-block-best-14.sqlite -n 600 --n-results-limit=1 --full-or-partial=partial --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 
+
+...
+Filtered 41 duplicate results
+Transferred 197 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-14-round1.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=300
+
+...
+1530.97/s, 1106.10 avg/s, 2,128,649/64,883,994 done, 159-279 gens, 1,783,540/3,297,548,507 pending, 0x0, -8.55x1, 91x166 A (1), -39 (26) fd, inf overlap (0), 196 pop (1)
+
+# This found a few new partial intermediate patterns, but none of the beehive we need. The previous beehive reaction does take a while to settle, so it makes sense that we aren't finding alternate options yet. Let's run autoshrink again with a n-results-limit of 2 million, so that it generates the round2 file.
+
+$ uv run snark.py autoshrink -r results/35/p46-stages.sqlite -i results/35/p46-back-block-best-13.sqlite -o results/35/p46-back-block-best-14.sqlite -n 600 --n-results-limit=1 --full-or-partial=partial --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --n-results-limit=2000000
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-14-round2.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=275
+
+...
+1275.76/s, 1069.80 avg/s, 371,889/6,827,733 done, 117-237 gens, 179,806/307,184,757 pending, 0x0, -9.15x2, 68x180 A (4), -39 (1031) fd, inf overlap (0), 179 pop (1)
+
+# There's one result which removes the extra loaf. Let's search from there:
+
+$ uv run snark.py setup-next-search -i results/35/p46-back-block-best-14-round2.sqlite -o results/35/p46-back-block-best-15.sqlite -q 'partial_intermediate_overlapping_digest=7391967363082790543'
+
+...
+Transferred 1 results as starting_points.
+
+$ uv run snark.py optimize -r results/35/p46-stages.sqlite -o results/35/p46-back-block-best-15.sqlite -n 600 --partial-range=74 --depth-range=-20 --merged-stream-gen-options="4x35-155;67-155" --gen-options=35-155 --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o!' --max-allowed-population=272 --must-contain='not 24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16b
+o2$2o$2o2$3bo$2bobo$bo2bo$2b2o!' --must-contain='24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16bo2$2o6bo$2o5bobo$7bobo$8bo!|24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16bo$27b3o3b3o$2o$2o29bo$31bo$31bo!|24b2o$24b2o$36bo$34b3o$25b2o6bo$25b2o6b2o$16bo$9b2o4bobo$9b2o4bobo$16bo11bo5bo$28bo5bo$2o26bo5bo$2o$30b3o!'
+
+# Added a must contain so that this searches faster.
 
 ```
+
