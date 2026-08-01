@@ -414,6 +414,9 @@ async def view_results(input_results_db, show_completion):
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
+    except asyncio.CancelledError:
+        # gracefully cancel.
+        pass
     finally:
         db.close()
 
@@ -863,6 +866,9 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
             if shared_args.max_allowed_population >= 0 and end_pattern1.population > shared_args.max_allowed_population:
                 break
 
+            if end_pattern != end_pattern2:
+                break
+
             if not process_must_contain(end_pattern, shared_args.must_contain):
                 break
 
@@ -877,7 +883,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                 )
                 if score:
                     result.valid_children.append(score)
-            elif end_pattern == end_pattern2:
+            else:
                 score1 = score_pattern(
                     job=job,
                     follow_up=next_possibility,
