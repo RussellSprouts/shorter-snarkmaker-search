@@ -16,7 +16,7 @@ from components import pattern_components
 from font import write_text
 from life_history import write_life_history
 from lifetree import lt
-from gliders import PI_BLOCKS, mk_glider, single_channel_stream
+from gliders import PI_BLOCKS, mk_glider, offset_based_on_glider, single_channel_stream
 from parse_p120_recipes import parse_p120_recipe
 from speedometer import Speedometer
 
@@ -67,7 +67,6 @@ argparser.add_argument(
 argparser.add_argument(
     "--max-population", type=int, default=float('inf'), help="The maximum population results to report"
 )
-
 
 class SubtreeDef:
     options: tuple[tuple[int]]
@@ -157,6 +156,11 @@ argparser.add_argument(
     action=argparse.BooleanOptionalAction,
     default=False,
     help="Check 90 degree gliders",
+)
+argparser.add_argument(
+    "--evaluate",
+    default=False,
+    help="Evaluates the pattern, offset based on the recipe glider present in the pattern."
 )
 
 args = argparser.parse_args()
@@ -508,7 +512,7 @@ def component_info(c, alt=False):
         if name == 'blinker' and alt:
             # skip blinkers when processing the alt.
             return None
-        return f"{name}(l{lane},d{depth},o{orientation})"
+        return f"{name}(l{lane},d{depth},o{orientation},p{int(alt)})"
     elif c.centre() == c[4].centre():
         # spaceship
         code = c.apgcode
@@ -518,8 +522,14 @@ def component_info(c, alt=False):
         x4, y4, _, _ = c[4].getrect()
 
         if x4 - x == 0 or y4 - y == 0:
+            orientation = pattern_orientation(HashablePattern(c, c.digest()))
             # xWSS, need to process even if alt is true.
-            return f"{name}({x},{y})({x4-x},{y4-y})"
+            canonical = c
+            if pattern_orientation(HashablePattern(c[2], c[2].digest())) < orientation:
+                canonical = c[2]
+            cx, cy, _, _ = canonical.getrect()
+            # record the parity and color of the xWSS.
+            return f"{name}({x4-x},{y4-y},p{int(alt) + (2 if c == canonical else 0)},c{(cx+cy) % 2})({cx},{cy})"
         elif alt:
             # ignore gliders in alt -- we've already got them.
             return None
@@ -703,6 +713,13 @@ if __name__ == "__main__":
     6 - forwards kickback
     7 - block on recipe side
     """
+
+    if args.evaluate:
+        patt = offset_based_on_glider(lt.pattern(args.evaluate))
+        s, result = evaluate((), patt)
+        print(result)
+
+        sys.exit(0)
 
     if args.concurrent:
         print("Generating jobs...", file=sys.stderr)
