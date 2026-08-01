@@ -95,14 +95,16 @@ with open(TOOLKIT_FILE, 'r', encoding='utf-8') as f:
             recipe = tuple(map(int, line[:line.index('(')-2].split(',')))
             min_follow = int(re.search(r'\((\d+)\)', line).group(1))
             consumed = int(re.search(r'\{consumed:\s*(\d+)\}', line).group(1))
-            offset = int(re.search(r'glider\(d(-?\d+)\)', line).group(1))
+            glider_match = re.search(r'glider\(d(-?\d+)\)', line)
+            offset = int(glider_match.group(1)) if glider_match else 0
             chunk.append(Recipe(offset, consumed, recipe, min_follow))
     if chunk: chunks[name] = chunk
 library = {
     (1, 1): chunks[DIRECTION + " black even"],
     (1, 0): chunks[DIRECTION + " black odd"],
     (0, 1): chunks[DIRECTION + " white even"],
-    (0, 0): chunks[DIRECTION + " white odd"]
+    (0, 0): chunks[DIRECTION + " white odd"],
+    'swim': chunks['Swim']
 }
 
 with open(args.salvo, 'r') as file:
@@ -168,7 +170,6 @@ for step_no, step in enumerate(recipe_steps):
         phase = gli[1] % 2
         gli_lane = gli[0]
         for rec in library[(color, phase)]:
-            best = None
             for pos in beam:
                 time = pos.time
                 orig_time = time
@@ -180,30 +181,52 @@ for step_no, step in enumerate(recipe_steps):
                 emits_str = list(pos.emits_str)
                 nextgl = pos.nextgl
                 while delay < time + (recipe_parity - ((time + parity_offset) % 8)) % 8:
-                    if delay + PERIOD >= time + (0 - ((time + parity_offset) % 8)) % 8 + args.min_follow:
-                        nextgl += PERIOD
-                        delay += PERIOD
-                        # send a 0 glider
-                        time += (0 - ((time + parity_offset) % 8)) % 8
-                        emits.append(time)
-                        emits_str.extend(('0', f'({args.min_follow})'))
-                        time += args.min_follow
-                    elif delay + PERIOD >= time + (4 - (time % 4)) % 8 + args.min_follow:
-                        nextgl += PERIOD
-                        delay += PERIOD
-                        # send a 4 glider
-                        time += (4 - ((time + parity_offset) % 8)) % 8
-                        emits.append(time)
-                        emits_str.extend(('4', f'({args.min_follow})'))
-                        time += args.min_follow
-                    else:
-                        nextgl += PERIOD * 2
-                        delay += PERIOD * 2
-                        # send a 2 glider
-                        time += (2 - ((time + parity_offset) % 8)) % 8
-                        emits.append(time)
-                        emits_str.extend(('2', f'({args.min_follow})'))
-                        time += args.min_follow
+                    bestdiff = float('-inf')
+                    bestnextgl = float('-inf')
+                    bestdelay = float('-inf')
+                    besttime = float('-inf')
+                    bestemits = []
+                    bestemits_str = []
+                    foundvalid = False
+
+                    for swimrec in library['swim']:
+                        nextgl2 = nextgl + PERIOD * swimrec.consumed
+                        delay2 = delay + PERIOD * swimrec.consumed
+                        time2 = time + (swimrec.recipe[0] - ((time + parity_offset) % 8)) % 8
+                        emits2 = [time]
+                        for i in itertools.accumulate(swimrec.recipe[1:]):
+                            emits2.append(time + i)
+                        emits_str2 = (tuple(map(str, swimrec.recipe)) + (f'({swimrec.min_follow})',))
+                        time2 += swimrec.min_follow
+
+                        diff2 = delay2 - (time2 + (recipe_parity - ((time2 + parity_offset) % 8)) % 8)
+                        if diff2 >= 0:
+                            # this swims far enough
+                            if not foundvalid or diff2 < bestdiff:
+                                bestdiff = diff2
+                                bestnextgl = nextgl2
+                                bestdelay = delay2
+                                besttime = time2
+                                bestemits = emits2
+                                bestemits_str = emits_str2
+                                foundvalid = True
+                        elif not foundvalid and diff2 > bestdiff:
+                            bestdiff = diff2
+                            bestnextgl = nextgl2
+                            bestdelay = delay2
+                            besttime = time2
+                            bestemits = emits2
+                            bestemits_str = emits_str2
+
+                    nextgl = bestnextgl
+                    delay = bestdelay
+                    time = besttime
+                    emits.extend(bestemits)
+                    emits_str.extend(bestemits_str)
+
+
+
+
 
                 time += (recipe_parity - ((time + parity_offset) % 8)) % 8
                 wait = ((delay - time) // 8) * 8

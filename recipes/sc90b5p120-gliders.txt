@@ -362,3 +362,8 @@ SW white odd
 7, 234, 92, 191, (692) {total: 1209} {consumed: 10} glider(d25)(ph3)(♝⬃①)
 7, 210, 92, 191, (332) {total: 825} {consumed: 7} glider(d19)(ph3)(♝⬃①)
 7, 242, 92, 173, (230) {total: 737} {consumed: 6} glider(d27)(ph1)(♝⬃①)
+
+Swim
+0, (90) {total: 90} {consumed: 1}
+4, (90) {total: 90} {consumed: 1}
+2, (90) {total: 90} {consumed: 2}
