@@ -16,7 +16,7 @@ class RecipeDag:
     def __init__(self, lanes, starting_block, keep_order=False):
         birthdays = {}
         periodic_birthdays = {}
-        dependencies = defaultdict(set)
+        dependencies = {}
         dependencies[0] = set([-1])
         should_create = {}
         should_delete = {}
@@ -31,6 +31,9 @@ class RecipeDag:
 
         debug = lt.pattern()
         pattern = starting_block
+        for i in range(0, len(lanes)):
+            dependencies[i] = set()
+
         for i, (lane, parity) in enumerate(lanes):
             old = pattern
             # cells that were periodic
@@ -222,10 +225,10 @@ class RecipeDag:
         return possibilities
 
     def get_next(self, so_far: tuple[RecipeStep]) -> list[RecipeStep]:
-        so_far_set = set(s[3] for s in so_far)
+        so_far_set = set(s.i for s in so_far)
         so_far_set.add(-1)
 
-        lanes = tuple((s[0], s[1], s[2]) for s in so_far)
+        lanes = tuple(s[0:3] for s in so_far)
         before = self._simulate(lanes)
 
         results = []
