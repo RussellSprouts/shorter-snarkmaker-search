@@ -9,4 +9,5 @@ dependencies = [
     "nuitka>=4.0.5",
     "prompt-toolkit>=3.0.52",
     "python-lifelib>=2.5.6",
+    "z3-solver>=5.0.0.0",
 ]
