@@ -162,6 +162,12 @@ argparser.add_argument(
     default=False,
     help="Evaluates the pattern, offset based on the recipe glider present in the pattern."
 )
+argparser.add_argument(
+    "--recipe-label",
+    default=True,
+    action=argparse.BooleanOptionalAction,
+    help="If true, use LifeHistory to print the recipe label in --print-rle mode."
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -303,6 +309,11 @@ o$17bo$34bo31b3o$9b2o23b3o$8bobo26bo$9bo26b2o5$25b2o5b2o$25b2o5b2o46b
 2o$79bo2bo$29b2o49b2o$24bo4b2o$5b2o16bobo8b2o$5b2o16bobo7bo2bo$24bo7b
 2o$33b2o3bo13b2o$34bo4bo12b2o$37b3o$49b2o5b2o$49b2o5b2o$12bo$6b2o3bobo
 $5bo2bo2b2o$6b2o!'''
+    elif args.use_gun_rle == '46':
+        args.use_gun_rle = '''x = 37, y = 15, rule = B3/S23
+24b2o$24b2o$36bo$10b2o22b3o$2o7bobo13b2o6bo$2o7bo15b2o6b2o$9b3o4$9b3o
+21b3o$2o7bo20b2o$2o7bobo13bo4b2o$10b2o11bobo4bobo$24b2o!
+'''
 
     gun = lt.pattern(args.use_gun_rle.strip())
     gun_without_gliders = remove_gliders(gun)
@@ -414,6 +425,8 @@ if args.print_rle:
         elif parse.start_mode == "sc":
             green_patt += PI_BLOCKS[1](200 * i, 0) + single_channel_stream(gliders_int)(200*i, 0)
             red_patt += write_text(" ".join(map(str, gliders_int)))(200 * i, 0)
+    if not args.recipe_label:
+        red_patt = lt.pattern()
     print(write_life_history(green=green_patt, red=red_patt))
 
     sys.exit(0)

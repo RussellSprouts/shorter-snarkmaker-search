@@ -76,6 +76,7 @@ DIRECTION = args.direction
 
 Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow"])
 Partial = collections.namedtuple("Partial", ["nextgl", "time", "emits", "emits_str"])
+SwimResult = collections.namedtuple("SwimResult", ["first_possible_time", "target", "next_glider", "emits", "emits_str"])
 
 chunks = {}
 with open(TOOLKIT_FILE, 'r', encoding='utf-8') as f:
@@ -158,6 +159,8 @@ def get_possible_gliders():
     return possible_gliders
 
 
+
+
 beam = [Partial(0, -float('inf'), [], [])]
 
 recipe_steps = get_possible_gliders()
@@ -170,17 +173,95 @@ for step_no, step in enumerate(recipe_steps):
         phase = gli[1] % 2
         gli_lane = gli[0]
         for rec in library[(color, phase)]:
-            for pos in beam:
-                time = pos.time
-                orig_time = time
-                recipe_parity, *recipe_rest = rec.recipe
+            # the mod 8 timing of the first glider
+            # and the rest
+            recipe_parity, *recipe_rest = rec.recipe
 
-                delay = pos.nextgl + (gli_lane - rec.offset) * 4 + recipe_parity
-                parity_offset = (delay - recipe_parity) % 8
+            # try each recipe on each position in the beam
+            for pos in beam:
+                first_possible_time = pos.time
+                next_glider = pos.nextgl
+                target = pos.nextgl + (gli_lane - rec.offset) * 4 + recipe_parity
+                offset = (target - recipe_parity) % 8
                 emits = list(pos.emits)
                 emits_str = list(pos.emits_str)
+
+                while target < first_possible_time:
+                    swim_results = []
+
+                    for swimrec in library['swim']:
+                        swim_parity = swimrec.recipe[0]
+                        swim_recipe_start = first_possible_time + (swim_parity - first_possible_time + offset) % 8
+                        swim_emits = [swim_recipe_start]
+                        swim_emits_str = (tuple(map(str, swimrec.recipe)) + (f'swim {swimrec.consumed}', f'({swimrec.min_follow})'))
+                        for i in itertools.accumulate(swimrec.recipe[1:]):
+                            swim_emits.append(swim_recipe_start + i)
+                        swim_results.append(SwimResult(
+                            first_possible_time=swim_emits[-1] + swimrec.min_follow,
+                            target=target + PERIOD * swimrec.consumed,
+                            next_glider=next_glider + PERIOD * swimrec.consumed,
+                            emits=swim_emits,
+                            emits_str=swim_emits_str,
+                        ))
+
+                    solutions = list(filter(lambda r: r.target > r.first_possible_time, swim_results))
+
+                    if solutions:
+                        # if there are recipes that move us far enough,
+                        # take the fastest one
+                        solutions.sort(key=lambda r: r.first_possible_time)
+                        best = solutions[0]
+                    else:
+                        # otherwise take the one that brings us closest.
+                        swim_results.sort(key=lambda r: r.first_possible_time - r.target, reverse=True)
+                        best = swim_results[0]
+
+                    first_possible_time = best.first_possible_time
+                    target = best.target
+                    offset = (target - recipe_parity) % 8
+                    next_glider = best.next_glider
+                    emits.extend(best.emits)
+                    emits_str.extend(best.emits_str)
+
+                wait = ((target - first_possible_time) // 8) * 8
+                if wait != 0 and math.isfinite(wait):
+                    emits_str.append(f'wait {wait}')
+                emits.append(target)
+                for i in itertools.accumulate(recipe_rest):
+                    emits.append(target + i)
+                emits_str.extend(tuple(map(str, rec.recipe)) + (f'swim {rec.consumed}', f'({rec.min_follow})'))
+                next_glider += PERIOD * rec.consumed
+                time = emits[-1] + rec.min_follow
+                new = Partial(next_glider, time, emits, emits_str)
+                heapq.heappush(newbeam, new)
+                if len(newbeam) > args.beam_width:
+                    newbeam.pop()
+    beam = newbeam
+
+"""
+recipe_steps = get_possible_gliders()
+for step_no, step in enumerate(recipe_steps):
+    print(f"Step {step_no}")
+    newbeam = []
+    for possible_glider in step:
+        gli = adjust_recipe((possible_glider.lane, possible_glider.parity))
+        color = gli[0] % 2
+        phase = gli[1] % 2
+        gli_lane = gli[0]
+        for rec in library[(color, phase)]:
+            recipe_parity, *recipe_rest = rec.recipe
+            for pos in beam:
+                # first available time we can send a glider
+                time = pos.time
+                # timing of the next unconsumed glider
                 nextgl = pos.nextgl
-                while delay < time + (recipe_parity - ((time + parity_offset) % 8)) % 8:
+                # actual time we want to send a glider
+                delay = nextgl + (gli_lane - rec.offset) * 4 + recipe_parity
+                emits = list(pos.emits)
+                emits_str = list(pos.emits_str)
+                print(gli_lane - rec.offset)
+
+                while delay < time:
                     bestdiff = float('-inf')
                     bestnextgl = float('-inf')
                     bestdelay = float('-inf')
@@ -190,16 +271,17 @@ for step_no, step in enumerate(recipe_steps):
                     foundvalid = False
 
                     for swimrec in library['swim']:
+                        time2 = time + ((swimrec.recipe[0] - ((time + nextgl) % 8)) % 8)
+                        emits2 = [time2]
+                        for i in itertools.accumulate(swimrec.recipe[1:]):
+                            emits2.append(time2 + i)
+                        emits_str2 = (tuple(map(str, swimrec.recipe)) + (f'swim {swimrec.consumed}', f'({swimrec.min_follow})'))
+                        time2 += sum(swimrec.recipe[1:]) + swimrec.min_follow
+
                         nextgl2 = nextgl + PERIOD * swimrec.consumed
                         delay2 = delay + PERIOD * swimrec.consumed
-                        time2 = time + (swimrec.recipe[0] - ((time + parity_offset) % 8)) % 8
-                        emits2 = [time]
-                        for i in itertools.accumulate(swimrec.recipe[1:]):
-                            emits2.append(time + i)
-                        emits_str2 = (tuple(map(str, swimrec.recipe)) + (f'({swimrec.min_follow})',))
-                        time2 += swimrec.min_follow
 
-                        diff2 = delay2 - (time2 + (recipe_parity - ((time2 + parity_offset) % 8)) % 8)
+                        diff2 = delay2 - time2
                         if diff2 >= 0:
                             # this swims far enough
                             if not foundvalid or diff2 < bestdiff:
@@ -224,18 +306,14 @@ for step_no, step in enumerate(recipe_steps):
                     emits.extend(bestemits)
                     emits_str.extend(bestemits_str)
 
-
-
-
-
-                time += (recipe_parity - ((time + parity_offset) % 8)) % 8
+                time += (recipe_parity - ((time + nextgl) % 8)) % 8
                 wait = ((delay - time) // 8) * 8
                 if wait != 0 and math.isfinite(wait):
                     emits_str.append(f'wait {wait}')
                 emits.append(delay)
                 for i in itertools.accumulate(recipe_rest):
                     emits.append(delay + i)
-                emits_str.extend(tuple(map(str, rec.recipe)) + (f'({rec.min_follow})',))
+                emits_str.extend(tuple(map(str, rec.recipe)) + (f'swim {rec.consumed}', f'({rec.min_follow})'))
                 nextgl += PERIOD * rec.consumed
                 time = emits[-1] + rec.min_follow
                 new = Partial(nextgl, time, emits, emits_str)
@@ -244,7 +322,7 @@ for step_no, step in enumerate(recipe_steps):
                     newbeam.pop()
 
     beam = newbeam
-
+"""
 timings = []
 ctime = 0
 for i in beam[0].emits:
