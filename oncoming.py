@@ -16,7 +16,7 @@ from components import pattern_components
 from font import write_text
 from life_history import write_life_history
 from lifetree import lt
-from gliders import PI_BLOCKS, mk_glider, offset_based_on_glider, single_channel_stream
+from gliders import mk_glider, offset_based_on_glider, single_channel_stream
 from parse_p120_recipes import parse_p120_recipe
 from speedometer import Speedometer
 
@@ -85,6 +85,12 @@ argparser.add_argument(
     type=SubtreeDef,
     action="append",
     help="Search range. E.g. '1;90-255' to search the glider 1 followed by any glider in [90,255], or '1,3,5,7' to search the starting gliders 1,3,5 and 7. Use comma to separate at the same depth, then semicolon to separate depths. Ranges are inclusive.",
+)
+argparser.add_argument(
+    "--subtree-file",
+    default=None,
+    type=pathlib.Path,
+    help="A path to a file, with each line containing a subtree. Overrides the subtree param."
 )
 argparser.add_argument(
     "--max-delay", type=int, default=255, help="Maximum delay for a glider."
@@ -403,6 +409,14 @@ if args.extract_recipes:
     sys.exit(0)
 
 if args.print_rle:
+
+    PI_BLOCKS = list(
+        map(
+            offset_based_on_glider,
+            [lt.pattern("2o$2o3$3o$o$bo!"), lt.pattern("2o$2o2b3o$4bo$5bo!")],
+        )
+    )
+
     macros = {
         'sc90b5p120': {
             'construct_arm': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode p120, set 28 (mod 120), (90)'
@@ -637,7 +651,17 @@ if args.view_orientations:
 
     sys.exit(0)
 
-def evaluate(s, patt):
+def evaluate(s, patt, stream_to_check_patt = None):
+    if args.actually_not_oncoming:
+        # if we are trying 90 degree recipes,
+        # ignore results where a recipe glider escapes without
+        # interacting.
+        expected_recipe_gliders = stream_to_check_patt[simulate_gens]
+        escaped_patt = patt & expected_recipe_gliders
+        for p in pattern_components(escaped_patt):
+            if p.population == 5:
+                return (s, ['prune'])
+
     if (patt - expected_incoming_gliders_pattern).population > args.max_population:
         return (s, ['too big'])
 
@@ -683,21 +707,24 @@ def process_concurrent(s):
     stream_to_check = s
     if args.swim_upstream_after:
         stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
-    patt = fake_gun + single_channel_stream(stream_to_check)
+    stream_to_check_patt = single_channel_stream(stream_to_check)
+    patt = fake_gun + stream_to_check_patt
 
     patt_n = patt[simulate_gens]
-    result = evaluate(s, patt_n)
+    result = evaluate(s, patt_n, stream_to_check_patt)
     return result
 
 def recurse(s, depth=0):
     stream_to_check = s
     if args.swim_upstream_after:
         stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
-    patt = fake_gun + single_channel_stream(stream_to_check)
+
+    stream_to_check_patt = single_channel_stream(stream_to_check)
+    patt = fake_gun + stream_to_check_patt
 
     if not args.to_apgluxe:
         patt_n = patt[simulate_gens]
-        v = evaluate(s, patt_n)
+        v = evaluate(s, patt_n, stream_to_check_patt)
         if v:
             print(*v)
     else:
@@ -733,6 +760,10 @@ if __name__ == "__main__":
         print(result)
 
         sys.exit(0)
+
+    if args.subtree_file:
+        with open(args.subtree_file) as f:
+            args.subtree = list(SubtreeDef(line) for line in f if line.strip())
 
     if args.concurrent:
         print("Generating jobs...", file=sys.stderr)

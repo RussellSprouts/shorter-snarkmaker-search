@@ -1,6 +1,6 @@
 import functools
 
-from gliders import mk_glider, PI_BLOCKS, offset_based_on_glider
+from gliders import mk_glider, offset_based_on_glider
 from lifetree import lt
 
 def mk_glider_interaction_envelopes():

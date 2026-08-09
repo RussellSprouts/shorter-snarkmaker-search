@@ -37,7 +37,6 @@ from db import (
 from gliders import (
     flip_pattern_as_if_other_pi_block,
     mk_glider,
-    PI_BLOCKS,
     offset_based_on_glider,
     reconstruct,
     single_channel_stream,
