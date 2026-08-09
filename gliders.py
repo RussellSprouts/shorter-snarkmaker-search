@@ -2,7 +2,7 @@
 
 from lifetree import lt
 
-canonical_glider = lt.pattern("""3o$3o$3o!""")
+canonical_glider = lt.pattern("ooo$o$bo!")
 
 canonical_glider_info = canonical_glider.oscar()
 if canonical_glider_info['displacement'] != (-1, -1):
