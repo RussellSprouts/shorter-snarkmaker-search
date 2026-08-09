@@ -8,8 +8,9 @@ import pathlib
 import os
 from multiprocessing import Pool
 import multiprocessing
-from datetime import timedelta
 import math
+
+import lifelib
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -173,6 +174,24 @@ argparser.add_argument(
     default=True,
     action=argparse.BooleanOptionalAction,
     help="If true, use LifeHistory to print the recipe label in --print-rle mode."
+)
+argparser.add_argument(
+    "--with-debris-rle",
+    default=None,
+    type=str,
+    help="Extra items to place alongside the construction lane. Include a NW glider indicating the location of the 0 glider."
+)
+argparser.add_argument(
+    "--and-without-debris",
+    default=False,
+    action=argparse.BooleanOptionalAction,
+    help="Also include results for the pattern without the debris"
+)
+argparser.add_argument(
+    "--without-debris-max-population",
+    default=float('inf'),
+    type=int,
+    help="The max population to consider for the pattern without debris"
 )
 
 args = argparser.parse_args()
@@ -354,6 +373,11 @@ $5bo2bo2b2o$6b2o!'''
     fake_gun = glider_appears(fx - x, fy - y)
 
 
+if args.with_debris_rle:
+    debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))
+    fake_gun = fake_gun + debris_pattern
+
+
 if args.extract_recipes:
 
     def parse_object(obj):
@@ -425,6 +449,12 @@ if args.print_rle:
     green_patt = lt.pattern("")
     red_patt = lt.pattern("")
     recipes = args.print_rle.split(";")
+
+    if args.and_without_debris:
+        stride = 400
+    else:
+        stride = 200
+
     for i, r in enumerate(recipes):
         if not r.strip():
             continue
@@ -432,13 +462,20 @@ if args.print_rle:
         gliders_int = parse.delays
         print(gliders_int)
         if parse.start_mode == "p120":
-            green_patt += fake_gun(200 * i, 0) + single_channel_stream(gliders_int)(
-                200 * i, 0
+            green_patt += fake_gun(stride * i, 0) + single_channel_stream(gliders_int)(
+                stride * i, 0
             )
-            red_patt += write_text(" ".join(map(str, gliders_int)))(200 * i, 0)
+            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
+
+            if args.and_without_debris:
+                green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + single_channel_stream(gliders_int)(
+                    stride * i + stride // 2, 0
+                )
+                red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i + stride // 2, 0)
+
         elif parse.start_mode == "sc":
-            green_patt += PI_BLOCKS[1](200 * i, 0) + single_channel_stream(gliders_int)(200*i, 0)
-            red_patt += write_text(" ".join(map(str, gliders_int)))(200 * i, 0)
+            green_patt += PI_BLOCKS[1](stride * i, 0) + single_channel_stream(gliders_int)(stride*i, 0)
+            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
     if not args.recipe_label:
         red_patt = lt.pattern()
     print(write_life_history(green=green_patt, red=red_patt))
@@ -495,8 +532,6 @@ friendly_names = {
     "xs11_g8o652z11": "boat tie ship",
     "xq4_6frc": "lwss",
 }
-
-reference = fake_gun[simulate_gens]
 
 class HashablePattern:
     def __init__(self, c: lifelib.Pattern, digest: int):
@@ -670,7 +705,7 @@ def evaluate(s, patt, stream_to_check_patt = None):
     if args.only_gliders:
         if patt.population % 5:
             return
-        diff = patt - reference
+        diff = patt - expected_incoming_gliders_pattern
         if diff.population % 5 or diff.population < 5:
             return
         if diff.centre() != diff[4].centre() or diff == diff[4]:
@@ -711,6 +746,13 @@ def process_concurrent(s):
     patt = fake_gun + stream_to_check_patt
 
     patt_n = patt[simulate_gens]
+
+    if args.and_without_debris:
+        patt_n_without_debris = (patt - debris_pattern)[simulate_gens]
+
+        if (patt_n_without_debris - expected_incoming_gliders_pattern).population > args.without_debris_max_population:
+            return
+
     result = evaluate(s, patt_n, stream_to_check_patt)
     return result
 
