@@ -8,6 +8,8 @@ segment ::=
 min_follow ::= '(' [0-9]+ ')'
 number ::= [0-9]+
 wait ::= ('wait'|'w') expr
+advance_debris ::= 'advance_debris' expr
+swim ::= 'swim' expr
 expr ::= times_expr ([+-] times_expr)*
 times_expr ::= atom (([*/]|mod) atom)*
 identifier ::= [a-zA-Z_][a-zA-Z0-9_]*
@@ -30,6 +32,8 @@ token_types = {
     'mod_clause': re.compile(r'\(\s*mod\s+([0-9]+)\s*\)'),
     'set': re.compile(r'set\b'),
     'wait': re.compile(r'(wait|w)\b'),
+    'advance_debris': re.compile(r'(advance_debris)\b'),
+    'swim': re.compile(r'(swim)\b'),
     'mode': re.compile(r'mode (p120|sc)'),
     'times_operator': re.compile(r'[*/]|mod'),
     'identifier': re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*\b'),
@@ -71,6 +75,8 @@ class Segment:
     wait: int = None
     set: int = None
     mode: str = None
+    advance_debris: int = None
+    swim: int = None
 
     def __repr__(self):
         r = map(lambda a: f'{a[0]}={a[1]}', filter(
@@ -82,6 +88,8 @@ class Segment:
                 ('wait', self.wait),
                 ('set', self.set),
                 ('mode', self.mode),
+                ('advance_debris', self.advance_debris)
+                ('swim', self.swim),
             ]
         ))
         return f'Segment({', '.join(r)})'
@@ -170,6 +178,12 @@ def parse_ast(input, macros):
                 return expand_macro(text)
             case (Token(type='minimum_follow', match=m),):
                 return Segment(minimum=int(m[1]))
+            case (Token(type='advance_debris'),):
+                expr = parse_expression()
+                return Segment(advance_debris=expr)
+            case (Token(type='swim'),):
+                expr = parse_expression()
+                return Segment(swim=expr)
             case (Token(type='set'),):
                 expr = parse_expression()
                 mod = next(1)[0]
@@ -215,11 +229,13 @@ def parse_ast(input, macros):
 class Parse:
     delays: list[int]
     start_mode: str
+    advance_debris: int
 
 def parse_p120_recipe(input, macros):
     ast = parse_ast(input, macros)
     mode = 'p120'
     start_mode = mode
+    advance_debris = 0
     set_start_mode = False
     after_minimum_follow = True
     i = 0
@@ -255,9 +271,13 @@ def parse_p120_recipe(input, macros):
                 next_delay = 0
             case Segment(wait=wait) if wait is not None:
                 next_delay += wait.eval()
+            case Segment(advance_debris=ad) if ad is not None:
+                advance_debris = ad.eval()
+            case Segment(swim=swim) if swim is not None:
+                i += (set_mod * swim.eval()) % 8
 
 
-    return Parse(delays=delays, start_mode=start_mode)
+    return Parse(delays=delays, start_mode=start_mode, advance_debris=advance_debris)
 
 if __name__ == '__main__':
     print(parse_p120_recipe(sys.argv[1]))

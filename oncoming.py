@@ -182,6 +182,12 @@ argparser.add_argument(
     help="Extra items to place alongside the construction lane. Include a NW glider indicating the location of the 0 glider."
 )
 argparser.add_argument(
+    "--evolve-debris-gens",
+    default=0,
+    type=int,
+    help="How many generations to evolve the debris before combining it with the pattern"
+)
+argparser.add_argument(
     "--and-without-debris",
     default=False,
     action=argparse.BooleanOptionalAction,
@@ -372,9 +378,9 @@ $5bo2bo2b2o$6b2o!'''
     x, y, _, _ = rect
     fake_gun = glider_appears(fx - x, fy - y)
 
-
+debris_pattern = lt.pattern()
 if args.with_debris_rle:
-    debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))
+    debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))[args.evolve_debris_gens]
     fake_gun = fake_gun + debris_pattern
 
 
@@ -462,7 +468,10 @@ if args.print_rle:
         gliders_int = parse.delays
         print(gliders_int)
         if parse.start_mode == "p120":
-            green_patt += fake_gun(stride * i, 0) + single_channel_stream(gliders_int)(
+            fg = fake_gun
+            if parse.advance_debris:
+                fg = fake_gun - debris_pattern + debris_pattern[parse.advance_debris]
+            green_patt += fg(stride * i, 0) + single_channel_stream(gliders_int)(
                 stride * i, 0
             )
             red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
