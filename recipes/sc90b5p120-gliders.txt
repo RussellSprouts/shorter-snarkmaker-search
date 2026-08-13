@@ -177,6 +177,7 @@ NE white odd
 7, 180, 96, 93, (90) {total: 459} {consumed: 4} glider(d5)(ph1)(♝⬀①)
 
 SW black even
+0, 221, (90) {total: 311} {consumed: 3} glider(d-8)(ph2)(♗⬃⓪) {requires state: 1}
 1, 104, 219, 241, (90) {total: 654} {consumed: 6} glider(d-12)(ph2)(♗⬃⓪)
 1, 104, 224, 106, (181) {total: 615} {consumed: 6} glider(d10)(ph0)(♗⬃⓪)
 1, 104, 227, 241, (90) {total: 662} {consumed: 6} glider(d-10)(ph2)(♗⬃⓪)
@@ -273,6 +274,7 @@ SW black odd
 7, 172, 162, 94, (299) {total: 727} {consumed: 6} glider(d12)(ph1)(♗⬃①)
 
 SW white even
+0, 219, (90) {total: 309} {consumed: 3} glider(d-9)(ph0)(♝⬃⓪) {requires state: 1}
 1, 90, 207, 187, (90) {total: 574} {consumed: 5} glider(d-13)(ph0)(♝⬃⓪)
 1, 104, 219, 239, (90) {total: 652} {consumed: 6} glider(d-13)(ph0)(♝⬃⓪)
 1, 92, 242, 91, (90) {total: 515} {consumed: 5} glider(d-15)(ph2)(♝⬃⓪)
@@ -315,6 +317,7 @@ SW white even
 7, 212, 217, 232, (90) {total: 751} {consumed: 6} glider(d-1)(ph2)(♝⬃⓪)
 
 SW white odd
+5, 138, (121) {total: 257} {consumed: 2} glider(d-1)(ph1)(♝⬃①) {to state: 1}
 1, 92, 199, 169, (105) {total: 565} {consumed: 6} glider(d-5)(ph3)(♝⬃①)
 1, 92, 187, 125, (250) {total: 654} {consumed: 7} glider(d-5)(ph3)(♝⬃①)
 1, 92, 163, (150) {total: 405} {consumed: 4} glider(d-5)(ph3)(♝⬃①)

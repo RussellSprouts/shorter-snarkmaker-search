@@ -74,8 +74,7 @@ PERIOD = args.period
 TOOLKIT_FILE = args.toolkit_file
 DIRECTION = args.direction
 
-Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow"])
-Partial = collections.namedtuple("Partial", ["nextgl", "time", "emits", "emits_str"])
+Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow", "to_state", "requires_state"])
 SwimResult = collections.namedtuple("SwimResult", ["first_possible_time", "target", "next_glider", "emits", "emits_str"])
 
 chunks = {}
@@ -98,7 +97,11 @@ with open(TOOLKIT_FILE, 'r', encoding='utf-8') as f:
             consumed = int(re.search(r'\{consumed:\s*(\d+)\}', line).group(1))
             glider_match = re.search(r'glider\(d(-?\d+)\)', line)
             offset = int(glider_match.group(1)) if glider_match else 0
-            chunk.append(Recipe(offset, consumed, recipe, min_follow))
+            to_state_match = re.search(r'\{to state: (\d+)\}', line)
+            to_state = int(to_state_match.group(1)) if to_state_match else 0
+            requires_state_match = re.search(r'\{requires state: (\d+)\}', line)
+            requires_state = int(requires_state_match.group(1)) if requires_state_match else 0 
+            chunk.append(Recipe(offset, consumed, recipe, min_follow, to_state, requires_state))
     if chunk: chunks[name] = chunk
 library = {
     (1, 1): chunks[DIRECTION + " black even"],
@@ -123,15 +126,13 @@ def adjust_recipe(a):
     phase = phase + args.parity
     return (lane, phase)
 
-
-Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow"])
-
 @dataclass
 class Partial:
     nextgl: int
     time: int
     emits: list[int]
     emits_str: list[str]
+    state: int
 
     def __lt__(self, other):
         match args.optimize:
@@ -159,14 +160,30 @@ def get_possible_gliders():
     return possible_gliders
 
 
+class Beam:
+    def __init__(self):
+        self.beams_by_end_state = collections.defaultdict(list)
 
+    def add(self, partial):
+        beam = self.beams_by_end_state[partial.state]
+        heapq.heappush(beam, partial)
+        if len(beam) > args.beam_width:
+            beam.pop()
 
-beam = [Partial(0, -float('inf'), [], [])]
+    def __iter__(self):
+        return heapq.merge(*self.beams_by_end_state.values())
+
+    def best(self, state=None):
+        if state is not None:
+            return self.beams_by_end_state[state][0]
+        return next(self.__iter__())
+
+beam = [Partial(0, -float('inf'), [], [], 0)]
 
 recipe_steps = get_possible_gliders()
 for step_no, step in enumerate(recipe_steps):
     print(f"Step {step_no}")
-    newbeam = []
+    newbeam = Beam()
     for possible_glider in step:
         gli = adjust_recipe((possible_glider.lane, possible_glider.parity))
         color = gli[0] % 2
@@ -179,6 +196,8 @@ for step_no, step in enumerate(recipe_steps):
 
             # try each recipe on each position in the beam
             for pos in beam:
+                if rec.requires_state != pos.state:
+                    continue
                 first_possible_time = pos.time
                 next_glider = pos.nextgl
                 target = pos.nextgl + (gli_lane - rec.offset) * 4 + recipe_parity
@@ -186,7 +205,11 @@ for step_no, step in enumerate(recipe_steps):
                 emits = list(pos.emits)
                 emits_str = list(pos.emits_str)
 
-                while target < first_possible_time:
+                if pos.state != 0 and target < first_possible_time:
+                    # we can't use swim recipes except in state 0
+                    continue
+
+                while target < first_possible_time:                    
                     swim_results = []
 
                     for swimrec in library['swim']:
@@ -232,10 +255,8 @@ for step_no, step in enumerate(recipe_steps):
                 emits_str.extend(tuple(map(str, rec.recipe)) + (f'swim {rec.consumed}', f'({rec.min_follow})'))
                 next_glider += PERIOD * rec.consumed
                 time = emits[-1] + rec.min_follow
-                new = Partial(next_glider, time, emits, emits_str)
-                heapq.heappush(newbeam, new)
-                if len(newbeam) > args.beam_width:
-                    newbeam.pop()
+                new = Partial(next_glider, time, emits, emits_str, rec.to_state)
+                newbeam.add(new)
     beam = newbeam
 
 """
@@ -325,10 +346,10 @@ for step_no, step in enumerate(recipe_steps):
 """
 timings = []
 ctime = 0
-for i in beam[0].emits:
+for i in beam.best(0).emits:
     timings.append(i - ctime)
     ctime = i
 print("gliders =", len(timings))
-print("duration =", beam[0].time)
+print("duration =", beam.best(0).time)
 print(timings)
-print(', '.join(beam[0].emits_str))
+print(', '.join(beam.best(0).emits_str))
