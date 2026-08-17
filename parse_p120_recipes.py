@@ -237,7 +237,7 @@ def parse_p120_recipe(input, macros):
     start_mode = mode
     advance_debris = 0
     set_start_mode = False
-    after_minimum_follow = True
+    after_minimum_follow = False
     i = 0
     delays = []
     next_delay = 0

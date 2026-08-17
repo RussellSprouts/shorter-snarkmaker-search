@@ -199,6 +199,12 @@ argparser.add_argument(
     type=int,
     help="The max population to consider for the pattern without debris"
 )
+argparser.add_argument(
+    "--without-debris-same-gliders-consumed",
+    default=False,
+    action=argparse.BooleanOptionalAction,
+    help="If true, the with and without debris results must consume the same number of gliders"
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -761,6 +767,29 @@ def process_concurrent(s):
 
         if (patt_n_without_debris - expected_incoming_gliders_pattern).population > args.without_debris_max_population:
             return
+
+        if patt_n_without_debris == patt_n - debris_pattern:
+            return
+
+        if args.without_debris_same_gliders_consumed:
+            if (patt_n & expected_incoming_gliders_pattern) != (patt_n_without_debris & expected_incoming_gliders_pattern):
+                return
+
+        _, without_result = evaluate(s, patt_n_without_debris, stream_to_check_patt)
+
+        _, with_result = evaluate(s, patt_n, stream_to_check_patt)
+
+        if with_result and with_result[0] == 'too big':
+            return
+
+        a = set(without_result)
+        b = set(with_result)
+
+        diff_plus = sorted(map(lambda x: f'+{x}', b - a))
+        diff_minus = sorted(map(lambda x: f'-{x}', a - b))
+
+        return (s, with_result + ['w/o:'] + without_result + ['diff:'] + diff_plus + diff_minus)
+
 
     result = evaluate(s, patt_n, stream_to_check_patt)
     return result
