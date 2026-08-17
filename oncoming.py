@@ -205,6 +205,12 @@ argparser.add_argument(
     action=argparse.BooleanOptionalAction,
     help="If true, the with and without debris results must consume the same number of gliders"
 )
+argparser.add_argument(
+    "--without-debris-must-differ",
+    default=True,
+    action=argparse.BooleanOptionalAction,
+    help="If true, the end pattern for the result with debris cannot be the same, just with the original debris."
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -768,7 +774,7 @@ def process_concurrent(s):
         if (patt_n_without_debris - expected_incoming_gliders_pattern).population > args.without_debris_max_population:
             return
 
-        if patt_n_without_debris == patt_n - debris_pattern:
+        if args.without_debris_must_differ and patt_n_without_debris == patt_n - debris_pattern:
             return
 
         if args.without_debris_same_gliders_consumed:
