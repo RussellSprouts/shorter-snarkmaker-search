@@ -79,8 +79,10 @@ args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 gun_period = args.toolkit.period
 def mk_fake_gun(n):
+    trailing = n != int(n)
+    n = int(n)
     fake_gun = sum(
-        [mk_glider(0, gun_period * x) for x in range(0, n)], start=lt.pattern("")
+        [mk_glider(0, gun_period * x) for x in range(0, n - trailing)], start=lt.pattern("")
     )
     fake_gun = fake_gun('rot180')(-10 + args.toolkit.lane_offset, -11)
     if args.tandem_delay or args.tandem_offset:
@@ -92,6 +94,8 @@ def mk_fake_gun(n):
             tandem_gliders = fake_gun(-shift + args.tandem_offset, -shift)[phase]
 
         fake_gun = fake_gun + tandem_gliders
+    if trailing:
+        fake_gun += mk_glider(0, gun_period * (n - 1))
     return fake_gun
 
 fake_gun = mk_fake_gun(args.n_gun_gliders)
@@ -121,9 +125,7 @@ def recipe_stream_to_delays(stream):
 
 def find_minimum_follow(r, consumed):
     if args.tandem_offset or args.tandem_delay:
-        if consumed % 2 == 1:
-            return
-        consumed //= 2
+        consumed /= 2
     delays = recipe_stream_to_delays(r)
     total = sum(delays)
     envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
