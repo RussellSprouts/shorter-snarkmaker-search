@@ -23,6 +23,8 @@ let else_glider_d78_ph2 = 7, 111, 146, (90) in
 let else_glider_d63_ph2 = 7, 114, 176, 135, (90) in
 let then_glider_d59_ph2 = 3, 102, 91, 93, (90) in
 let then_tub_minus17 = 3, 96, 202, 170, 104, 93, (90) in 
+let then_block_l22 = 7, 130, 115, 168, 152, 252, (90) in
+let else_block_l21 = 7, 118, 172, 147, (90) in
 
 let block_l37 = 3, 225, 137, 148, (90) in
 let block_l37_to_elbows_salvo = 7, 148, 106, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 128, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 32, 3, 212, 96, swim 4, (104), wait 64, 3, 102, 90, swim 3, (90), wait 8, 3, 102, 90, swim 3, (90), wait 80, 7, 148, 106, swim 3, (90), wait 64, 3, 102, 90, swim 3, (90), wait 8, 7, 148, 106, swim 3, (90), wait 56, 3, 102, 90, swim 3, (90), wait 24, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 32, 7, 170, 94, 92, swim 4, (90), wait 56, 3, 102, 90, swim 3, (90), wait 120, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90) in
@@ -38,16 +40,11 @@ wait 52*8, cond_tub_to_block
 wait 20*8, cond_push_block
 swim2, wait 6*8, cond_push_block
 
-wait 16*8
-block_l37
+swim2, wait 2*8, if_block, wait 23*8, then_block_l22
 
-wait 1*8, block_l37_to_elbows_salvo
+swim2, swim2, wait 2*8, if_block, wait 14*8, else_block_l21
 
-swim2, swim2, swim2, swim2, wait 53*8, if_block, wait 18*8, else_glider_d63_ph2
-
-swim2, swim2, swim2, swim2, 0, (90) wait 51*8, if_block, wait 24*8, then_glider_d59_ph2
-
-swim2, swim2, swim2, swim2, swim2, swim2, wait 50*8, cond_toggle_block,
+swim2, swim2, wait 14*8, cond_toggle_block,
 # triggering if_block upstream triggers a
 # destructive read.
 if_block, wait 15*8, then_tub_minus17
@@ -63,7 +60,10 @@ snarkbreaker1, wait 396, snarkbreaker2
 sc_destroy
 
 sc_pull38
-sc_pull31
+sc_pull38
+sc_pull38
+sc_pull38
+sc_pull29
 
 snarkmaker
 snarkmaker
