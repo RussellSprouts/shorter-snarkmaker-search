@@ -37,26 +37,20 @@ wait 52*8, cond_tub_to_block
 
 wait 20*8, cond_push_block
 swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
-swim2, wait 6*8, cond_push_block
 
-wait 64*8
+wait 16*8
 block_l37
 
 wait 1*8, block_l37_to_elbows_salvo
 
-swim2, swim2, swim2, swim2, wait 5*8, if_block, wait 66*8, else_glider_d63_ph2
+swim2, swim2, swim2, swim2, wait 53*8, if_block, wait 18*8, else_glider_d63_ph2
 
-swim2, swim2, swim2, swim2, 0, (90) wait 3*8, if_block, wait 72*8, then_glider_d59_ph2
+swim2, swim2, swim2, swim2, 0, (90) wait 51*8, if_block, wait 24*8, then_glider_d59_ph2
 
-swim2, swim2, swim2, swim2, swim2, swim2, wait 2*8, cond_toggle_block,
+swim2, swim2, swim2, swim2, swim2, swim2, wait 50*8, cond_toggle_block,
 # triggering if_block upstream triggers a
 # destructive read.
-if_block, wait 63*8, then_tub_minus17
+if_block, wait 15*8, then_tub_minus17
 
 disable_arm,
 
