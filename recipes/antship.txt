@@ -1,19 +1,80 @@
+let swim2 = 2, (90) in
+
+# convert tub l-17 to block l-7, if present
 let cond_tub_to_block = 1, 90, 218, 164, 99, (273) in
+
+# push block l-7, if present
 let cond_push_block = 7, 145, 127, 133, 105, 153, 136, 104, (90) in
+# block l-7 -> not block l-7, also pulls the block by 16
+let cond_toggle_block = 7, 148, 227, (122) in
+
+let disable_arm = 79 (mod 120), 180, 204, 96, (90) in
+let disabled_arm_to_block = 0, 91, 90, 104, 121, 121, 96, 99, 112, 94, 102, 94, 115, 231, 111, 118, 91, 92, 108, 129, (90), mode sc in
 let block_gun_with_eater = 5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, 210, 151, 199, 210, 181, (148) in
 
-snarkmaker
-snarkmaker
-sc_pull9, snarkmaker
-sc_push3, sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44
+let snarkbreaker1 = 0, 93, 91, 118, 93, 151, 90, 99, 155, 120, 92, 108, 90, 102, 164, 90, 96, (90)
+let snarkbreaker2 = 1, 179, 97, (90)
+
+# non-destructive read of the block, the block suppresses
+# an extra 180 degree glider that other recipes can use.
+let if_block = 3, 208, 197, (90) in
+# recipes that use the suppressed glider.
+let else_glider_d78_ph2 = 7, 111, 146, (90) in
+let else_glider_d63_ph2 = 7, 114, 176, 135, (90) in
+let then_glider_d59_ph2 = 3, 102, 91, 93, (90) in
+let then_tub_minus17 = 3, 96, 202, 170, 104, 93, (90) in 
+
+let block_l37 = 3, 225, 137, 148, (90) in
+let block_l37_to_elbows_salvo = 7, 148, 106, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 128, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 32, 3, 212, 96, swim 4, (104), wait 64, 3, 102, 90, swim 3, (90), wait 8, 3, 102, 90, swim 3, (90), wait 80, 7, 148, 106, swim 3, (90), wait 64, 3, 102, 90, swim 3, (90), wait 8, 7, 148, 106, swim 3, (90), wait 56, 3, 102, 90, swim 3, (90), wait 24, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 32, 7, 170, 94, 92, swim 4, (90), wait 56, 3, 102, 90, swim 3, (90), wait 120, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90) in
+
+snarkmaker, snarkmaker, sc_push13, snarkmaker
+sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
 construct_arm
 
-# detect tub l-17 and convert to block l-7
-wait 240, cond_tub_to_block
+# conditional recipes that have different behavior
+# depending on whether there's a tub/block along the lane
+wait 52*8, cond_tub_to_block
 
-wait 20*8
-cond_push_block
+wait 20*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
+swim2, wait 6*8, cond_push_block
 
+wait 64*8
+block_l37
 
-wait 32*8
-block_gun_with_eater
+wait 1*8, block_l37_to_elbows_salvo
+
+swim2, swim2, swim2, swim2, wait 5*8, if_block, wait 66*8, else_glider_d63_ph2
+
+swim2, swim2, swim2, swim2, 0, (90) wait 3*8, if_block, wait 72*8, then_glider_d59_ph2
+
+swim2, swim2, swim2, swim2, swim2, swim2, wait 2*8, cond_toggle_block,
+# triggering if_block upstream triggers a
+# destructive read.
+if_block, wait 63*8, then_tub_minus17
+
+disable_arm,
+
+swim2, swim2, swim2, 0, (90)
+
+disabled_arm_to_block
+snarkbreaker1, wait 1236, snarkbreaker2
+snarkbreaker1, wait 448, snarkbreaker2
+snarkbreaker1, wait 396, snarkbreaker2
+sc_destroy
+
+sc_pull38
+sc_pull31
+
+snarkmaker
+snarkmaker
+snarkmaker
+
+sc_destroy
+
+512, (90)

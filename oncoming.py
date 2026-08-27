@@ -17,7 +17,7 @@ from components import pattern_components
 from font import write_text
 from life_history import write_life_history
 from lifetree import lt
-from gliders import mk_glider, offset_based_on_glider, single_channel_stream
+from gliders import extract_single_channel_recipe, mk_glider, offset_based_on_glider, single_channel_stream
 from parse_p120_recipes import parse_p120_recipe
 from speedometer import Speedometer
 
@@ -211,8 +211,19 @@ argparser.add_argument(
     action=argparse.BooleanOptionalAction,
     help="If true, the end pattern for the result with debris cannot be the same, just with the original debris."
 )
+argparser.add_argument(
+    "--delays-from-rle",
+    type=str,
+)    
 
 args = argparser.parse_args()
+
+if args.delays_from_rle:
+    p = lt.pattern(args.delays_from_rle)
+    print(extract_single_channel_recipe(p))
+    sys.exit(0)
+
+
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 
 simkin_gun = lt.pattern("""x = 37, y = 26, rule = B3/S23

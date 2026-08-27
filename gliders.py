@@ -99,6 +99,50 @@ def extract_recipe_lanes(pattern, enforce_signed_byte = True, relative_to='last'
     return shifted, starting_block(relative_to_glider, 0)
 
 
+def extract_single_channel_recipe(pattern):
+    gliders = []
+    for c in pattern.components():
+        if c[4] != c(-1, -1):
+            # filter non-gliders
+            continue
+        gliders.append(c)
+
+    # make sure the gliders are in order
+    gliders.sort(key=lambda c: c.getrect()[1])
+
+    cumulative_recipe = []
+    for g in gliders:
+        m1 = g.match(canonical_glider, halo=halo)
+        m2 = g[1].match(canonical_glider, halo=halo)
+        m3 = g[2].match(canonical_glider, halo=halo)
+        m4 = g[3].match(canonical_glider, halo=halo)
+        if m1.population:
+            phase = 0
+            canonical = m1
+        elif m2.population:
+            phase = 1
+            canonical = m2
+        elif m3.population:
+            phase = 2
+            canonical = m3
+        elif m4.population:
+            phase = 3
+            canonical = m4
+        else:
+            raise ValueError("Recipe contained unexpected pattern. Does the recipe travel NW?")
+
+        _, y, _, _ = canonical.getrect()
+
+        cumulative_recipe.append((y * 4) + phase)
+
+    recipe = []
+    last = cumulative_recipe[0]
+    for c in cumulative_recipe:
+        recipe.append(c - last)
+        last = c
+
+    return recipe
+
 def reconstruct(recipe, starting_block, spacing):
     start = starting_block
     for i, (lane, phase) in enumerate(recipe):
