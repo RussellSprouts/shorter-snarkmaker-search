@@ -1,0 +1,19 @@
+let cond_tub_to_block = 1, 90, 218, 164, 99, (273) in
+let cond_push_block = 7, 145, 127, 133, 105, 153, 136, 104, (90) in
+let block_gun_with_eater = 5, 144, 165, 125, 115, 177, 225, 90, 107, 206, 156, 96, 104, 210, 151, 199, 210, 181, (148) in
+
+snarkmaker
+snarkmaker
+sc_pull9, snarkmaker
+sc_push3, sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44
+construct_arm
+
+# detect tub l-17 and convert to block l-7
+wait 240, cond_tub_to_block
+
+wait 20*8
+cond_push_block
+
+
+wait 32*8
+block_gun_with_eater

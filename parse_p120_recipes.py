@@ -26,6 +26,9 @@ import re
 import sys
 
 token_types = {
+    'let': re.compile(r'let\b'),
+    'in': re.compile(r'in\b'),
+    'equals': re.compile(r'='),
     'whitespace': re.compile(r'\s+'),
     'comment': re.compile(r'#.*\n'),
     'minimum_follow': re.compile(r'\(\s*([0-9]+)\s*\)'),
@@ -88,7 +91,7 @@ class Segment:
                 ('wait', self.wait),
                 ('set', self.set),
                 ('mode', self.mode),
-                ('advance_debris', self.advance_debris)
+                ('advance_debris', self.advance_debris),
                 ('swim', self.swim),
             ]
         ))
@@ -167,10 +170,22 @@ def parse_ast(input, macros):
     def expand_macro(text):
         if text not in macros:
             raise SyntaxError(f'Unknown macro {text}')
-        return parse_ast(macros[text], macros)
+        expanded = macros[text]
+        if isinstance(expanded, str):
+            return parse_ast(expanded, macros)
+        return expanded
 
     def parse_segment():
         match next(1):
+            case (Token(type='let'),):
+                macro_name, equals = next(2)
+                if macro_name.type != 'identifier':
+                    raise SyntaxError(f'Expected macro name after let')
+                if equals.type != 'equals':
+                    raise SyntaxError(f'Expected equals after let macro name')
+                segments = parse_segments('in')
+                macros[macro_name.text] = segments
+                return []
             case (Token(type='wait'),):
                 expr = parse_expression()
                 return Segment(wait=expr)
@@ -201,7 +216,7 @@ def parse_ast(input, macros):
                     mod = int(mod_tok.match[1])
                 return Segment(delay=expr,mod=mod)
 
-    def parse_segments():
+    def parse_segments(until_type = None):
         segments = []
         s = parse_segment()
         match s:
@@ -214,6 +229,8 @@ def parse_ast(input, macros):
                 case (Token(type='comma'),):
                     # remove optional commas
                     tokens.pop(0)
+                case (Token(type=a),) if a == until_type:
+                    return segments
             if tokens:
                 s = parse_segment()
                 match s:

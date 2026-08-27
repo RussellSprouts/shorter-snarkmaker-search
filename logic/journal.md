@@ -136,6 +136,12 @@ l-7:
 '+glider(d63)(ph1)(♝⬃①)'
 '+glider(d54)(ph0)(♗⬃⓪)'
 
+75, 208, 197, 257, 92, 180, 153
+75, 208, 197, 261, 138, 143
+75, 208, 197, 259, 196, 131, 143
+
+1, 90, 91, 91
+
 '+glider(d54)(ph2)(♗⬀⓪)'
 '+glider(d59)(ph2)(♝⬀⓪)'
 
@@ -144,6 +150,11 @@ l-7:
 '-glider(d78)(ph2)(♗⬃⓪)'
 '-glider(d80)(ph0)(♗⬃⓪)'
 '-glider(d88)(ph3)(♗⬃①)'
+
+75, 208, 197, 263, 111, 146
+75, 208, 197, 257, 104, 196, 143
+75, 208, 197, 263, 178, 120
+75, 208, 197, 259, 94, 92, 163
 
 '-glider(d69)(ph0)(♝⬃⓪)'
 '-glider(d75)(ph2)(♝⬃⓪)'
@@ -180,3 +191,38 @@ l-9:
 67, 208, 197
 
 l-10:
+
+# Tub l18 to block l-7
+
+123, 104, 233, 151, 104, (134)
+
+# Tub l-17 to block l-7
+
+uv run oncoming.py --with-debris-rle='3o$o$bo15$bo$obo$bo!' --and-without-debris --print-rle='33, 90, 218, 164, 99, (273)'
+
+--subtree="33; 90; 218" --subtree="55; 130; 220" --subtree="171; 91; 198" --subtree="67; 207; 197" --subtree="147; 91; 139" --subtree="25; 110; 118" --subtree="83; 204; 94" --subtree="115; 195; 122" --subtree="99; 204; 122" --subtree="59; 195; 110" --subtree="131; 248; 91" --subtree="139; 240; 91" --subtree="83; 111; 156" --subtree="211; 103; 178" --subtree="211; 103; 180" --subtree="211; 103; 188" --subtree="135; 156; 196" --subtree="139; 216; 147" --subtree="51; 92; 142" --subtree="51; 92; 143" --subtree="93; 182; 194" --subtree="139; 216; 141" --subtree="67; 98; 90"
+
+Working triple snark:
+
+uv run oncoming.py --print-rle="snarkmaker, snarkmaker,sc_pull9,snarkmaker,sc_push3,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,construct_arm,wait 240, 1, 90, 218, 164, 99, (273)"
+
+
+--subtree="35;  230;  105" --subtree="115;  195;  209" --subtree="163;  96;  202"
+
+
+block l-9 to l-7
+83, 219, 130
+
+
+(103, 145) '+beehive(l-4,d25,o1)'
+(67, 94) '+block(l-1,d11,o0)'
+(113, 107) '+beehive(l-2,d25,o1)'
+(109, 135) '-blinker(l-1,d21,o1,p0)'
+(129, 107) '+beehive(l-5,d24,o1)'
+(91, 205) '-beehive(l-2,d25,o0)'
+(117, 135) '-blinker(l-1,d23,o1,p0)'
+
+
+103, 145, 127, 133
+
+uv run oncoming.py --print-rle="snarkmaker, snarkmaker,sc_pull9,snarkmaker,sc_push3,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,sc_push44,construct_arm,wait 240, 1, 90, 218, 164, 99, (273), 0"
