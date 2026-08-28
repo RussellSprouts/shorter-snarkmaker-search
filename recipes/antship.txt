@@ -26,10 +26,7 @@ let then_tub_minus17 = 3, 96, 202, 170, 104, 93, (90) in
 let then_block_l22 = 7, 130, 115, 168, 152, 252, (90) in
 let else_block_l21 = 7, 118, 172, 147, (90) in
 
-let block_l37 = 3, 225, 137, 148, (90) in
-let block_l37_to_elbows_salvo = 7, 148, 106, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 40, 3, 102, 90, swim 3, (90), wait 128, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 32, 3, 212, 96, swim 4, (104), wait 64, 3, 102, 90, swim 3, (90), wait 8, 3, 102, 90, swim 3, (90), wait 80, 7, 148, 106, swim 3, (90), wait 64, 3, 102, 90, swim 3, (90), wait 8, 7, 148, 106, swim 3, (90), wait 56, 3, 102, 90, swim 3, (90), wait 24, 7, 148, 106, swim 3, (90), 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90), wait 72, 3, 102, 90, swim 3, (90), wait 32, 7, 170, 94, 92, swim 4, (90), wait 56, 3, 102, 90, swim 3, (90), wait 120, 3, 102, 90, swim 3, (90), wait 80, 3, 102, 90, swim 3, (90) in
-
-snarkmaker, snarkmaker, sc_push13, snarkmaker
+snarkmaker, snarkmaker, sc_pull1, snarkmaker
 sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
 construct_arm
 
@@ -55,7 +52,7 @@ swim2, swim2, swim2, 0, (90)
 
 disabled_arm_to_block
 snarkbreaker1, wait 1236, snarkbreaker2
-snarkbreaker1, wait 448, snarkbreaker2
+snarkbreaker1, wait 392, snarkbreaker2
 snarkbreaker1, wait 396, snarkbreaker2
 sc_destroy
 
