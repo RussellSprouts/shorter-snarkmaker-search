@@ -35,16 +35,15 @@ construct_arm
 wait 52*8, cond_tub_to_block
 
 wait 20*8, cond_push_block
-swim2, wait 6*8, cond_push_block
 
-swim2, wait 2*8, if_block, wait 23*8, then_block_l22
+swim2, wait 2*8, if_block, wait 15*8, then_block_l22
 
-swim2, swim2, wait 2*8, if_block, wait 14*8, else_block_l21
+swim2, swim2, wait 10*8, if_block, wait 6*8, else_block_l21
 
-swim2, swim2, wait 14*8, cond_toggle_block,
-# triggering if_block upstream triggers a
+swim2, wait 4*8, cond_toggle_block,
+# triggering if_block upstream of the normal position triggers a
 # destructive read.
-if_block, wait 15*8, then_tub_minus17
+if_block, wait 7*8, then_tub_minus17
 
 disable_arm,
 
@@ -56,11 +55,14 @@ snarkbreaker1, wait 392, snarkbreaker2
 snarkbreaker1, wait 396, snarkbreaker2
 sc_destroy
 
-sc_pull38
-sc_pull38
-sc_pull38
-sc_pull38
-sc_pull29
+# send a 180 degree glider
+let long_pull1 = 0, 109, 90, 93, 91, 91, 90, 90, 100, 90, 90, 146, 92, 90, 90, 103, 90, 91, 91, 157, (90) in
+# and recover an elbow block
+let long_pull2 = 1, 90, 157, 90, 138, 91, 90, 90, 92, 91, 147, 90, 91, 90, 165, 129, (90) in
+
+# pull the block 181
+long_pull1
+wait 680, long_pull2
 
 snarkmaker
 snarkmaker
