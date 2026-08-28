@@ -27,12 +27,12 @@ let then_block_l22 = 7, 130, 115, 168, 152, 252, (90) in
 let else_block_l21 = 7, 118, 172, 147, (90) in
 
 snarkmaker, snarkmaker, sc_pull1, snarkmaker
-sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
+sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
 construct_arm
 
 # conditional recipes that have different behavior
 # depending on whether there's a tub/block along the lane
-wait 52*8, cond_tub_to_block
+wait 8*8, cond_tub_to_block
 
 wait 20*8, cond_push_block
 
@@ -46,13 +46,12 @@ swim2, wait 4*8, cond_toggle_block,
 if_block, wait 7*8, then_tub_minus17
 
 disable_arm,
-
-swim2, swim2, swim2, 0, (90)
+swim2, swim2
 
 disabled_arm_to_block
-snarkbreaker1, wait 1236, snarkbreaker2
-snarkbreaker1, wait 392, snarkbreaker2
-snarkbreaker1, wait 396, snarkbreaker2
+snarkbreaker1, wait 221*4, snarkbreaker2
+snarkbreaker1, wait 98*4, snarkbreaker2
+snarkbreaker1, wait 99*4, snarkbreaker2
 sc_destroy
 
 # send a 180 degree glider
