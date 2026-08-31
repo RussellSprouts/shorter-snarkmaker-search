@@ -556,7 +556,7 @@ if args.print_rle:
             continue
         parse = parse_p120_recipe(r, macros.get(args.toolkit.name, {}))
         gliders_int = parse.delays
-        print(gliders_int)
+        print(gliders_int, file=sys.stderr)
         if parse.start_mode == "p120":
             fg = fake_gun
             if parse.advance_debris:

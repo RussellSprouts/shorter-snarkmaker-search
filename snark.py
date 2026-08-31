@@ -895,7 +895,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                     job=job,
                     follow_up=next_possibility,
                     before_hit_digest=before_hit_digest,
-                    end_pattern=end_pattern,
+                    end_pattern=end_pattern1,
                     shared_args=shared_args,
                     recursed=False,
                 )
@@ -1221,6 +1221,7 @@ async def autoshrink(
     live_view_depth: int,
     n_results_limit: int,
     merged_stream_gen_options: str,
+    must_contain: list[str],
     max_allowed_population: int,
 ):
     if full_or_partial not in ("full", "partial"):
@@ -1289,7 +1290,7 @@ async def autoshrink(
             live_view_depth=live_view_depth,
             n_results_limit=n_results_limit,
             merged_stream_gen_options=merged_stream_gen_options,
-            must_contain=None,
+            must_contain=must_contain,
             max_allowed_population=max_allowed_population,
         )
 
@@ -1773,6 +1774,13 @@ async def main():
         help="NxA;B. E.g., '4x35-256;67-256'. This indicates that our construction arm can gliders with 67 tick minimum spacing. Additionally, we may send up to 4 gliders with a spacing as close as 35 ticks before we need to reset with a 67 tick spaced glider."
     )
     parser_autoshrink.add_argument(
+        "--must-contain",
+        type=str,
+        default=None,
+        help="Rle for a pattern that must be included in a result for it to be processed. Use | to separate multiple valid options",
+        action="append",
+    )
+    parser_autoshrink.add_argument(
         "--max-allowed-population",
         type=int,
         default=-1,
@@ -1899,6 +1907,7 @@ async def main():
                 live_view_depth=args.live_view_depth,
                 n_results_limit=args.n_results_limit,
                 merged_stream_gen_options=args.merged_stream_gen_options,
+                must_contain=args.must_contain,
                 max_allowed_population=args.max_allowed_population,
             )
         case "custom-starting-point":
