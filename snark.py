@@ -1349,6 +1349,75 @@ def custom_starting_point(output_db, stream, target_rle):
     output_db.close()
     print("Added starting point.")
 
+# splits the pattern into independent vertical segments
+def split_vertical(p):
+    fx, fy, fw, fh = p.getrect()
+
+    horizontal_lines = []
+    for c in pattern_components(p):
+        if c.population < 10:
+            continue
+        _, y, _, h = c.getrect()
+
+        if h == 1:
+            horizontal_lines.append(y)
+    horizontal_lines.append(fy+fh+1)
+    horizontal_lines.sort()
+
+    segments = []
+    last_y = fy
+    for y in horizontal_lines:
+        segments.append(p[fx:fx+fw,last_y:y])
+        last_y = y + 1
+
+    return segments
+
+def split_horizontal(p):
+    fx, fy, fw, fh = p.getrect()
+
+    vertical_lines = []
+    for c in pattern_components(p):
+        if c.population < 10:
+            continue
+        x, _, w, _ = c.getrect()
+
+        if w == 1:
+            vertical_lines.append(x)
+    vertical_lines.append(fx+fw+1)
+    vertical_lines.sort()
+
+    segments = []
+    last_x = fx
+    for x in vertical_lines:
+        segments.append(p[last_x:x,fy:fy+fh])
+        last_x = x + 1
+
+    return segments
+
+def custom_intermediates(recipe_intermediates_db, intermediates_rle):
+    ip = lt.pattern(intermediates_rle)
+
+    db = ProcessingDatabase(recipe_intermediates_db)
+
+    intermediates = []
+    stages = split_vertical(ip)
+    for i, segment in enumerate(stages):
+        for j, intermediate in enumerate(split_horizontal(segment)):
+            offset = offset_based_on_glider(intermediate)
+            intermediates.append(Recipe(
+                id=None,
+                so_far=((0,0),) * i,
+                remaining=((0,0),) * (len(stages) - i),
+                digest=offset.digest(),
+                x=offset.getrect()[0],
+                y=offset.getrect()[1],
+                rle_string=offset.rle_string()
+            ))
+
+    db.add_recipe_intermediates(intermediates)
+    db.commit()
+    print("Intermediates added to database")
+
 async def main():
     multiprocessing.set_start_method('spawn')
 
@@ -1737,6 +1806,25 @@ async def main():
         default="2o$2o3$3o$o$bo!"
     )
 
+    parser_custom_intermediates = subcommand.add_parser(
+        "custom-intermediates",
+        description="Use a custom set of intermediates as the intermediates database"
+    )
+    parser_custom_intermediates.add_argument(
+        "-r",
+        "--recipe-intermediates-db",
+        type=pathlib.Path,
+        help="DB to save the recipe intermediates",
+        required=True,
+    )
+    parser_custom_intermediates.add_argument(
+        "-i",
+        "--intermediates-rle",
+        help="The rle for the set of intermediates. Each intermediate should include a glider for reference. The segments should be separated by lines of cells at least 10 blocks long. Divide the stages with horizontal lines, then use vertical lines to indicate possibilities at the same level.",
+        type=str,
+        default="2o$2o3$3o$o$bo!"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -1818,6 +1906,11 @@ async def main():
                 output_db=args.output_db,
                 stream=args.stream,
                 target_rle=args.target_rle
+            )
+        case "custom-intermediates":
+            custom_intermediates(
+                recipe_intermediates_db=args.recipe_intermediates_db,
+                intermediates_rle=args.intermediates_rle,
             )
 if __name__ == "__main__":
     asyncio.run(main())
