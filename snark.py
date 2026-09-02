@@ -306,6 +306,7 @@ async def view_results(input_results_db, show_completion):
 
     try:
         while True:
+            cursor = None
             try:
                 with patch_stdout():
                     query = await prompt_session.prompt_async("> ")
@@ -413,6 +414,9 @@ async def view_results(input_results_db, show_completion):
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
+            finally:
+                if cursor:
+                    cursor.close()
     except asyncio.CancelledError:
         # gracefully cancel.
         pass
@@ -989,6 +993,8 @@ async def optimize(
         output_db.add_recipe_intermediates(list(new_intermediates.values()))
         output_db.reload_recipe_intermediates()
         output_db.commit()
+        recipe_intermediates_db.close()
+        print(f"{len(new_intermediates)} intermediates transferred.", file=sys.stderr)
     else:
         print(
             f"Recipe intermediates already present in output DB, assuming already transferred.",
@@ -1243,21 +1249,22 @@ async def autoshrink(
     candidate_queries = []
     for n in range(1, len(measures) + 1):
         for combo in itertools.combinations(measures, n):
-            candidate_queries.append(
-                [
-                    f"select * from r where {cond} order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
-                ]
-            )
-            candidate_queries.append(
-                [
-                    f"select * from r where {cond} group by digest order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
-                ]
-            )
-            candidate_queries.append(
-                [
-                    f"select * from r where {cond} group by {full_or_partial}_intermediate_overlapping_digest order by {' + '.join(combo)}, {tiebreak} limit {candidates}"
-                ]
-            )
+            for operator in ['+', '*']:
+                candidate_queries.append(
+                    [
+                        f"select * from r where {cond} order by {f' {operator} '.join(combo)}, {tiebreak} limit {candidates}"
+                    ]
+                )
+                candidate_queries.append(
+                    [
+                        f"select * from r where {cond} group by digest order by {f' {operator} '.join(combo)}, {tiebreak} limit {candidates}"
+                    ]
+                )
+                candidate_queries.append(
+                    [
+                        f"select * from r where {cond} group by {full_or_partial}_intermediate_overlapping_digest order by {f' {operator} '.join(combo)}, {tiebreak} limit {candidates}"
+                    ]
+                )
 
     last_path = input_db
     for i in range(1, 1000):

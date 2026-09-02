@@ -307,7 +307,7 @@ class Recipe:
 class ProcessingDatabase:
     def __init__(self, filename):
         self.path = filename
-        self.conn = sqlite3.connect(filename)
+        self.conn = sqlite3.connect(filename, timeout=10)
         self.conn.autocommit = False
         self.conn.row_factory = sqlite3.Row
 
@@ -548,12 +548,12 @@ class ProcessingDatabase:
                 )
                 for job in jobs
             ],
-        )
+        ).close()
 
     def add_starting_points(self, starting_points: List[StartingPoint]):
         ids = []
         for s in starting_points:
-            r = self.conn.execute(
+            conn = self.conn.execute(
                 """INSERT INTO starting_points
             (id, cost, stream, follow_up_gen_limit, max_depth, target_rle)
             VALUES (?, ?, ?, ?, ?, ?) RETURNING id""",
@@ -565,7 +565,9 @@ class ProcessingDatabase:
                     s.max_depth,
                     s.target_rle,
                 )
-            ).fetchone()
+            )
+            r = conn.fetchone()
+            conn.close()
             ids.append(r['id'])
 
         return ids
