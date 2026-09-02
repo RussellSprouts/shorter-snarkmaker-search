@@ -1,8 +1,10 @@
 
 from life_history import lht
-from lifetree import lt
+from lifetree import get_lht
 from gliders import mk_glider
 import sys
+
+lht = get_lht()
 
 cleanup_problem = lht.pattern("""x = 70, y = 81, rule = x3xsixstate
 $19.9D$16.14D$11.20D$8.25D$7.28D$6.30D$5.10D5B17D$5.10D6B16D$4.11D2BA

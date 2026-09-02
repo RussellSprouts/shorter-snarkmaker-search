@@ -2,8 +2,12 @@ import lifelib
 
 from lifetree import lt
 
-session = lifelib.load_rules('sixstate.rule')
-lht = session.lifetree()
+import functools
+
+@functools.lru_cache()
+def get_lht():
+    session = lifelib.load_rules('sixstate.rule')
+    return session.lifetree()
 
 EMPTY = lt.pattern()
 
@@ -15,6 +19,7 @@ def write_life_history(
     yellow=EMPTY,  # temp mark
     grey=EMPTY,  # boundary, always dead
 ):
+    lht = get_lht()
     patterns = [
         lht.pattern(grey.rle_string().replace('A', 'F'))(*(grey.getrect() or (0, 0))[0:2]),
         lht.pattern(yellow.rle_string().replace('A', 'E'))(*(yellow.getrect() or (0, 0))[0:2]),
