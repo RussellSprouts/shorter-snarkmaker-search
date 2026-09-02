@@ -450,17 +450,8 @@ def abs_lane(x):
         return -x + 1
     return x
 
-
-def score_pattern(
-    job: StreamJob,
-    follow_up: int,
-    before_hit_digest: int,
-    end_pattern,
-    shared_args: OptimizeArgs,
-    recursed=False,
-):
+def get_lanes(comps):
     lanes = []
-    comps = pattern_components(end_pattern)
     for c in comps:
         x, y, w, h = c.getrect()
         is_pi_equivalent = c.digest() in offset_elbows
@@ -475,8 +466,19 @@ def score_pattern(
                 c,
             )
         )
-
     lanes.sort(key=lambda l: abs_lane(l[0]))
+    return lanes
+
+def score_pattern(
+    job: StreamJob,
+    follow_up: int,
+    before_hit_digest: int,
+    end_pattern,
+    shared_args: OptimizeArgs,
+    recursed=False,
+):
+    comps = pattern_components(end_pattern)
+    lanes = get_lanes(comps)
 
     # max depth of all components including the offset block
     original_components = set(
@@ -603,6 +605,7 @@ def score_pattern(
                         overlapping_pattern.digest()
                     )
                     full_intermediate_shift = pattern_offset
+                    lanes = get_lanes(map(lambda a: a.pattern, elbow))
             else:
                 # partial match!
                 # find probability of finding rest of match
