@@ -350,10 +350,63 @@ This ran 55 rounds overnight! It turns out that there's a solution at round 35.
 
 Now, let's go back making the end snark.
 
-```
-uv run snark.py autoshrink -r results/sod_snark/intermediates.sqlite -i results/sod_snark/end3.sqlite -o results/sod_snark/end_shrink.sqlite -n 450 --depth-range="0" --partial-range=1 -q 'full_intermediate is not null' --must-contain='5$15b2o$14bobo5b2o$8b2o4bo7b2o$6bo2bo2b2ob4o$6b2obobobobo2bo$9bobobobo
+```bash
+$ uv run snark.py autoshrink -r results/sod_snark/intermediates.sqlite -i results/sod_snark/end3.sqlite -o results/sod_snark/end_shrink.sqlite -n 450 --depth-range="0" --partial-range=1 -q 'full_intermediate is not null' --must-contain='5$15b2o$14bobo5b2o$8b2o4bo7b2o$6bo2bo2b2ob4o$6b2obobobobo2bo$9bobobobo
 $9bobob2o$10bo$30bo$23b2o4bobo$14b2o7bo5bobo$14b2o5bobo6bo$21b2o3$25bo
 $25bo$25bo2$11b2o$12bo$9b3o$9bo!|15$19b2o$18bobo5b2o$12b2o4bo7b2o$10bo2bo2b2ob4o$10b2obobobobo2bo$13bob
 obobo$13bobob2o$14bo$34bo$27b2o4bobo$18b2o7bo5bobo$18b2o5bobo6bo$25b2o
 4$28b3o3$15b2o$16bo$13b3o$13bo!' --n-results-limit=100000 --max-allowed-population=200
 ```
+
+This got stuck. I realized that the lane width calculation includes the block,
+so it wasn't able to optimize the lane width at all. I adjusted scoring to include only the elbow in the lane width if there is a full intermediate match.
+
+Let's try running autoshrink again from end3.sqlite.
+
+```bash
+$ uv run snark.py autoshrink -r results/sod_snark/intermediates.sqlite -i results/sod_snark/end3.sqlite -o results/sod_snark/end_shrink2.sqlite -n 450 --depth-range="0" --partial-range=1 -q 'full_intermediate is not null' --must-contain='
+14$64b2o$63bobo5b2o$57b2o4bo7b2o$55bo2bo2b2ob4o$55b2obobobobo2bo$58bob
+obobo$58bobob2o$59bo$79bo$72b2o4bobo$63b2o7bo5bobo$63b2o5bobo6bo$70b2o
+3$74bo$74bo$74bo2$60b2o$61bo$58b3o$58bo41$11b2o$11b2o!
+|
+14$64b2o$63bobo5b2o$57b2o4bo7b2o$55bo2bo2b2ob4o$55b2obobobobo2bo$58bob
+obobo$58bobob2o$59bo$79bo$72b2o4bobo$63b2o7bo5bobo$63b2o5bobo6bo$70b2o
+4$73b3o3$60b2o$61bo$58b3o$58bo41$11b2o$11b2o!
+' --n-results-limit=100000 --max-allowed-population=200
+
+...
+Transferred 176 results as starting_points.
+Running search in results/sod_snark/end_shrink2-round1.sqlite...
+Transferring recipe_intermediates from results/sod_snark/intermediates.sqlite
+4 intermediates transferred.
+```
+
+The --max-allowed-population becomes less restructive over time, so I eventually lowered it to 145, then 90.
+
+I was able to reduce it down to just the far away blinker, which is a dead end. The old feature for finding offset blocks pops the furthest item, so the lane_width is calculated from the second furthest item. I fixed that so that it only pops if the offset block feature is enabled.
+
+```bash
+$ uv run snark.py autoshrink -r results/sod_snark/intermediates.sqlite -i results/sod_snark/end_shrink2-round13.sqlite -o results/sod_snark/end_shrink3.sqlite -n 450 --depth-range="0" --partial-range=1 -q 'full_intermediate is not null' --must-contain='
+14$64b2o$63bobo5b2o$57b2o4bo7b2o$55bo2bo2b2ob4o$55b2obobobobo2bo$58bob
+obobo$58bobob2o$59bo$79bo$72b2o4bobo$63b2o7bo5bobo$63b2o5bobo6bo$70b2o
+3$74bo$74bo$74bo2$60b2o$61bo$58b3o$58bo41$11b2o$11b2o!
+|
+14$64b2o$63bobo5b2o$57b2o4bo7b2o$55bo2bo2b2ob4o$55b2obobobobo2bo$58bob
+obobo$58bobob2o$59bo$79bo$72b2o4bobo$63b2o7bo5bobo$63b2o5bobo6bo$70b2o
+4$73b3o3$60b2o$61bo$58b3o$58bo41$11b2o$11b2o!
+' --n-results-limit=67000 --max-allowed-population=200
+
+...
+Filtered 49 duplicate results
+Transferred 332 results as starting_points.
+Running search in results/sod_snark/end_shrink3-round1.sqlite...
+
+...
+1374.15/s, 1374.15 avg/s, 603/13,778 done, 90-255 gens, 41,334/334,062 pending, 1x603, -1.35x603, 105x94 A (1), -72 (603) fd, 0 overlap (120), 101 pop (31)
+...
+2437.89/s, 2308.09 avg/s, 65,708/769,544 done, 232-397 gens, 332/18,826,134 pending, 1x65708, -1.35x65708, 73x96 A (2), -72 (65708) fd, 0 overlap (31181), 97 pop (1)
+...
+1801.02/s, 1538.53 avg/s, 66,430/450,264 done, 215-380 gens, 498/14,231,799 pending, 1x66430, -1.35x66430, 70x96 A (6), -72 (66430) fd, 0 overlap (19286), 93 pop (1)
+
+# switched max-allowed-population to 130
+~

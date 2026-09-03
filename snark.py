@@ -491,13 +491,14 @@ def score_pattern(
 
     depths_to_search = shared_args.depth_range
     if lanes:
-        furthest_lane, is_pi_equivalent, elbow_component = lanes.pop()
+        furthest_lane, is_pi_equivalent, elbow_component = lanes[-1]
     else:
         furthest_lane = 0
         is_pi_equivalent = False
         elbow_component = lt.pattern()
 
     if shared_args.min_offset_block_lane > 0:
+        lanes.pop()
         if len(lanes) < 2:
             return None
 
@@ -1244,7 +1245,7 @@ async def autoshrink(
     b = f"{full_or_partial}_intermediate_overlapping_population"
     c = "(lane_width*sqrt(lane_width))"
     d = f"(CASE WHEN {full_or_partial}_intermediate IS NOT NULL THEN depth - far_depth - {full_or_partial}_intermediate_non_overlapping_depth_separation ELSE depth - far_depth END)"
-    e = f"({d} + lane_width)"
+    e = f"lane_width"
     tiebreak = f"({a} + {b} + {c} + {d})"
 
     measures = (a, b, c, d, e)
