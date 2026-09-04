@@ -1,5 +1,6 @@
 """Helpers for working with gliders and recipes"""
 
+from components import pattern_components
 from lifetree import lt
 
 canonical_glider = lt.pattern("ooo$o$bo!")
@@ -48,12 +49,11 @@ def extract_recipe_lanes(pattern, enforce_signed_byte = True, relative_to='last'
     """
     starting_block = lt.pattern("")
     gliders = []
-    for c in pattern.components():
-        if c.population == 4:
-            # remove the target starting_block
+    for c in pattern_components(pattern):
+        if c[4] != c and c[4].centre() == c.centre():
+            gliders.append(c)
+        else:
             starting_block += c
-            continue
-        gliders.append(c)
 
     # make sure the gliders are in order
     gliders.sort(key=lambda c: c.getrect()[1])

@@ -67,6 +67,11 @@ argparser.add_argument(
     type=int,
     default=100
 )
+argparser.add_argument(
+    "--max-stabilization-gens",
+    type=int,
+    default=2048
+)
 
 args = argparser.parse_args()
 
@@ -114,9 +119,10 @@ library = {
 with open(args.salvo, 'r') as file:
     rle = file.read()
     recipe, starting_block = extract_recipe_lanes(lt.pattern(rle), enforce_signed_byte=False, relative_to='first')
+    starting_block = starting_block[1]
 
     print("Calculating recipe dag, this may take a few seconds...")
-    dag = RecipeDag(recipe, starting_block, keep_order=True)
+    dag = RecipeDag(recipe, starting_block, keep_order=True, max_gens=args.max_stabilization_gens)
 
 def adjust_recipe(a):
     lane, phase = a
@@ -149,7 +155,7 @@ def get_possible_gliders():
     possible_gliders = []
     so_far = []
     for i in range(0, len(recipe)):
-        possibilities = dag.get_next(tuple(so_far))
+        possibilities = dag.get_next(tuple(so_far), max_gens=args.max_stabilization_gens)
         filtered_possibilities = list(filter(
             lambda a: a.kind != 'rephase',
             possibilities

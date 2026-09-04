@@ -13,7 +13,7 @@ RecipeStep = namedtuple("RecipeStep", ("lane", "parity", "kind", "i", "digest"))
 
 class RecipeDag:
 
-    def __init__(self, lanes, starting_block, keep_order=False):
+    def __init__(self, lanes, starting_block, keep_order=False, max_gens=2048):
         birthdays = {}
         periodic_birthdays = {}
         dependencies = {}
@@ -29,6 +29,9 @@ class RecipeDag:
         for c in coords(starting_block):
             birthdays[c] = -1
 
+        for c in coords(starting_block ^ starting_block[1]):
+            periodic_birthdays[c] = -1
+
         debug = lt.pattern()
         pattern = starting_block
         for i in range(0, len(lanes)):
@@ -39,10 +42,10 @@ class RecipeDag:
             # cells that were periodic
             old_periodic = old[1] ^ old
 
-            new = pattern + mk_glider(lane, 400 - parity)
+            new = pattern + mk_glider(lane, max_gens//2 - parity)
             debug += new(i * 400, 0)
             flight_path = lt.pattern()
-            for _ in range(0, 1024):
+            for _ in range(0, max_gens // 2):
                 next = new[2]
                 flight_path |= (next - new)
                 flight_path |= (new - next)
@@ -52,7 +55,7 @@ class RecipeDag:
             else:
                 print(debug.rle_string())
                 print(i, lane, parity)
-                raise Exception("Slow salvo didn't stabilize in 2048 gens!")
+                raise Exception(f"Slow salvo didn't stabilize in {max_gens} gens!")
 
             flight_path -= old
             flight_path -= old_periodic
@@ -185,14 +188,14 @@ class RecipeDag:
         self.p1_gliders = p1_gliders
 
     @functools.lru_cache(2**12)
-    def _simulate(self, lanes):
+    def _simulate(self, lanes, max_gens=2048):
         """Simulates the results of the given tuple of glider numbers. Cached.
         Returns 'unstable' if the result is not stable."""
         if not lanes:
             return self.starting_block
         lane, parity, kind = lanes[-1]
-        p = self._simulate(lanes[:-1]) + mk_glider(lane, 400 - parity)
-        p = p[2048]
+        p = self._simulate(lanes[:-1], max_gens=max_gens) + mk_glider(lane, max_gens//2 - parity)
+        p = p[max_gens]
         if kind == 'rephase':
             p = p[1]
         if p[2] != p:
@@ -224,12 +227,12 @@ class RecipeDag:
 
         return possibilities
 
-    def get_next(self, so_far: tuple[RecipeStep]) -> list[RecipeStep]:
+    def get_next(self, so_far: tuple[RecipeStep], max_gens=2048) -> list[RecipeStep]:
         so_far_set = set(s.i for s in so_far)
         so_far_set.add(-1)
 
         lanes = tuple(s[0:3] for s in so_far)
-        before = self._simulate(lanes)
+        before = self._simulate(lanes, max_gens=max_gens)
 
         results = []
 
@@ -242,7 +245,7 @@ class RecipeDag:
                 continue
 
             for lane, parity, kind in self.get_possible_gliders(i):
-                after = self._simulate(lanes + ((lane, parity, kind),))
+                after = self._simulate(lanes + ((lane, parity, kind),), max_gens=max_gens)
                 if isinstance(after, str) and after == 'unstable':
                     continue
                 deleted = before - after
