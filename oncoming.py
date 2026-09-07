@@ -60,6 +60,12 @@ argparser.add_argument(
     help="Prints a rle showing the given recipes. Skips processing anything else.",
 )
 argparser.add_argument(
+    "--print-rle-stride",
+    type=int,
+    default=200,
+    help="How much to offset each semi-colon separated recipe",
+)
+argparser.add_argument(
     "--n-gun-gliders", type=int, default=10, help="How many gun gliders to simulate"
 )
 argparser.add_argument(
@@ -472,7 +478,7 @@ if args.print_rle:
 
     macros = {
         'sc90b5p120': {
-            'construct_arm': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode p120, set 28 (mod 120), (90)',
+            'construct_arm': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode p120, set 28 (mod 120), set d0, (90)',
             'snarkmaker': 'mode sc, 0,135,93,105,107,115,91,105,102,118,101,96,92,138,151,147,129,108,91,116,154,149,128,114,202,128,128,120,110,113,162,115,90,91,146,127,103,118,135,176,124,180,96,108,218,91,90,111,111,99,104,202,174,135,111,214,116,94,182,91,93,190,103,106,95,96,117,91,122,110,147,117,91,120,92,105,149,108,119,102,106,126,124,106,128,150,130,132,134,90,197,99,132,91,161,146,100,108,145,97,138,100,101,167,91,183,140,90,94,99,93,100,105,102,153,105,92,121,92,90,99,96,97,116,91,193,94,91,117,100,103,122,121,90,109,205,90,105,110,93,232,108,100,93,145,118,106,90,101,151,134,113,141,96,91,123,91,111,90,102,95,198,107,122,162,90,114,96,92,114,127,109,126,98,135,95,141,114,98,124,102,148,129,91,92,136,107,249,181,93,141,106,109,98,113,95,128,108,250,105,98,109,100,96,170,94,95,102,101,206,98,100,170,111,152,169,97,141,186,100,101,94,96,95,110,95,134,111,98,115,91,91,96,102,98,98,101,175,156,238,100,99,172,116,122,212,146,96,138,152,101,104,96,98,131,138,127,103,94,129,96,120,147,98,142,128,(156)',
             'sc_destroy': 'mode sc, 0, 109, 90, 93, 91, 90, 90, 90, (90)',
             'sc_paren_left': 'mode sc, 0, 109, 90, 93, 91, 90, 95, 91, 90, 91, 91, 90, 90, 91, 90, 90, 99, 90, 90, 91, 90, 94, 90, 90, 109, 91, 94, 91, 91, 189, 91, 90, 91, 92, 90, 91, 158, 91, 90, 90, 90, 91, 116, 91, 137, 91, 90, 91, 90, 90, 149, 200, 90, 90, 154, 90, 91, (256)',
@@ -546,10 +552,10 @@ if args.print_rle:
     red_patt = lt.pattern("")
     recipes = args.print_rle.split(";")
 
+    stride = args.print_rle_stride
+
     if args.and_without_debris:
-        stride = 400
-    else:
-        stride = 200
+        stride *= 2
 
     for i, r in enumerate(recipes):
         if not r.strip():
@@ -557,24 +563,24 @@ if args.print_rle:
         parse = parse_p120_recipe(r, macros.get(args.toolkit.name, {}))
         gliders_int = parse.delays
         print(gliders_int, file=sys.stderr)
-        if parse.start_mode == "p120":
-            fg = fake_gun
-            if parse.advance_debris:
-                fg = fake_gun - debris_pattern + debris_pattern[parse.advance_debris]
-            green_patt += fg(stride * i, 0) + single_channel_stream(gliders_int)(
-                stride * i, 0
+
+        if parse.start_mode == "sc":
+            fake_gun = PI_BLOCKS[1] + debris_pattern
+
+        fg = fake_gun
+        if parse.advance_debris:
+            fg = fake_gun - debris_pattern + debris_pattern[parse.advance_debris]
+        green_patt += fg(stride * i, 0) + single_channel_stream(gliders_int)(
+            stride * i, 0
+        )
+        red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
+
+        if args.and_without_debris:
+            green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + single_channel_stream(gliders_int)(
+                stride * i + stride // 2, 0
             )
-            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
+            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i + stride // 2, 0)
 
-            if args.and_without_debris:
-                green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + single_channel_stream(gliders_int)(
-                    stride * i + stride // 2, 0
-                )
-                red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i + stride // 2, 0)
-
-        elif parse.start_mode == "sc":
-            green_patt += PI_BLOCKS[1](stride * i, 0) + single_channel_stream(gliders_int)(stride*i, 0)
-            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
     if not args.recipe_label:
         red_patt = lt.pattern()
     print(write_life_history(green=green_patt, red=red_patt))

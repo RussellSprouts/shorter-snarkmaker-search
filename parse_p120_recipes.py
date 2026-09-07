@@ -102,7 +102,7 @@ class WaitSegment(Segment):
 
 @dataclass
 class SetSegment(Segment):
-    set: Expr
+    set: Expr = None
     mod: int = None
     depth: Expr = None
 
@@ -225,25 +225,32 @@ def parse_ast(input):
             )
         return val
 
+    def parse_let_arg():
+        match(next(1)):
+            case (Token(type='depth', match=m),):
+                return 'depth', Expr(value = int(m[1]))
+            case (Token(type='lane', match=m),):
+                return 'lane', Expr(value = int(m[1]))
+            case (Token(type='depth_particle'),):
+                if tokens[0].type != 'lparen':
+                    syntax_error(tokens[0], 'Expected a depth expression d(...)')
+                return 'depth', parse_expression()
+            case (Token(type='lane_particle'),):
+                if tokens[0].type != 'lparen':
+                    syntax_error(tokens[0], 'Expected a lane expression l(...)')
+                return 'lane', parse_expression()
+            case a:
+                syntax_error(a[0], 'Expected a depth or lane indicator, like "d-1", "l12", or "d(5*5)"')
+
     def parse_let_args():
         lane = None
         depth = None
         while tokens and tokens[0].type != 'rparen':
-            match(next(1)):
-                case (Token(type='depth', match=m),):
-                    depth = Expr(value = int(m[1]))
-                case (Token(type='lane', match=m),):
-                    lane = Expr(value = int(m[1]))
-                case (Token(type='depth_particle'),):
-                    if tokens[0].type != 'lparen':
-                        syntax_error(tokens[0], 'Expected a depth expression d(...)')
-                    depth = parse_expression()
-                case (Token(type='lane_particle'),):
-                    if tokens[0].type != 'lparen':
-                        syntax_error(tokens[0], 'Expected a lane expression l(...)')
-                    depth = parse_expression()
-                case a:
-                    syntax_error(a[0], 'Expected a depth or lane indicator, like "d-1", "l12", or "d(5*5)"')
+            ld, expr = parse_let_arg()
+            if ld == 'lane':
+                lane = expr
+            else:
+                depth = expr
             if tokens[0].type == 'comma':
                 next(1)
         (rparen,) = next(1)
@@ -296,7 +303,19 @@ def parse_ast(input):
                 next(1)
                 lane, depth = parse_let_args()
                 return MacroCallSegment(name, lane, depth)
-        return MacroCallSegment(name)
+        return MacroCallSegment(name, lane=None, depth=None)
+
+    def parse_set():
+        match tokens[0].type:
+            case 'depth' | 'depth_particle':
+                _, depth = parse_let_arg()
+                return SetSegment(depth=depth)
+            case _:
+                expr = parse_expression()
+                (mod,) = next(1)
+                if mod.type != 'mod_clause':
+                    syntax_error(mod, f'Expected mod clause')
+                return SetSegment(set=expr,mod=int(mod.match[1]))
 
     def parse_segment():
         match next(1):
@@ -316,11 +335,7 @@ def parse_ast(input):
                 expr = parse_expression()
                 return SwimSegment(swim=expr)
             case (Token(type='set'),):
-                expr = parse_expression()
-                mod = next(1)[0]
-                if mod.type != 'mod_clause':
-                    syntax_error(mod, f'Expected mod clause')
-                return SetSegment(set=expr,mod=int(mod.match[1]))
+                return parse_set()
             case (Token(type='mode', match=m),):
                 return ModeSegment(mode=m[1])
             case _ as t:
@@ -381,24 +396,34 @@ def parse_p120_recipe(input, macros):
         set_mod=120,
         next_glider=0
     )
-    global_scope = ChainMap({
-        '$currentTime': lambda state: state.i
-    })
+    global_scope = ChainMap(
+        {'$currentTime': lambda state: state.i},
+        {name: EvaluatedMacro(
+            name=name,
+            lane=None,
+            depth=None,
+            body=parse_ast(value),
+            scope=ChainMap()
+            ) for name, value in macros.items()
+        }
+    )
 
     ast = parse_ast(input)
-    print(ast)
 
     def evaluate(segment, state, scope):
         match segment:
             case ModeSegment(mode=m):
                 state = state._replace(mode=m)
-                mode = m
-            case SetSegment(set, mod):
-                state = state._replace(
-                    set_mod=mod,
-                    i=set.eval(scope, state) + state.next_delay
-                )
-                set_mod = mod
+            case SetSegment(set, mod, depth):
+                if set:
+                    state = state._replace(
+                        set_mod=mod,
+                        i=set.eval(scope, state) + state.next_delay
+                    )
+                else:
+                    state = state._replace(
+                        next_glider=depth.eval(scope, state) * -4
+                    )
             case MinimumSegment(minimum=minimum):
                 state = state._replace(
                     after_minimum_follow=True,
@@ -479,7 +504,7 @@ def parse_p120_recipe(input, macros):
                     depth = depth.eval(scope, state)
                 name = f'{name}({lane})'
                 if qualified_name not in scope:
-                    raise ValueError('Unknown macro {qualified_name}')
+                    raise ValueError(f'Unknown macro {qualified_name}')
                 macro = scope[qualified_name]
 
                 if depth is not None:
@@ -496,7 +521,6 @@ def parse_p120_recipe(input, macros):
                         raise ValueError(f"Macro {qualified_name} requested at depth {depth}, but macro has no outputs.")
                     recipe_parity = first_glider.delay.eval(macro.scope, state)
                     target = state.next_glider + (depth - macro.depth) * 4 + recipe_parity
-                    offset = (target - recipe_parity) % 8
 
                     while target < first_possible_time:
                         swim_results = []
@@ -519,12 +543,11 @@ def parse_p120_recipe(input, macros):
                             best = solutions[0]
                         else:
                             # otherwise take the one that brings us closest.
-                            swim_results.sort(key=lambda r: r.first_possible_time - r.target, reverse=True)
+                            swim_results.sort(key=lambda r: r.first_possible_time - r.target)
                             best = swim_results[0]
 
                         first_possible_time = best.first_possible_time
                         target = best.target
-                        offset = (target - recipe_parity) % 8
                         state = best.full_state
 
                     wait = ((target - first_possible_time) // 8) * 8
