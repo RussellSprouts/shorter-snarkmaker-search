@@ -272,11 +272,13 @@ def parse_ast(input):
                 (equals,) = next(1)
                 if equals.type != 'equals':
                     syntax_error(equals, "Expected equals after let, got '{name.text}' '{equals.text}'")
- 
+
                 segments = parse_segments('in')
+                if not tokens:
+                    raise SyntaxError(f"Expected `in` to end `let {text}`")
                 (in_tok,) = next(1)
                 if in_tok.type != 'in':
-                    syntax_error(in_tok, f'Expected `in` after let')
+                    syntax_error(in_tok, f'Expected `in` after let (in `let {text}`)')
                 return LetMacroSegment(
                     name=text,
                     lane=lane,
@@ -535,7 +537,7 @@ def parse_p120_recipe(input, macros):
                                 full_state=new_state
                             ))
                         if not swim_results:
-                            raise ValueError("Requested macro {qualified_name}, but there are no swim_ recipes defined to get to that depth.")
+                            raise ValueError(f"Requested macro {qualified_name}, but there are no swim_ recipes defined to get to that depth.")
                         
                         solutions = list(filter(lambda r: r.target > r.first_possible_time, swim_results))
                         if solutions:
