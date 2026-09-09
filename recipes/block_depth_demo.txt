@@ -21,14 +21,15 @@ let if_block_destroy(l-7, d15) = 3, 208, 197, swim 4, (90) in
 # toggles the block and moves it +d4
 let toggle_block(l-7,d15) = 7, 148, 227, swim 4, (112) in
 
+
+let then_block(l-13,d5) = 5, 153, 104, 109, swim 5, (236) in
+let then_block(l22,d-4) = 7, 130, 115, 168, 152, 252, swim 7, (90) in
+let then_tub(l-17,d3) = 3, 96, 202, 170, 104, 93, swim 6, (90) in 
+
+let else_block(l21,d7) = 7, 118, 172, 147, swim 4, (90) in
 # sends a 0-degree glider on l21 if there wasn't a block
 let else_glider(l-21) = 7, 157, 108, 186, 134, swim 6, (90) in
 
-let then_block(l22,d-4) = 7, 130, 115, 168, 152, 252, swim 7, (90) in
-let else_block(l21,d7) = 7, 118, 172, 147, swim 4, (90) in
-let then_tub(l-17,d3) = 3, 96, 202, 170, 104, 93, swim 6, (90) in 
-let else_block(l-14,d44) = 7, 170, 97, 135, swim 4, (114) in
-let then_block(l-13,d5) = 5, 153, 104, 109, swim 5, (236) in
 ############################################################
 # Start of SC recipe
 ############################################################
@@ -40,7 +41,7 @@ sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_p
 construct_arm
 
 #############################################################
-# Start of p120 recipe to detect tub and place elbow blocks
+# Start of p120 recipe to detect tub and place different elbow blocks
 #############################################################
 
 set d-326 # set the depth so that the tub is at 0
@@ -118,6 +119,8 @@ snarkmaker_chain2
 snarkmaker_chain2
 sc_destroy
 
+# now we hit the second set of elbow blocks that are
+# conditioned on the tub
 snarkmaker_chain2
 snarkmaker_chain2
 sc_pull1

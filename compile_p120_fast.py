@@ -316,4 +316,4 @@ print('\n'.join(sorted(beam.best(0).emits_recipes.values())))
 emits_symbols = beam.best(0).emits_symbols
 max_width = max(len(a) for a in emits_symbols)
 for group in itertools.batched(beam.best(0).emits_symbols, 10):
-    print(''.join(f'{a}, '.ljust(max_width+2) for a in group).)
+    print(''.join(f'{a}, '.ljust(max_width+2) for a in group))
