@@ -242,7 +242,7 @@ for step_no, step in enumerate(recipe_steps):
                         best = solutions[0]
                     else:
                         # otherwise take the one that brings us closest.
-                        swim_results.sort(key=lambda r: r.first_possible_time - r.target, reverse=True)
+                        swim_results.sort(key=lambda r: r.first_possible_time - r.target)
                         best = swim_results[0]
 
                     first_possible_time = best.first_possible_time
