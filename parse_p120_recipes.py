@@ -24,7 +24,7 @@ let_clause ::= 'let' identifier let_args? '=' segments 'in'
 let_variable_clause ::= 'let' variable '=' expr 'in'
 let_args ::= '(' (let_arg (',' let_arg)*)? ')'
 let_arg ::= l-?[0-9]+ | d-?[0-9]+ | 'l' '(' expr ')' | 'd' '(' expr ')'
-
+print ::= 'print' expr
 """
 
 from dataclasses import dataclass
@@ -38,13 +38,14 @@ token_types = {
     'in': re.compile(r'in\b'),
     'equals': re.compile(r'='),
     'whitespace': re.compile(r'\s+'),
-    'comment': re.compile(r'#.*\n'),
+    'comment': re.compile(r'#.*(\n|$)'),
     'minimum_follow': re.compile(r'\(\s*([0-9]+)\s*\)'),
     'mod_clause': re.compile(r'\(\s*mod\s+([0-9]+)\s*\)'),
     'set': re.compile(r'set\b'),
     'wait': re.compile(r'(wait|w)\b'),
     'advance_debris': re.compile(r'(advance_debris)\b'),
     'swim': re.compile(r'(swim)\b'),
+    'print': re.compile(r'print\b'),
     'mode': re.compile(r'mode\s+(p120|sc)'),
     'times_operator': re.compile(r'[*/]|mod'),
     'lane': re.compile(r'l(-?[0-9]+)\b'),
@@ -145,6 +146,10 @@ class LetVariableSegment(Segment):
     name: str
     value: Expr
     scope: list[Segment]
+
+@dataclass
+class PrintSegment(Segment):
+    value: Expr
 
 @dataclass
 class Expr:
@@ -340,6 +345,9 @@ def parse_ast(input):
                 return parse_set()
             case (Token(type='mode', match=m),):
                 return ModeSegment(mode=m[1])
+            case (Token(type='print'),):
+                expr = parse_expression()
+                return PrintSegment(value=expr)
             case _ as t:
                 tokens.insert(0, t[0])
                 expr = parse_expression()
@@ -399,7 +407,7 @@ def parse_p120_recipe(input, macros):
         next_glider=0
     )
     global_scope = ChainMap(
-        {'$currentTime': lambda state: state.i},
+        {'$currentTime': lambda state: state.i + state.next_delay},
         {name: EvaluatedMacro(
             name=name,
             lane=None,
@@ -473,6 +481,8 @@ def parse_p120_recipe(input, macros):
                     i=state.i + (state.set_mod * n) % 8,
                     next_glider=state.next_glider + state.set_mod * n
                 )
+            case PrintSegment(value):
+                print('DEBUG PRINT:', value.eval(scope, state), file=sys.stderr)
             case LetMacroSegment(name, lane, depth, body, scope=visible_scope):
                 qualified_name = name
                 if lane:
@@ -492,8 +502,9 @@ def parse_p120_recipe(input, macros):
                 for s in visible_scope:
                     state = evaluate(s, state, new_scope)
             case LetVariableSegment(name, value, scope=visible_scope):
+                v = value.eval(scope, state)
                 new_scope = scope.new_child({
-                    name: lambda _: value.eval(scope, state)
+                    name: lambda _: v
                 })
                 for s in visible_scope:
                     state = evaluate(s, state, new_scope)
