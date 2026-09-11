@@ -289,7 +289,7 @@ for step_no, step in enumerate(recipe_steps):
                     emits.append(target + i)
                 emits_str.extend(tuple(map(str, rec.recipe)) + (f'swim {rec.consumed}', f'({rec.min_follow})'))
                 emits_symbols.append(f'{rec.symbol}(d{gli_lane})')
-                rec_desc = f'let {rec.symbol}(d{rec.offset + args.color}) = {recipe_parity}, {', '.join(map(str, recipe_rest))}, swim {rec.consumed}, ({rec.min_follow}) in'
+                rec_desc = f'let {rec.symbol}(d{rec.offset + int(args.direction == 'SW')}) = {recipe_parity}, {', '.join(map(str, recipe_rest))}, swim {rec.consumed}, ({rec.min_follow}) in'
                 if rec.requires_state > 0:
                     rec_desc += f' # (requires state {rec.requires_state})'
                 if rec.to_state > 0:

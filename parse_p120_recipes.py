@@ -46,7 +46,7 @@ token_types = {
     'advance_debris': re.compile(r'(advance_debris)\b'),
     'swim': re.compile(r'(swim)\b'),
     'print': re.compile(r'print\b'),
-    'mode': re.compile(r'mode\s+(p120|sc)'),
+    'mode': re.compile(r'mode\s+(oggca|sc)'),
     'times_operator': re.compile(r'[*/]|mod'),
     'lane': re.compile(r'l(-?[0-9]+)\b'),
     'depth': re.compile(r'd(-?[0-9]+)\b'),
@@ -160,7 +160,7 @@ class Expr:
     variable: str = None
 
     def __repr__(self):
-        if self.value:
+        if self.value is not None:
             return repr(self.value)
         if self.variable:
             return self.variable
@@ -278,9 +278,9 @@ def parse_ast(input):
                 if equals.type != 'equals':
                     syntax_error(equals, "Expected equals after let, got '{name.text}' '{equals.text}'")
 
-                segments = parse_segments('in')
+                segments = parse_segments()
                 if not tokens:
-                    raise SyntaxError(f"Expected `in` to end `let {text}`")
+                    raise SyntaxError(f"Expected `in` to end `let {text}`.")
                 (in_tok,) = next(1)
                 if in_tok.type != 'in':
                     syntax_error(in_tok, f'Expected `in` after let (in `let {text}`)')
@@ -357,7 +357,7 @@ def parse_ast(input):
                     mod = int(mod_tok.match[1])
                 return DelaySegment(delay=expr,mod=mod)
 
-    def parse_segments(until_type = None):
+    def parse_segments():
         segments = []
         s = parse_segment()
         match s:
@@ -370,7 +370,7 @@ def parse_ast(input):
                 case (Token(type='comma'),):
                     # remove optional commas
                     tokens.pop(0)
-                case (Token(type=a),) if a == until_type:
+                case (Token(type=a),) if a == 'in':
                     return segments
             if tokens:
                 s = parse_segment()
@@ -391,20 +391,22 @@ class Parse:
 
 def parse_p120_recipe(input, macros):
 
-    State = namedtuple('State', ['mode', 'start_mode', 'advance_debris', 'set_start_mode', 'after_minimum_follow', 'i', 'delays', 'next_delay', 'set_mod', 'next_glider'])
+    State = namedtuple('State', ['mode', 'start_mode', 'advance_debris', 'set_start_mode', 'after_minimum_follow', 'i', 'delays', 'next_delay', 'set_mod', 'glider_interval', 'next_glider', 'target'])
     SwimResult = namedtuple('SwimResult', ['first_possible_time', 'target', 'next_glider', 'full_state'])
 
     state = State(
-        mode='p120',
-        start_mode='p120',
+        mode='oggca',
+        start_mode='oggca',
         advance_debris=0,
         set_start_mode=False,
         after_minimum_follow=False,
         i=0,
         delays=(),
         next_delay=0,
-        set_mod=120,
-        next_glider=0
+        set_mod=240,
+        glider_interval=120,
+        next_glider=0,
+        target=None
     )
     global_scope = ChainMap(
         {'$currentTime': lambda state: state.i + state.next_delay},
@@ -440,11 +442,54 @@ def parse_p120_recipe(input, macros):
                     next_delay=state.next_delay + minimum
                 )
             case DelaySegment(delay, mod):
-                if state.mode == 'p120' and state.after_minimum_follow and mod is None:
+                if state.target is not None:
+                    d = delay.eval(state, scope)
+                    target = state.target + d
+                    state = state._replace(
+                        target=None
+                    )
+                    first_possible_time = state.i + state.next_delay
+
+                    while target < first_possible_time:
+                        swim_results = []
+                        for macro_name, _ in scope.items():
+                            if not macro_name.startswith('swim_'):
+                                continue
+                            new_state = evaluate(MacroCallSegment(macro_name, None, None), state, scope)
+                            swim_results.append(SwimResult(
+                                first_possible_time=new_state.i + new_state.next_delay,
+                                target=target+(new_state.next_glider - state.next_glider),
+                                next_glider=new_state.next_glider,
+                                full_state=new_state
+                            ))
+                        if not swim_results:
+                            raise ValueError(f"Requested macro with depth but there are no swim_ recipes defined to get to that depth.")
+                        
+                        solutions = list(filter(lambda r: r.target > r.first_possible_time, swim_results))
+                        if solutions:
+                            solutions.sort(key=lambda r: r.first_possible_time)
+                            best = solutions[0]
+                        else:
+                            # otherwise take the one that brings us closest.
+                            swim_results.sort(key=lambda r: r.first_possible_time - r.target)
+                            best = swim_results[0]
+
+                        first_possible_time = best.first_possible_time
+                        target = best.target
+                        state = best.full_state
+
+                    wait = ((target - first_possible_time) // 8) * 8
+                    state = state._replace(
+                        next_delay=state.next_delay + wait,
+                    )
+
+                if state.mode == 'oggca' and state.after_minimum_follow and mod is None:
                     mod = 8
                 elif state.mode == 'sc' and state.after_minimum_follow and mod is None:
                     mod = 2
+
                 state = state._replace(after_minimum_follow=False)
+
                 if mod is not None:
                     if mod > state.set_mod:
                         raise ValueError(f'Trying to send a glider mod {mod}, but there was no "set ... (mod {mod})"')
@@ -468,6 +513,9 @@ def parse_p120_recipe(input, macros):
                     next_delay=0
                 )
             case WaitSegment(wait):
+                wait_time = wait.eval(scope, state)
+                if wait_time < 0:
+                    raise ValueError(f"wait time {wait_time} is less than 0, (from {repr(wait)})")
                 state = state._replace(
                     next_delay=state.next_delay + wait.eval(scope, state)
                 )
@@ -478,8 +526,8 @@ def parse_p120_recipe(input, macros):
             case SwimSegment(swim):
                 n = swim.eval(scope, state)
                 state = state._replace(
-                    i=state.i + (state.set_mod * n) % 8,
-                    next_glider=state.next_glider + state.set_mod * n
+                    i=state.i + (state.glider_interval * n) % 8,
+                    next_glider=state.next_glider + state.glider_interval * n
                 )
             case PrintSegment(value):
                 print('DEBUG PRINT:', value.eval(scope, state), file=sys.stderr)
@@ -520,55 +568,21 @@ def parse_p120_recipe(input, macros):
                     raise ValueError(f'Unknown macro {qualified_name}')
                 macro = scope[qualified_name]
 
+                depth_adjust = None
                 if depth is not None:
                     # requesting an output at a specific depth,
                     # so we automatically swim or delay to match it.
                     if macro.depth is None:
                         macro.depth = 0
-                    first_possible_time = state.i + state.next_delay
-                    first_glider = None
-                    for first_glider in macro.body:
-                        if isinstance(first_glider, DelaySegment):
-                            break
-                    else:
-                        raise ValueError(f"Macro {qualified_name} requested at depth {depth}, but macro has no outputs.")
-                    recipe_parity = first_glider.delay.eval(macro.scope, state)
-                    target = state.next_glider + (depth - macro.depth) * 4 + recipe_parity
-
-                    while target < first_possible_time:
-                        swim_results = []
-                        for macro_name, definition in scope.items():
-                            if not macro_name.startswith('swim_'):
-                                continue
-                            new_state = evaluate(MacroCallSegment(macro_name, None, None), state, scope)
-                            swim_results.append(SwimResult(
-                                first_possible_time=new_state.i + new_state.next_delay,
-                                target=target+(new_state.next_glider - state.next_glider),
-                                next_glider=new_state.next_glider,
-                                full_state=new_state
-                            ))
-                        if not swim_results:
-                            raise ValueError(f"Requested macro {qualified_name}, but there are no swim_ recipes defined to get to that depth.")
-                        
-                        solutions = list(filter(lambda r: r.target > r.first_possible_time, swim_results))
-                        if solutions:
-                            solutions.sort(key=lambda r: r.first_possible_time)
-                            best = solutions[0]
-                        else:
-                            # otherwise take the one that brings us closest.
-                            swim_results.sort(key=lambda r: r.first_possible_time - r.target)
-                            best = swim_results[0]
-
-                        first_possible_time = best.first_possible_time
-                        target = best.target
-                        state = best.full_state
-
-                    wait = ((target - first_possible_time) // 8) * 8
-                    if wait != 0 and math.isfinite(wait):
-                        state = state._replace(next_delay=state.next_delay + wait)
+                    depth_adjust = depth + scope.get('!depth', 0) - macro.depth
+                    state = state._replace(
+                        target=state.next_glider + depth_adjust * 4
+                    )
 
                 for s in macro.body:
-                    state = evaluate(s, state, macro.scope)
+                    state = evaluate(s, state, macro.scope.new_child({
+                        '!depth': depth_adjust
+                    }))
 
         return state
     for s in ast:

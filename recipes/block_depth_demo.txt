@@ -1,7 +1,4 @@
-# define how to swim upstream
-let swim_2 = 2, swim 2, (90) in
-let swim_0 = 0, swim 1, (90) in
-let swim_4 = 4, swim 1, (90) in
+# uv run oncoming.py --print-rle="$(cat recipes/block_depth_demo.txt)" --with-debris-rle='3$5bo$4bobo$5bo119$125b3o$125bo$126bo!' --and-without-debris --print-rle-stride=1024 --no-recipe-label
 
 let block(l-7,d-11) = 1, 90, 91, 91, swim 3, (90) in
 let block(l-21,d-9) = 1, 104, 94, 116, 95, 91, swim 5, (90) in
@@ -33,8 +30,6 @@ let else_glider(l-21) = 7, 157, 108, 186, 134, swim 6, (90) in
 ############################################################
 # Start of SC recipe
 ############################################################
-
-sc_push44, sc_push44, sc_push44, sc_push44
 
 snarkmaker, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, snarkmaker, sc_pull1, snarkmaker
 sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
