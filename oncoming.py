@@ -145,7 +145,7 @@ argparser.add_argument(
 argparser.add_argument(
     "--concurrent",
     action=argparse.BooleanOptionalAction,
-    default=False,
+    default=True,
     help="Use multiple threads for searching."
 )
 argparser.add_argument(
