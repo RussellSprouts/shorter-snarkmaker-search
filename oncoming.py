@@ -74,6 +74,9 @@ argparser.add_argument(
 argparser.add_argument(
     "--max-population", type=int, default=float('inf'), help="The maximum population results to report"
 )
+argparser.add_argument(
+    "--max-total-gens", type=int, default=float('inf'), help="The maximum number of gens in the sum of searched streams"
+)
 
 class SubtreeDef:
     options: tuple[tuple[int]]
@@ -228,7 +231,6 @@ if args.delays_from_rle:
     p = lt.pattern(args.delays_from_rle)
     print(extract_single_channel_recipe(p))
     sys.exit(0)
-
 
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 
@@ -913,6 +915,41 @@ def recurse(s, depth=0):
         for n in range(args.toolkit.min_spacing, args.max_delay + 1):
             recurse(s + (n,), depth - 1)
 
+class TreeIterator:
+    def __init__(self, options_per_glider: tuple[tuple[int]], min_depth=0, depth=0, max_total=args.max_total_gens):
+        self.options_per_glider = options_per_glider
+        self.min_depth = min_depth
+        self.depth = depth
+        self.max_total = max_total
+
+    def __len__(self):
+        return self.n_possibilities(0, 0)
+
+    @functools.lru_cache(maxsize=None)
+    def n_possibilities(self, gliders_so_far, gens_so_far):
+        if gliders_so_far >= self.depth:
+            return 0        
+        total = 0
+        for o in self.options_per_glider[gliders_so_far]:
+            if gens_so_far + o <= self.max_total:
+                if gliders_so_far + 1 >= self.min_depth:
+                    total += 1
+                total += self.n_possibilities(gliders_so_far + 1, gens_so_far + o)
+        return total
+
+    def __iter__(self):
+        return self.iter((), 0)
+
+    def iter(self, so_far, total):
+        gliders_so_far = len(so_far)
+        if gliders_so_far >= self.depth:
+            return
+        for o in self.options_per_glider[gliders_so_far]:
+            n = so_far + (o,)
+            if total + o <= self.max_total:
+                if gliders_so_far + 1 >= self.min_depth:
+                    yield so_far + (o,)
+                yield from self.iter(n, total + o)
 
 if __name__ == "__main__":
     """
@@ -949,20 +986,22 @@ if __name__ == "__main__":
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]
         len_all_options = 0
+        default_glider = tuple(range(args.toolkit.min_spacing, args.max_delay + 1))
+        iterators = []
         for subtree in args.subtree:
-            for depth in range(0, args.depth - len(subtree.options) + 1):
-                deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
-                len_all_options += math.prod(map(len, subtree.options + deeper))
+            iterator = TreeIterator(
+                options_per_glider=subtree.options + (default_glider,) * (args.depth - len(subtree.options)),
+                min_depth=len(subtree.options),
+                depth=args.depth,
+                max_total=args.max_total_gens
+            )
+            iterators.append(iterator)
+            len_all_options += len(iterator)
 
         print('Total:', len_all_options, file=sys.stderr)
 
         def all_options():
-            for subtree in args.subtree:
-                for depth in range(0, args.depth - len(subtree.options) + 1):
-                    for starting_point in itertools.product(*subtree.options):
-                        deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
-                        for d in itertools.product(*map(lambda a: (a,), starting_point), *deeper):
-                            yield d
+            return itertools.chain(*iterators)
 
         multiprocessing.set_start_method('spawn')
         with Pool(processes=os.cpu_count() - 1) as pool:
