@@ -13,8 +13,7 @@ from components import pattern_components
 from font import write_text
 from life_history import write_life_history
 from lifetree import lt
-from gliders import mk_glider, single_channel_stream
-
+from gliders import mk_glider, single_channel_stream, rewind_glider
 
 argparser = argparse.ArgumentParser(
     prog="oncoming.py", description="Search for glider patterns"
@@ -124,24 +123,45 @@ def recipe_stream_to_delays(stream):
             result.append(g)
     return result
 
+def find_glider_timing(r, consumed):
+    if args.tandem_offset or args.tandem_delay:
+        consumed /= 2
+    delays = recipe_stream_to_delays(r)
+    pattern = mk_fake_gun(consumed) + single_channel_stream(delays)
+    pattern = pattern[2048]
+    components = pattern_components(pattern)
+    if len(components) != 1:
+        return None
+    c = components[0]
+    # not a glider
+    if c[4] == c or c[4].centre() != c.centre(): return None
+    # escaping gun glider?
+    if c[4] == c(1, 1): return None
+    x, y, w, h = c.getrect()
+    # spaceship?
+    if w != 3 or h != 3: return None
+    
+    lane = x - y
+
+    rewind = 2 * abs(lane) - 8
+    
+    for i in range(0, 128):
+        new_glider = rewind_glider(c, rewind + i)
+        nx, ny, _, _ = new_glider.getrect()
+        new_lane = nx - ny
+        if new_lane == 0:
+            return rewind + i
+
+    return None
+
+
+
 def find_minimum_follow(r, consumed):
     if args.tandem_offset or args.tandem_delay:
         consumed /= 2
     delays = recipe_stream_to_delays(r)
     total = sum(delays)
     envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
-    '''
-    expected_incoming_gliders = pattern_components(fake_gun[simulate_gens])
-    p = fake_gun + single_channel_stream(delays)
-    p = p[simulate_gens]
-    escaping_gliders = []
-    for c in pattern_components(p):
-        for i, e in enumerate(expected_incoming_gliders):
-            if c == e:
-                escaping_gliders.append(i)
-    n_escaping = max(escaping_gliders) + 1 if escaping_gliders else 0
-    consumed = args.n_gun_gliders - n_escaping
-    '''
     pattern = mk_fake_gun(consumed) + single_channel_stream(delays)
     @functools.lru_cache(maxsize=None)
     def pattern_at_gen(n):
@@ -251,13 +271,16 @@ with args.recipes.open() as results_file:
                 seen.add(sig)
                 minimum_follow = find_minimum_follow(m.group(1), info['consumed'])
                 if not minimum_follow: continue
+                timing = find_glider_timing(m.group(1), info['consumed'])
+                if timing is None: continue
                 total_time = sum(stream[1:]) + minimum_follow
+                info_str = re.sub(r'ph[0-9]', f'ph{timing}', info['objects'][0]['info']) if info['objects'] else ''
                 desc = Result(
                     m.group(1),
                     minimum_follow,
                     total_time,
                     info['consumed'],
-                    info['objects'][0]['info'] if info['objects'] else ''
+                    info_str
                 )
                 print(desc)
                 recs[info['objects'][0]['info'].split('(')[-1][:-1]].append(desc)
@@ -279,7 +302,6 @@ with args.recipes.open() as results_file:
             )
             recs[info['objects'][0]['name']].append(desc)
             print(desc)
-
 
 
 print()
