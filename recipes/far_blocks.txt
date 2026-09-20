@@ -1,0 +1,39 @@
+# Recipes to place far away blocks using glider-LWSS collisions
+
+# makes blocks at l-17 and l-25, d-15. The blocks and beehive form a LWSS seed.
+let blocks(d-15) = 3, 101, 160, 99, 93, 114, 95, swim 7, (90) in
+let beehive_o0(l-14,d-19) = 3, 112, 100, 93, swim 3, (90) in
+let beehive_o1(l-15,d10) = 3, 93, 104, 387, swim 5, (90) in
+let boat_o2(l-7,d15) = 5, 144, 144, 172, swim 4, (90) in
+
+# glider(l-8)(ph1)(♗⬂①) and glider(l-9)(ph1)(♝⬁①)
+# these are on the same diagonal, so the same boat works
+# as a reflector for both
+let activate(d0) = 5, 144, 107, 201, 130, swim 5, (90) in
+
+# The upstream block has the glider upstream of the LWSS,
+# so it is along the upstream edge of the arm.
+# We can make the block further, must be a multiple of 4.
+let $upstream_offset = 0 in
+
+let block(l(0 - 142 - $upstream_offset),d0) =
+    boat_o2(l-7,d-7)
+    blocks(d(95 + $upstream_offset))
+    beehive_o0(l-14,d(111 + $upstream_offset))
+    activate(d(66 + $upstream_offset / 2))
+in
+
+# The downstream block has the glider downstream of the LWSS,
+# so it is along the downstream edge of the arm.
+# We can make the block further, must be a multiple of 4.
+let $downstream_offset = 0 in
+
+let block(l(0 - 128 - $downstream_offset),d(96 + $downstream_offset)) =
+    beehive_o1(l-15,d2)
+    blocks(d15)
+    boat_o2(l-7,d(105 + $downstream_offset))
+    activate(d(66 + $downstream_offset / 2))
+in
+
+block(l-142,d0)
+block(l-128,d96)
