@@ -193,7 +193,11 @@ def parse_ast(input):
         return r
 
     def syntax_error(token, message):
-        raise SyntaxError(f'SyntaxError at {token.text} (column {token.i}):\n{message}')
+        line_number = 1 + input.count('\n', 0, token.i)
+        last_newline = input.rfind('\n', 0, token.i)
+        column_number = token.i if last_newline == -1 else token.i - last_newline - 1
+
+        raise SyntaxError(f'SyntaxError at {token.text} (line {line_number}, column {column_number}):\n{message}')
 
     def parse_atom():
         match next(1):
@@ -381,7 +385,12 @@ def parse_ast(input):
                         segments.extend(s)
         return segments
 
-    return parse_segments()
+    result = parse_segments()
+
+    if tokens:
+        syntax_error(tokens[0], "Unexpected extra token after full parse")
+
+    return result
 
 @dataclass
 class Parse:
