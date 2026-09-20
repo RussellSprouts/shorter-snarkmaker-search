@@ -6,6 +6,7 @@ import itertools
 import functools
 import pathlib
 import math
+from collections import defaultdict
 
 from arg_parser import range_str_to_list
 from components import pattern_components
@@ -210,23 +211,24 @@ def parse_objects(objs):
     }
 
 class Result:
-    def __init__(self, rec, min_follow, total_time, consumed, glider):
+    def __init__(self, rec, min_follow, total_time, consumed, glider, object='glider'):
         self.rec = rec
         self.min_follow = min_follow
         self.total_time = total_time
         self.consumed = consumed
         self.glider = glider
+        self.object = object
 
     def __repr__(self):
         return (self.rec +
             f', ({self.min_follow}) {{total: {self.total_time}}} {{consumed: {self.consumed}}}' +
-            (' glider' + self.glider))
+            (f' {self.object}' + self.glider))
 
 seen = set()
 types = [(i[0]+j[0]+k[0], j[1]+' '+i[1]+' '+k[1]) for j in [('⬀', 'NE'), ('⬃', 'SW')]
                    for i in [('♗', 'black'), ('♝', 'white')]
                    for k in [('⓪', 'even'), ('①', 'odd')]]
-recs = dict((i[0], []) for i in types)
+recs = defaultdict(list)
 with args.recipes.open() as results_file:
     for line in results_file:
         if not line.strip():
@@ -259,6 +261,26 @@ with args.recipes.open() as results_file:
                 )
                 print(desc)
                 recs[info['objects'][0]['info'].split('(')[-1][:-1]].append(desc)
+        elif len(info['objects']) == 1 and info['objects'][0]['name'] in ('lwss', 'xq4_27dee6', 'xq4_27deee6'):
+            # an xwss
+            minimum_follow = find_minimum_follow(m.group(1), info['consumed'])
+            if not minimum_follow: continue
+            total_time = sum(stream[1:]) + minimum_follow
+            type_desc = (info['objects'][0]['name'], info['objects'][0]['name'])
+            if type_desc not in types:
+                types.append(type_desc)
+            desc = Result(
+                m.group(1),
+                minimum_follow,
+                total_time,
+                info['consumed'],
+                info['objects'][0]['info'] if info['objects'] else '',
+                object=info['objects'][0]['name']
+            )
+            recs[info['objects'][0]['name']].append(desc)
+            print(desc)
+
+
 
 print()
 print(args.toolkit.name)

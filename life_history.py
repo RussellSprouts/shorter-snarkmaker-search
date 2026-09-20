@@ -29,6 +29,8 @@ def write_life_history(
         lht.pattern(green.rle_string())(*(green.getrect() or (0, 0))[0:2]),
     ]
 
-    p = sum(patterns, start=lht.pattern())
+    p = lht.pattern()
+    for color in patterns:
+        p |= color
 
     return p.rle_string().replace('x3xsixstate', 'LifeHistory')

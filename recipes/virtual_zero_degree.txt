@@ -1,0 +1,62 @@
+# recipe.txt
+snarkmaker, snarkmaker
+# push as far as you need to make space for construction
+sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
+# constructs the p120 arm, leaving a block at l-60, from https://conwaylife.com/forums/viewtopic.php?p=228828#p228828
+construct_arm_block
+
+# ... recipe to convert block at l-60 to the pattern
+# follow the instructions for compile_p120_fast.py to generate it.
+let recipe(d0) =
+    # copy the result from compile_p120_fast here
+    let g1a(d-7) = 0, 221, swim 3, (90) in # (requires state 1)
+    let g1g(d-15) = 3, 96, 143, 130, swim 4, (90) in
+    let g1j(d-5) = 3, 185, 129, swim 4, (90) in
+    let g1y(d11) = 3, 198, 105, swim 3, (90) in
+    let g2a(d-11) = 1, 92, 134, swim 3, (90) in
+    let g3a(d-8) = 0, 219, swim 3, (90) in # (requires state 1)
+    let g3d(d-14) = 1, 92, 242, 91, swim 5, (90) in
+    let g3f(d-6) = 1, 100, 137, 115, swim 4, (105) in
+    let g3y(d4) = 5, 144, 132, 107, swim 4, (90) in
+    let g4a(d0) = 5, 138, swim 2, (121) in # (to state 1)
+    let g4b(d0) = 5, 138, 125, swim 3, (90) in
+    let g4e(d-4) = 1, 92, 163, swim 4, (150) in
+    g1y(d-1),  g1j(d-5),  g4a(d10),  g1a(d15),  g3f(d12),  g4b(d-4),  g4b(d14),  g2a(d29),  g4a(d32),  g1a(d35),  
+    g1j(d31),  g2a(d29),  g1j(d39),  g1y(d45),  g4a(d36),  g3a(d38),  g1j(d43),  g1y(d45),  g3f(d42),  g3d(d34),  
+    g2a(d45),  g4a(d50),  g1a(d51),  g4a(d42),  g3a(d46),  g2a(d33),  g4b(d52),  g4a(d42),  g3a(d44),  g1j(d41),  
+    g2a(d41),  g2a(d49),  g4e(d46),  g2a(d53),  g1y(d69),  g2a(d69),  g1j(d65),  g2a(d59),  g1y(d71),  g2a(d73),  
+    g2a(d75),  g4a(d74),  g1a(d75),  g1j(d75),  g2a(d63),  g4b(d38),  g4a(d30),  g3a(d36),  g1y(d49),  g2a(d37),  
+    g2a(d37),  g3f(d34),  g4a(d24),  g1a(d29),  g3y(d40),  g2a(d37),  g1y(d51),  g1j(d55),  g2a(d57),  g1j(d59),  
+    g1y(d65),  g2a(d47),  g2a(d77),  g1j(d73),  g4a(d76),  g3a(d76),  g4a(d76),  g1a(d79),  g1j(d71),  g3y(d72),  
+    g1y(d83),  g1g(d71),  g1j(d81),  g1y(d81),  g3y(d84),  g3f(d76),  g3y(d80),  g2a(d81),  g3d(d70),  g4b(d72),  
+    g4a(d84),  g1a(d83),  g4a(d80),  g1a(d85),  g2a(d83),  g4b(d96),  g4b(d90),  g2a(d49),  g1j(d53),  g4b(d40),  
+    g2a(d59),  g4a(d58),  g1a(d57),  g2a(d57),  g4a(d50),  g1a(d51),  g3y(d64),  g1g(d49),  g4b(d90),  g3f(d86),  
+    g3f(d88),  g4a(d90),  g1a(d101), g4e(d92),  g2a(d99),  g4b(d80) # remove trailing comma
+
+in
+# run the recipe -- adjust the depth until it hits the block correctly. if it doesn't work, try running compile_p120_fast.py with the opposite color.
+recipe(d10)
+
+disable_arm
+# after you disable the arm, there will be some gliders that escape the gun before it turns off, depending on how far
+# away you are.
+# use swim_2 to delete 2 at a time, and swim_0 to delete a single one.
+# there are 5 in my case
+swim_2, swim_2, swim_0
+
+disabled_arm_to_block
+
+# destroy the second snark
+snarkbreaker_1
+# adjust this based on how much you pushed the block to make space for construction
+wait 44*5 * 4 - 8
+snarkbreaker_2
+
+# destroy the first snark
+snarkbreaker_1
+wait 99*4
+
+# use snarkbreaker_2 instead if you want to keep a block in front
+snarkbreaker_2_destroy
+
+

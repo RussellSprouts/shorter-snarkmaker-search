@@ -74,6 +74,9 @@ argparser.add_argument(
 argparser.add_argument(
     "--max-population", type=int, default=float('inf'), help="The maximum population results to report"
 )
+argparser.add_argument(
+    "--max-total-gens", type=int, default=float('inf'), help="The maximum number of gens in the sum of searched streams"
+)
 
 class SubtreeDef:
     options: tuple[tuple[int]]
@@ -145,7 +148,7 @@ argparser.add_argument(
 argparser.add_argument(
     "--concurrent",
     action=argparse.BooleanOptionalAction,
-    default=False,
+    default=True,
     help="Use multiple threads for searching."
 )
 argparser.add_argument(
@@ -228,7 +231,6 @@ if args.delays_from_rle:
     p = lt.pattern(args.delays_from_rle)
     print(extract_single_channel_recipe(p))
     sys.exit(0)
-
 
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 
@@ -482,7 +484,13 @@ if args.print_rle:
             'swim_0': '0, swim 1, (90)',
             'swim_4': '4, swim 1, (90)',
             'construct_arm': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode oggca, set 28 (mod 240), set d0, (90)',
+            'construct_arm_block': 'mode sc, 0, 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 289, 219, mode oggca, set 115 (mod 240), set d-28, (90)',
+            'disable_arm': '79 (mod 120), 180, 204, 96, (90)',
+            'disabled_arm_to_block': '0, 91, 90, 104, 121, 121, 96, 99, 112, 94, 102, 94, 115, 231, 111, 118, 91, 92, 108, 129, (90), mode sc, set 0 (mod 120)',
             'snarkmaker': 'mode sc, 0,135,93,105,107,115,91,105,102,118,101,96,92,138,151,147,129,108,91,116,154,149,128,114,202,128,128,120,110,113,162,115,90,91,146,127,103,118,135,176,124,180,96,108,218,91,90,111,111,99,104,202,174,135,111,214,116,94,182,91,93,190,103,106,95,96,117,91,122,110,147,117,91,120,92,105,149,108,119,102,106,126,124,106,128,150,130,132,134,90,197,99,132,91,161,146,100,108,145,97,138,100,101,167,91,183,140,90,94,99,93,100,105,102,153,105,92,121,92,90,99,96,97,116,91,193,94,91,117,100,103,122,121,90,109,205,90,105,110,93,232,108,100,93,145,118,106,90,101,151,134,113,141,96,91,123,91,111,90,102,95,198,107,122,162,90,114,96,92,114,127,109,126,98,135,95,141,114,98,124,102,148,129,91,92,136,107,249,181,93,141,106,109,98,113,95,128,108,250,105,98,109,100,96,170,94,95,102,101,206,98,100,170,111,152,169,97,141,186,100,101,94,96,95,110,95,134,111,98,115,91,91,96,102,98,98,101,175,156,238,100,99,172,116,122,212,146,96,138,152,101,104,96,98,131,138,127,103,94,129,96,120,147,98,142,128,(156)',
+            'snarkbreaker_1': '0, 93, 91, 118, 93, 151, 90, 99, 155, 120, 92, 108, 90, 102, 164, 90, 96, (90)',
+            'snarkbreaker_2': '1, 141, 97, (90)',
+            'snarkbreaker_2_destroy': '1, 118, 90, 90, (90)',
             'sc_destroy': 'mode sc, 0, 109, 90, 93, 91, 90, 90, 90, (90)',
             'sc_paren_left': 'mode sc, 0, 109, 90, 93, 91, 90, 95, 91, 90, 91, 91, 90, 90, 91, 90, 90, 99, 90, 90, 91, 90, 94, 90, 90, 109, 91, 94, 91, 91, 189, 91, 90, 91, 92, 90, 91, 158, 91, 90, 90, 90, 91, 116, 91, 137, 91, 90, 91, 90, 90, 149, 200, 90, 90, 154, 90, 91, (256)',
             'sc_paren_right': 'mode sc, 0, 109, 90, 93, 91, 90, 90, 90, 90, 121, 91, 91, 90, (256)',
@@ -907,6 +915,41 @@ def recurse(s, depth=0):
         for n in range(args.toolkit.min_spacing, args.max_delay + 1):
             recurse(s + (n,), depth - 1)
 
+class TreeIterator:
+    def __init__(self, options_per_glider: tuple[tuple[int]], min_depth=0, depth=0, max_total=args.max_total_gens):
+        self.options_per_glider = options_per_glider
+        self.min_depth = min_depth
+        self.depth = depth
+        self.max_total = max_total
+
+    def __len__(self):
+        return self.n_possibilities(0, 0)
+
+    @functools.lru_cache(maxsize=None)
+    def n_possibilities(self, gliders_so_far, gens_so_far):
+        if gliders_so_far >= self.depth:
+            return 0        
+        total = 0
+        for o in self.options_per_glider[gliders_so_far]:
+            if gens_so_far + o <= self.max_total:
+                if gliders_so_far + 1 >= self.min_depth:
+                    total += 1
+                total += self.n_possibilities(gliders_so_far + 1, gens_so_far + o)
+        return total
+
+    def __iter__(self):
+        return self.iter((), 0)
+
+    def iter(self, so_far, total):
+        gliders_so_far = len(so_far)
+        if gliders_so_far >= self.depth:
+            return
+        for o in self.options_per_glider[gliders_so_far]:
+            n = so_far + (o,)
+            if total + o <= self.max_total:
+                if gliders_so_far + 1 >= self.min_depth:
+                    yield so_far + (o,)
+                yield from self.iter(n, total + o)
 
 if __name__ == "__main__":
     """
@@ -943,20 +986,22 @@ if __name__ == "__main__":
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]
         len_all_options = 0
+        default_glider = tuple(range(args.toolkit.min_spacing, args.max_delay + 1))
+        iterators = []
         for subtree in args.subtree:
-            for depth in range(0, args.depth - len(subtree.options) + 1):
-                deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
-                len_all_options += math.prod(map(len, subtree.options + deeper))
+            iterator = TreeIterator(
+                options_per_glider=subtree.options + (default_glider,) * (args.depth - len(subtree.options)),
+                min_depth=len(subtree.options),
+                depth=args.depth,
+                max_total=args.max_total_gens
+            )
+            iterators.append(iterator)
+            len_all_options += len(iterator)
 
         print('Total:', len_all_options, file=sys.stderr)
 
         def all_options():
-            for subtree in args.subtree:
-                for depth in range(0, args.depth - len(subtree.options) + 1):
-                    for starting_point in itertools.product(*subtree.options):
-                        deeper = (tuple(range(args.toolkit.min_spacing, args.max_delay + 1)),) * depth
-                        for d in itertools.product(*map(lambda a: (a,), starting_point), *deeper):
-                            yield d
+            return itertools.chain(*iterators)
 
         multiprocessing.set_start_method('spawn')
         with Pool(processes=os.cpu_count() - 1) as pool:

@@ -42,7 +42,7 @@ argparser.add_argument(
     "--direction",
     type=str,
     choices = ["SW", "NE"],
-    default = 'NE'
+    default = 'SW'
 )
 argparser.add_argument(
     "--color",
@@ -91,7 +91,7 @@ symbol_names = {
     'NE black odd': 'g6',
     'NE white even': 'g7',
     'NE white odd': 'g8',
-    'Swim': 's'
+    'Swim': 'swim_'
 }
 letters = 'abcdefghijklmnopqrstuvwxyz'
 def get_letter(i):
@@ -150,8 +150,10 @@ with open(args.salvo, 'r') as file:
 def adjust_recipe(a):
     lane, phase = a
     lane = lane + args.color
+    if args.direction == 'NW':
+        lane = -lane
     if args.direction == 'SW':
-        lane = lane * -1 + 1
+        lane = lane - 1
     phase = phase + args.parity
     return (lane, phase)
 
