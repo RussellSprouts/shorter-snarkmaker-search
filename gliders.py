@@ -1,5 +1,7 @@
 """Helpers for working with gliders and recipes"""
 
+import math
+
 from components import pattern_components
 from lifetree import lt
 
@@ -158,3 +160,14 @@ def single_channel_stream(distances, lane=0):
         p += mk_glider(lane, d + total_distance)
         total_distance += d
     return p
+
+def rewind_glider(glider, n):
+    x1, y1, _, _ = glider.getrect()
+    x2, y2, _, _ = glider[4].getrect()
+
+    dx = x2 - x1
+    dy = y2 - y1
+
+    shift = math.ceil((n+1)/4)
+
+    return glider(-shift * dx, -shift * dy)[4 - (n % 4)]
