@@ -1,0 +1,45 @@
+# Gliders that can emit very close to the gun.
+
+# min d-26
+let g1_edgiest(d-10) = 3, 196, 128, swim 4, (90) in
+# min d-20
+let g2_edgy(d-12) = 1, 92, 134, swim 3, (90) in
+# min d-24
+let g2_edgiest(d-34) = 1, 90, 90, 92, 170, 117, swim 6, (90) in
+# min d-27
+let g3_edgy(d-17) = 1, 90, 109, 140, 205, swim 6, (167) in
+# min d-35
+let g3_edgiest(d-33) = 1, 90, 95, 197, 250, 120, swim 8, (90) in
+# min d-23
+let g4_edgy(d-15) = 3, 96, 92, 147, swim 4, (90) in
+# min d-25
+let g4_edgiest(d-25) = 1, 90, 95, 187, 90, 165, swim 7, (90) in
+
+# min d-17 (ignoring beehive), d-1 with beehive
+let g5_edgy(d-5) = 3, 102, 90, swim 3, (90) in
+# min d-17 (ignoring beehive), d-1 with beehive
+let g6_edgy(d-15) = 3, 195, 102, 90, swim 5, (152) in
+# min d-16 (ignoring beehive), d-2 with beehive
+let g7_edgy(d-10) = 3, 201, swim 4, (167) in
+# min d-16 (ignoring beehive), d-3 with beehive
+let g8_edgy(d-12) = 1, 90, 109, 143, 106, swim 4, (90) in
+
+construct_arm
+
+g1_edgiest(d-26)
+g2_edgiest(d-24)
+g3_edgiest(d-35)
+g4_edgiest(d-25)
+
+g2_edgy(d-20)
+g3_edgy(d-27)
+g4_edgy(d-23)
+
+g5_edgy(d-17)
+g5_edgy(d-1)
+g6_edgy(d-17)
+g6_edgy(d-1)
+g7_edgy(d-16)
+g7_edgy(d-2)
+g8_edgy(d-16)
+g8_edgy(d-2)
