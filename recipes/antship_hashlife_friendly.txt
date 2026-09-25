@@ -1,0 +1,4 @@
+
+snarkmaker, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, snarkmaker, sc_pull1, snarkmaker
+sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
+construct_arm
