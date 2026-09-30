@@ -82,6 +82,7 @@ elif mode == 2 and __name__ == '__main__':
             results.extend(r)
 
     results.sort(key=lambda a: a[0], reverse=True)
-    for pop, delay, stream, p in results:
+    for pop, delay, stream in results:
+        p = seed + single_channel_stream((0, 122, 99) + (delay,) + (stream * 12)[1:])
         print(pop, delay, stream, p.rle_string())
     print(list(streams_summing_to(192)))
