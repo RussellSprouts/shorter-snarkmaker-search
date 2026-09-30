@@ -27,7 +27,7 @@ def process_repeated_stream(s):
     results = []
     for delay in range(90, 128):
         p = seed + single_channel_stream((0, 122, 99) + (delay,) + (s * 12)[1:])
-        p2 = p[4096]
+        p2 = p[8192]
         x1, _, _, _ = p2.getrect()
         x2, _, _, _ = p2[288].getrect()
 
