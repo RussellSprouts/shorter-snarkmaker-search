@@ -2,11 +2,14 @@
 from lifetree import lt
 from gliders import mk_glider, offset_based_on_glider, single_channel_stream
 
+import functools
 import multiprocessing
 from multiprocessing import Pool
 import os
 from dataclasses import dataclass
 import heapq
+
+from speedometer import Speedometer
 
 mode = 2
 
@@ -65,6 +68,20 @@ elif mode == 2 and __name__ == '__main__':
     start = seed + single_channel_stream([0, 122, 99])
     print(start.rle_string())
 
+    @functools.lru_cache(maxsize=None)
+    def n_streams_summing_to(n, total=0, min=90, max=10000):
+        num = 0
+        for i in range(min, max):
+            if i + total == n:
+                num += 1
+            elif i + total > n:
+                break
+
+            if i + total + min <= n:
+                num += n_streams_summing_to(n, total + i, min, max)
+
+        return num
+
     def streams_summing_to(n, so_far=(), total=0, min=90, max=10000):
         for i in range(min, max):
             if i + total == n:
@@ -77,14 +94,25 @@ elif mode == 2 and __name__ == '__main__':
 
     multiprocessing.set_start_method('spawn')
     with Pool(processes=os.cpu_count() - 1) as pool:
+        speedo = Speedometer()
         results = []
         best = float('inf')
-        for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(576)):
+        TARGET_SUM = 576
+        total = n_streams_summing_to(TARGET_SUM)
+        for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(TARGET_SUM)):
             for a in r:
                 heapq.heappush(results, a)
                 if a.population < best:
                     best = a.population
                     print(a)
+            if speedo.tick(1):
+                current_per_s = speedo.get_current_speed_and_reset()
+                avg_per_s = speedo.overall_speed()
+                done = speedo.n_finished
+
+                print(f'{current_per_s=} {avg_per_s=} {done=} {total=}')
+                print(f'Most recent: {a.stream}')
+
             while len(results) > 100:
                 results.pop()
 
