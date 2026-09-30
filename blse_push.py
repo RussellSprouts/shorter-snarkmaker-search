@@ -97,6 +97,7 @@ elif mode == 2 and __name__ == '__main__':
         speedo = Speedometer()
         results = []
         best = float('inf')
+        best_result = None
         TARGET_SUM = 576
         total = n_streams_summing_to(TARGET_SUM)
         for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(TARGET_SUM)):
@@ -104,6 +105,7 @@ elif mode == 2 and __name__ == '__main__':
                 heapq.heappush(results, a)
                 if a.population < best:
                     best = a.population
+                    best_result = a
                     print(a)
             if speedo.tick(1):
                 current_per_s = speedo.get_current_speed_and_reset()
@@ -111,7 +113,7 @@ elif mode == 2 and __name__ == '__main__':
                 done = speedo.n_finished
 
                 print(f'{current_per_s=} {avg_per_s=} {done=} {total=}')
-                print(f'Most recent: {a.stream}')
+                print(f'Most recent: {a.stream}, current best {best_result}')
 
             while len(results) > 100:
                 results.pop()
