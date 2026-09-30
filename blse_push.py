@@ -34,7 +34,7 @@ class Result:
 def process_repeated_stream(s):
     results = []
     for delay in range(90, 128):
-        p = seed + single_channel_stream((0, 122, 99) + (delay,) + (s * 12)[1:])
+        p = seed + single_channel_stream((0, 122, 99) + (delay,) + (s * 8)[1:])
         p2 = p[8192]
         x1, _, _, _ = p2.getrect()
         x2, _, _, _ = p2[288].getrect()
@@ -79,7 +79,7 @@ elif mode == 2 and __name__ == '__main__':
     with Pool(processes=os.cpu_count() - 1) as pool:
         results = []
         best = float('inf')
-        for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(384)):
+        for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(576)):
             for a in r:
                 heapq.heappush(results, a)
                 if a.population < best:
