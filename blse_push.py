@@ -5,6 +5,8 @@ from gliders import mk_glider, offset_based_on_glider, single_channel_stream
 import multiprocessing
 from multiprocessing import Pool
 import os
+from dataclasses import dataclass
+import heapq
 
 mode = 2
 
@@ -23,6 +25,12 @@ def process(p):
         return None
     return remove_block_patterns(p).population
 
+@dataclass(frozen=True, order=True)
+class Result:
+    population: int
+    delay: int
+    stream: tuple[int]
+
 def process_repeated_stream(s):
     results = []
     for delay in range(90, 128):
@@ -34,11 +42,8 @@ def process_repeated_stream(s):
         if x1 - x2 != 24:
             # broke the blse
             continue
-        if p2.population < 359:
-            print(p2.population, delay, s, p.rle_string())
-        results.append((p2.population, delay, s))
+        results.append(Result(p2.population, delay, s))
     return results
-
 
 if mode == 1:
     results = []
@@ -76,13 +81,16 @@ elif mode == 2 and __name__ == '__main__':
         best = float('inf')
         for r in pool.imap_unordered(process_repeated_stream, streams_summing_to(384)):
             for a in r:
-                if a[0] < best:
-                    best = a[0]
+                heapq.heappush(results, a)
+                if a.population < best:
+                    best = a.population
                     print(a)
-            results.extend(r)
+            while len(results) > 100:
+                results.pop()
 
-    results.sort(key=lambda a: a[0], reverse=True)
-    for pop, delay, stream in results:
+    for a in sorted(results, reverse=True):
+        pop = a.population
+        delay = a.delay
+        stream = a.stream
         p = seed + single_channel_stream((0, 122, 99) + (delay,) + (stream * 12)[1:])
         print(pop, delay, stream, p.rle_string())
-    print(list(streams_summing_to(192)))
