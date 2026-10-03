@@ -12,7 +12,6 @@ import math
 
 import lifelib
 
-from arg_parser import range_str_to_list
 from components import pattern_components
 from font import write_text
 from life_history import write_life_history
@@ -20,6 +19,7 @@ from lifetree import lt
 from gliders import extract_single_channel_recipe, mk_glider, offset_based_on_glider, single_channel_stream
 from parse_p120_recipes import parse_p120_recipe
 from speedometer import Speedometer
+from sequence_iterator import glider_sequence_iterator, SubtreeDef
 
 argparser = argparse.ArgumentParser(
     prog="oncoming.py", description="Search for glider patterns"
@@ -77,17 +77,6 @@ argparser.add_argument(
 argparser.add_argument(
     "--max-total-gens", type=int, default=float('inf'), help="The maximum number of gens in the sum of searched streams"
 )
-
-class SubtreeDef:
-    options: tuple[tuple[int]]
-
-    def __init__(self, str):
-        depths = ()
-        for d in str.split(";"):
-            options = range_str_to_list(d)
-            depths = depths + (tuple(options),)
-        self.options = depths
-
 
 argparser.add_argument(
     "--subtree",
@@ -915,42 +904,6 @@ def recurse(s, depth=0):
         for n in range(args.toolkit.min_spacing, args.max_delay + 1):
             recurse(s + (n,), depth - 1)
 
-class TreeIterator:
-    def __init__(self, options_per_glider: tuple[tuple[int]], min_depth=0, depth=0, max_total=args.max_total_gens):
-        self.options_per_glider = options_per_glider
-        self.min_depth = min_depth
-        self.depth = depth
-        self.max_total = max_total
-
-    def __len__(self):
-        return self.n_possibilities(0, 0)
-
-    @functools.lru_cache(maxsize=None)
-    def n_possibilities(self, gliders_so_far, gens_so_far):
-        if gliders_so_far >= self.depth:
-            return 0        
-        total = 0
-        for o in self.options_per_glider[gliders_so_far]:
-            if gens_so_far + o <= self.max_total:
-                if gliders_so_far + 1 >= self.min_depth:
-                    total += 1
-                total += self.n_possibilities(gliders_so_far + 1, gens_so_far + o)
-        return total
-
-    def __iter__(self):
-        return self.iter((), 0)
-
-    def iter(self, so_far, total):
-        gliders_so_far = len(so_far)
-        if gliders_so_far >= self.depth:
-            return
-        for o in self.options_per_glider[gliders_so_far]:
-            n = so_far + (o,)
-            if total + o <= self.max_total:
-                if gliders_so_far + 1 >= self.min_depth:
-                    yield so_far + (o,)
-                yield from self.iter(n, total + o)
-
 if __name__ == "__main__":
     """
     p = lt.pattern('')
@@ -985,29 +938,22 @@ if __name__ == "__main__":
         print("Generating jobs...", file=sys.stderr)
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]
-        len_all_options = 0
-        default_glider = tuple(range(args.toolkit.min_spacing, args.max_delay + 1))
-        iterators = []
-        for subtree in args.subtree:
-            iterator = TreeIterator(
-                options_per_glider=subtree.options + (default_glider,) * (args.depth - len(subtree.options)),
-                min_depth=len(subtree.options),
-                depth=args.depth,
+
+        all_options = glider_sequence_iterator(
+                subtree=args.subtree,
+                max_depth=args.depth,
+                min_spacing=args.toolkit.min_spacing,
+                max_delay=args.max_delay,
                 max_total=args.max_total_gens
             )
-            iterators.append(iterator)
-            len_all_options += len(iterator)
-
+        len_all_options = len(all_options)
         print('Total:', len_all_options, file=sys.stderr)
-
-        def all_options():
-            return itertools.chain(*iterators)
 
         multiprocessing.set_start_method('spawn')
         with Pool(processes=os.cpu_count() - 1) as pool:
             speedo = Speedometer()
             print("Starting...", file=sys.stderr)
-            for result in pool.imap_unordered(process_concurrent, all_options(), chunksize=256):
+            for result in pool.imap_unordered(process_concurrent, all_options, chunksize=256):
                 if speedo.tick(1):
                     current_per_s = speedo.get_current_speed_and_reset()
                     avg_per_s = speedo.overall_speed()
