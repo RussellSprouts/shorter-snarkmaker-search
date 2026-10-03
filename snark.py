@@ -1331,35 +1331,38 @@ def recipe_tree(recipe_intermediates_db, start):
     print(recipe_graph.stamp_collection(include_glider=True).rle_string())
 
 def custom_starting_point(output_db, stream, target_rle):
-    output_db = ProcessingDatabase(output_db)
+    target_pattern = lt.pattern(target_rle)
 
-    stream_bytes = bytes(int(i) for i in stream.split(','))
+    for possibility in split_vertical(target_pattern):
+        output_db = ProcessingDatabase(output_db)
 
-    id = output_db.add_starting_points([
-        StartingPoint(
-            None,
-            0,
-            stream_bytes,
-            255,
-            0,
-            target_rle
-        )
-    ])[0]
+        stream_bytes = bytes(int(i) for i in stream.split(','))
 
-    output_db.push_queue([
-        StreamJob(
-            None,
-            0,
-            id,
-            bytes(),
-            255,
-            0,
-            None
-        )
-    ])
-    output_db.commit()
-    output_db.close()
-    print("Added starting point.")
+        id = output_db.add_starting_points([
+            StartingPoint(
+                None,
+                0,
+                stream_bytes,
+                255,
+                0,
+                possibility.rle_string()
+            )
+        ])[0]
+
+        output_db.push_queue([
+            StreamJob(
+                None,
+                0,
+                id,
+                bytes(),
+                255,
+                0,
+                None
+            )
+        ])
+        output_db.commit()
+        output_db.close()
+        print("Added starting point.")
 
 # splits the pattern into independent vertical segments
 def split_vertical(p):
