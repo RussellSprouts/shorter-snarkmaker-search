@@ -274,7 +274,7 @@ SW black odd
 7, 172, 162, 94, (299) {total: 727} {consumed: 6} glider(d12)(ph1)(♗⬃①)
 
 SW white even
-0, 219, (90) {total: 309} {consumed: 3} glider(d-9)(ph0)(♝⬃⓪) {requires state: 1}
+0, 219, (90) {total: 309} {consumed: 3} glider(d-9)(ph1802)(♝⬃⓪) {requires state: 1}
 1, 90, 207, 187, (90) {total: 574} {consumed: 5} glider(d-13)(ph0)(♝⬃⓪)
 1, 104, 219, 239, (90) {total: 652} {consumed: 6} glider(d-13)(ph0)(♝⬃⓪)
 1, 92, 242, 91, (90) {total: 515} {consumed: 5} glider(d-15)(ph2)(♝⬃⓪)

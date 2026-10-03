@@ -2,3 +2,26 @@
 snarkmaker, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, snarkmaker, sc_pull1, snarkmaker
 sc_push3, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44, sc_push44
 construct_arm
+
+set d-326 # set the depth so that the marker block is at 0
+
+# 140 (141, 146, 116, 95) ['block(l-7,d29,o0)', 'g0', 'g1', 'g2', 'g3', 'g4', 'w/o:', 'g0', 'g1', 'g2', 'g3', 'g4', 'diff:', '+block(l-7,d29,o0)']
+
+# detects the block(l-17,d3) and places the new block(l-7,d11) if present
+let detect_marker_block(d3) = 5, 143, 123, 103, swim 4, (90) in
+
+detect_marker_block(d0) # now there a block l-7 at d8, if the marker block was present
+
+let if_block(l-7, d5) = 3, 208, 197, swim 4, (90) in
+let else_block(l18, d28) = 7, 126, 91, 121, swim 4, (122) in
+# pushes the block l-7 upstream by 16
+let if_block_push_block(l-7,d-3) = 7, 145, 127, 133, 105, 153, 136, 104, swim 8, (90) in
+
+if_block_push_block(l-7,d-1)
+if_block_push_block(l-7,d-17) # block is now at -33
+
+if_block(l-7, d-33) else_block(l18, d100)
+
+# 140 (87, 132, 253, 175) ['g0', 'g1', 'g2', 'g3', 'g4', 'w/o:', 'block(l-7,d49,o0)', 'g0', 'g1', 'g2', 'g3', 'g4', 'diff:', '-block(l-7,d49,o0)']
+# 161 (75, 208, 197, 263, 126, 91, 121) ['block(l-7,d23,o0)', 'g0', 'g1', 'w/o:', 'block(l18,d92,o0)', 'g0', 'g1', 'diff:', '+block(l-7,d23,o0)', '-block(l18,d92,o0)']
+# 152 (29, 143, 123, 103) ['block(l-7,d17,o0)', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'w/o:', 'g0', 'g1', 'g2', 'g3', 'g4', 'g5', 'diff:', '+block(l-7,d17,o0)']

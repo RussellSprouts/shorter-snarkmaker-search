@@ -1,4 +1,4 @@
-# uv run oncoming.py --print-rle="$(cat recipes/block_depth_demo.txt)" --with-debris-rle='3$5bo$4bobo$5bo119$125b3o$125bo$126bo!' --and-without-debris --print-rle-stride=1024 --no-recipe-label
+# uv run oncoming.py --print-rle="$(cat recipes/antship.txt)" --with-debris-rle='3$5bo$4bobo$5bo119$125b3o$125bo$126bo!' --and-without-debris --print-rle-stride=1024 --no-recipe-label
 
 let block(l-7,d-11) = 1, 90, 91, 91, swim 3, (90) in
 let block(l-21,d-9) = 1, 104, 94, 116, 95, 91, swim 5, (90) in
