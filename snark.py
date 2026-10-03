@@ -1566,6 +1566,12 @@ async def main():
         default=-1,
         help="The maximum allowed population of patterns to analyze. Stable patterns larger than this will be discarded."
     )
+    parser_optimize.add_argument(
+        "--n-results-limit",
+        type=int,
+        default=float("inf"),
+        help="The maximum number of results to collect before moving to the next stage.",
+    )
 
     parser_view_results = subcommand.add_parser(
         "view-results", description="Explore and view results"
@@ -1867,7 +1873,7 @@ async def main():
                 n_processes=args.n_processes,
                 live_view_depth=args.live_view_depth,
                 depth_range=args.depth_range,
-                n_results_limit=float('inf'),
+                n_results_limit=args.n_results_limit,
                 merged_stream_gen_options=args.merged_stream_gen_options,
                 must_contain=args.must_contain,
                 max_allowed_population=args.max_allowed_population,
