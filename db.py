@@ -427,6 +427,7 @@ class ProcessingDatabase:
         self.conn.execute("""
             CREATE VIEW IF NOT EXISTS r AS
             SELECT
+                r.rowid as orig_rowid,
                 r.stream as stream,
                 r.starting_point as starting_point,
                 r.digest as digest,
