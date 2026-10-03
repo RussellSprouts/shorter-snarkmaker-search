@@ -13,7 +13,7 @@ import re
 
 from speedometer import Speedometer
 
-mode = 2
+mode = 3
 
 seed = offset_based_on_glider(lt.pattern('$8bo$8bo$8bo2$9b3o$bo4bo2bo$bo4bo3bo$bo4bo!'))
 block = lt.pattern('oo$oo')
@@ -135,7 +135,6 @@ elif mode == 2 and __name__ == '__main__':
                     p = seed + single_channel_stream((0, 122, 99) + (delay,) + (stream * 12)[1:])
                     print(' ', pop, delay, stream, file=sys.stderr)
                 print(f'{current_per_s=} {avg_per_s=} {done=} {total=} most recent: {a.stream}',file=sys.stderr)
-
 
             while len(results) > 100:
                 results.pop()
