@@ -105,7 +105,7 @@ class ComponentSearch:
         """Given a list of components, returns a set of depths that have matches"""
         result = set()
         for c in components:
-            result += self.component_to_recipe_at_any_depth[c]
+            result |= self.component_to_recipe_at_any_depth[c]
         return result
 
     def recipe_components(self, recipe: Recipe) -> Set[PatternRef]:

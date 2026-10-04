@@ -18,10 +18,10 @@ def recursive_priority_process_wrapper(shared_args, queue, pipe, f):
 
     pattern_cache = PatternCache()
     n_patterns = 0
-    shared_args.component_search = ComponentSearch(pattern_cache, shared_args.depth_range)
+    shared_args.component_search = ComponentSearch(pattern_cache)
     for recipe in shared_args.recipe_intermediates.values():
         if len(recipe.so_far) in shared_args.partial_range:
-            shared_args.component_search.add_recipe(recipe)
+            shared_args.component_search.add_recipe(recipe, shared_args.depth_range)
             n_patterns += 1
 
     while True:

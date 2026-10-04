@@ -480,7 +480,8 @@ def score_pattern(
     recursed=False,
 ):
     comps = pattern_components(end_pattern)
-    lanes = get_lanes(comps)
+    component_lanes = get_lanes(comps)
+    lanes = list(component_lanes)
 
     # max depth of all components including the offset block
     original_components = set(
@@ -547,11 +548,11 @@ def score_pattern(
 
     not_offset_components = set(
         shared_args.component_search.pattern_cache.id(c)
-        for _, _, c in lanes
+        for _, _, c in component_lanes
     )
-    debug_overlapping_depths = shared_args.component_search.depths_with_overlapping_recipes(not_offset_components)
+    depths_with_overlap = shared_args.component_search.depths_with_overlapping_recipes(not_offset_components)
 
-    for pattern_offset in depths_to_search:
+    for pattern_offset in depths_with_overlap:
 
         # components shifted to line up with the snark that would
         # hit the elbow
@@ -559,18 +560,12 @@ def score_pattern(
             shared_args.component_search.pattern_cache.id(
                 c(-pattern_offset, -pattern_offset)
             )
-            for _, _, c in lanes
+            for _, _, c in component_lanes
         )
 
         overlapping_recipes = shared_args.component_search.overlapping_recipes(
             components
         )
-
-        if not overlapping_recipes and pattern_offset in debug_overlapping_depths:
-            raise "Expected overlap but got none"
-
-        if overlapping_recipes and pattern_offset not in debug_overlapping_depths:
-            raise "Expected no overlap but got some"
 
         for recipe in overlapping_recipes:
             recipe_components = shared_args.component_search.recipe_components(recipe)
@@ -1350,9 +1345,9 @@ def recipe_tree(recipe_intermediates_db, start):
 
 def custom_starting_point(output_db, stream, target_rle):
     target_pattern = lt.pattern(target_rle)
+    output_db = ProcessingDatabase(output_db)
 
-    for possibility in split_vertical(target_pattern):
-        output_db = ProcessingDatabase(output_db)
+    for possibility in split_horizontal(target_pattern):
 
         stream_bytes = bytes(int(i) for i in stream.split(','))
 
@@ -1379,9 +1374,9 @@ def custom_starting_point(output_db, stream, target_rle):
                 follow_ups=None
             )
         ])
-        output_db.commit()
-        output_db.close()
-        print("Added starting point.")
+    output_db.commit()
+    output_db.close()
+    print("Added starting point(s).")
 
 # splits the pattern into independent vertical segments
 def split_vertical(p):
