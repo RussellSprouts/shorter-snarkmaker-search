@@ -52,6 +52,7 @@ class StartingPoint:
 class StreamJob:
     id: int
     cost: int
+    total_cost: int
     starting_point: int
     stream: bytes
     follow_up_gen_limit: bytes
@@ -63,6 +64,7 @@ class StreamJob:
         return StreamJob(
             id=row["id"],
             cost=row["cost"],
+            total_cost=row["total_cost"] if "total_cost" in keys else row["cost"],
             starting_point=row["starting_point"],
             stream=row["stream"],
             follow_up_gen_limit=row["follow_up_gen_limit"],
@@ -87,6 +89,7 @@ class SavedResult:
     max_depth: int
     depth: int
     far_depth: int
+    total_cost: int
     population: int
     flipped_offset_block: int
     target_rle: str
@@ -126,6 +129,7 @@ class SavedResult:
             max_depth=row["max_depth"],
             depth=row["depth"] if "depth" in keys else row["max_depth"],
             far_depth=row["far_depth"] if "far_depth" in keys else 0,
+            total_cost=row["total_cost"] if "total_cost" in keys else 0,
             population=row["population"],
             flipped_offset_block=row["flipped_offset_block"],
             target_rle=row["target_rle"],
@@ -191,7 +195,8 @@ class SavedResult:
             f"lane_width={self.lane_width}, "
             f"max_depth={self.max_depth}, "
             f"depth={self.depth}, "
-            f"far_depth={self.far_depth} "
+            f"far_depth={self.far_depth}, "
+            f"total_cost={self.total_cost}, "
             f"population={self.population}, "
             f"flipped_offset_block={self.flipped_offset_block}, "
             f"full_intermediate={self.full_intermediate}, "
@@ -225,6 +230,7 @@ class StreamResult:
     max_depth: int
     depth: int
     far_depth: int
+    total_cost: int
     population: int
     flipped_offset_block: int
 
@@ -331,6 +337,7 @@ class ProcessingDatabase:
                 id INTEGER PRIMARY KEY,
                 in_progress INTEGER,
                 cost INTEGER,
+                total_cost INTEGER,
                 starting_point INTEGER REFERENCES starting_points(id),
                 stream BLOB,
                 follow_up_gen_limit INTEGER,
@@ -348,6 +355,14 @@ class ProcessingDatabase:
             CREATE INDEX IF NOT EXISTS queue_id_idx ON queue (id ASC)
             """)
 
+        try:
+            self.conn.execute("""
+            ALTER TABLE queue ADD COLUMN total_cost INTEGER;
+            """)
+            self.conn.commit()
+        except:
+            pass
+
         # Table of processing results
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS results (
@@ -362,6 +377,7 @@ class ProcessingDatabase:
                 max_depth INTEGER,
                 depth INTEGER,
                 far_depth INTEGER,
+                total_cost INTEGER,
                 population INTEGER,
                 flipped_offset_block INTEGER,
                 full_intermediate INTEGER REFERENCES recipe_intermediates(id),
@@ -419,6 +435,14 @@ class ProcessingDatabase:
         except:
             pass
 
+        try:
+            self.conn.execute("""
+            ALTER TABLE results ADD COLUMN total_cost INTEGER;
+            """)
+            self.conn.commit()
+        except:
+            pass
+
         # Create a view with all the relevant joins for ease of
         # querying.
         self.conn.execute("""
@@ -439,6 +463,7 @@ class ProcessingDatabase:
                 r.max_depth as max_depth,
                 r.depth as depth,
                 r.far_depth as far_depth,
+                r.total_cost as total_cost,
                 r.population as population,
                 r.flipped_offset_block as flipped_offset_block,
                 r.full_intermediate as full_intermediate,
@@ -536,11 +561,12 @@ class ProcessingDatabase:
         for job in jobs:
             self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) + 1
         self.conn.executemany(
-            """INSERT INTO queue (in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth, follow_ups) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO queue (in_progress, cost, total_cost, starting_point, stream, follow_up_gen_limit, max_depth, follow_ups) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     0,
                     job.cost,
+                    job.total_cost,
                     job.starting_point,
                     job.stream,
                     job.follow_up_gen_limit,
@@ -581,8 +607,8 @@ class ProcessingDatabase:
 
         self.conn.executemany(
             """INSERT INTO results
-            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, far_depth, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_non_overlapping_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_non_overlapping_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (stream, starting_point, digest, before_hit_digest, x, y, offset_block_lane, lane_width, max_depth, depth, far_depth, total_cost, population, flipped_offset_block, full_intermediate, full_intermediate_depth_separation, full_intermediate_non_overlapping_depth_separation, full_intermediate_overlapping_population, full_intermediate_overlapping_digest, full_intermediate_shift, partial_intermediate, partial_intermediate_log_prob, partial_intermediate_positive_log_prob, partial_intermediate_depth_separation, partial_intermediate_non_overlapping_depth_separation, partial_intermediate_overlapping_population, partial_intermediate_shift, partial_intermediate_digest, partial_intermediate_overlapping_digest)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             [
                 (
                     result.stream + bytes((child.follow_up,)),
@@ -596,6 +622,7 @@ class ProcessingDatabase:
                     child.max_depth,
                     child.depth,
                     child.far_depth,
+                    child.total_cost,
                     child.population,
                     child.flipped_offset_block,
                     child.full_intermediate,
@@ -665,49 +692,3 @@ class ProcessingDatabase:
     def close(self):
         self.conn.commit()
         self.conn.close()
-
-
-if __name__ == "__main__":
-    filename = "new-db.sqlite"
-    db = ProcessingDatabase(filename)
-    print(f"Opened database {filename}")
-    queue_stats = db.fetch_queue_stats()
-    print(f"Queue contains {sum(queue_stats.values())} job(s). Costs:", queue_stats)
-
-    print(f"Database contains {len(db.recipe_intermediates)} recipe intermediates")
-
-    for job in db.pop_queue(1):
-        print(job)
-        db.save_results(
-            [
-                (
-                    job,
-                    StreamJobResult(
-                        starting_point=0,
-                        stream=b"",
-                        valid_children=[
-                            StreamResult(
-                                follow_up=90,
-                                digest=123,
-                                before_hit_digest=456,
-                                x=0,
-                                y=0,
-                                offset_block_lane=100,
-                                lane_width=20,
-                                population=16,
-                                best_full_intermediate_match=None,
-                                best_partial_intermediate_match=None,
-                                intermediate_match_fraction=0,
-                                elbow_intermediate_depth_separation=0,
-                                elbow_intermediate_overlapping_population=0,
-                                max_depth=1,
-                            )
-                        ],
-                    ),
-                )
-            ]
-        )
-    db.commit()
-
-    for results in db.conn.execute("""SELECT * FROM results"""):
-        print(results)

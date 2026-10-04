@@ -72,8 +72,9 @@ class ComponentSearch:
         self.component_to_recipe = defaultdict(set)
         # Map of Recipe to set of PatternRef components
         self.recipe_to_components = {}
+        self.component_to_recipe_at_any_depth = defaultdict(set)
 
-    def add_recipe(self, recipe: Recipe):
+    def add_recipe(self, recipe: Recipe, depth_options):
         """Adds the recipe as a target to
         search."""
         if recipe in self.recipe_to_components:
@@ -84,7 +85,12 @@ class ComponentSearch:
         for pr in components:
             self.component_to_recipe[pr].add(recipe)
 
-    def overlapping_recipes(self, components: Set[PatternRef]) -> Set[Recipe]:
+        for depth in depth_options:
+            for c in recipe.pattern.components():
+                pr = self.pattern_cache.id(c(depth, depth))
+                self.component_to_recipe_at_any_depth[pr].add(depth)
+
+    def overlapping_recipes(self, components: Set[PatternRef]) -> dict[PatternRef,Set[Recipe]]:
         """Given a list of components, returns a map of
         recipe to set of components that are overlapping"""
         result = defaultdict(set)
@@ -93,6 +99,13 @@ class ComponentSearch:
             if recipes:
                 for r in recipes:
                     result[r].add(c)
+        return result
+
+    def depths_with_overlapping_recipes(self, components: Set[PatternRef]) -> Set[int]:
+        """Given a list of components, returns a set of depths that have matches"""
+        result = set()
+        for c in components:
+            result += self.component_to_recipe_at_any_depth[c]
         return result
 
     def recipe_components(self, recipe: Recipe) -> Set[PatternRef]:

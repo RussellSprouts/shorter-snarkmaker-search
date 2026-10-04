@@ -176,6 +176,7 @@ def combine_starting_points(input_dbs, output_db, reset_costs):
             StreamJob(
                 id=None,
                 cost=0 if reset_costs else s.cost,
+                total_cost=sum(s.stream),
                 starting_point=s.id,
                 stream=b"",
                 follow_up_gen_limit=255,
@@ -212,7 +213,7 @@ def setup_next_search(
     for i, query in enumerate(queries):
         print(f"Running query {i+1}/{len(queries)}...", query)
         query = query[0]
-        if not query.lower().startswith("select "):
+        if not (query.lower().startswith("select ") or query.lower().startswith("with ")):
             query = f"SELECT * FROM r LEFT OUTER JOIN recipe_intermediates fi ON full_intermediate = fi.id WHERE {query};"
         for result in in_db.conn.execute(query):
             results.add(SavedResult.from_row(result))
@@ -272,6 +273,7 @@ def setup_next_search(
             StreamJob(
                 id=None,
                 cost=0 if reset_costs else sum(r.stream) + in_db.starting_points[r.starting_point].cost,
+                total_cost=sum(r.stream) + in_db.starting_points[r.starting_point].cost,
                 starting_point=next_id,
                 stream=b"",
                 follow_up_gen_limit=255,
@@ -543,6 +545,12 @@ def score_pattern(
     partial_intermediate_digest = 0
     partial_intermediate_overlapping_digest = 0
 
+    not_offset_components = set(
+        shared_args.component_search.pattern_cache.id(c)
+        for _, _, c in lanes
+    )
+    debug_overlapping_depths = shared_args.component_search.depths_with_overlapping_recipes(not_offset_components)
+
     for pattern_offset in depths_to_search:
 
         # components shifted to line up with the snark that would
@@ -557,6 +565,12 @@ def score_pattern(
         overlapping_recipes = shared_args.component_search.overlapping_recipes(
             components
         )
+
+        if not overlapping_recipes and pattern_offset in debug_overlapping_depths:
+            raise "Expected overlap but got none"
+
+        if overlapping_recipes and pattern_offset not in debug_overlapping_depths:
+            raise "Expected no overlap but got some"
 
         for recipe in overlapping_recipes:
             recipe_components = shared_args.component_search.recipe_components(recipe)
@@ -671,6 +685,7 @@ def score_pattern(
         max_depth=max_depth,
         depth=depth,
         far_depth=far_depth,
+        total_cost=job.total_cost + follow_up,
         population=end_pattern.population,
         flipped_offset_block=1 if recursed else 0,
         full_intermediate=(
@@ -734,6 +749,7 @@ def combine_score(
         max_depth=a.max_depth,
         depth=a.depth,
         far_depth=a.far_depth,
+        total_cost=a.total_cost,
         population=a.population,
         flipped_offset_block=a.flipped_offset_block,
         full_intermediate=a.full_intermediate if a_better else b.full_intermediate,
@@ -941,6 +957,7 @@ def find_p2_output(job: StreamJob, queue, shared_args: OptimizeArgs):
                 StreamJob(
                     id=None,
                     cost=added_gens,
+                    total_cost=job.total_cost + next_possibility,
                     starting_point=job.starting_point,
                     stream=job.stream + bytes([next_possibility]),
                     follow_up_gen_limit=follow_up_gen_limit,
@@ -1196,6 +1213,7 @@ def reprocess(input_db, output_db, queries):
                 StreamJob(
                     id=None,
                     cost=0,
+                    total_cost=sum(stream_start),
                     starting_point=next_id,
                     stream=b"",
                     follow_up_gen_limit=255,
@@ -1340,24 +1358,25 @@ def custom_starting_point(output_db, stream, target_rle):
 
         id = output_db.add_starting_points([
             StartingPoint(
-                None,
-                0,
-                stream_bytes,
-                255,
-                0,
-                possibility.rle_string()
+                id=None,
+                cost=0,
+                stream=stream_bytes,
+                follow_up_gen_limit=255,
+                max_depth=0,
+                target_rle=possibility.rle_string()
             )
         ])[0]
 
         output_db.push_queue([
             StreamJob(
-                None,
-                0,
-                id,
-                bytes(),
-                255,
-                0,
-                None
+                id=None,
+                cost=0,
+                total_cost=sum(stream_bytes),
+                starting_point=id,
+                stream=bytes(),
+                follow_up_gen_limit=255,
+                max_depth=0,
+                follow_ups=None
             )
         ])
         output_db.commit()

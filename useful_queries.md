@@ -59,10 +59,10 @@ byte_values AS (
     -- Map each hex pair back to its 0-255 decimal value
     SELECT 
         orig_rowid,
-        (INSTR('0123456789ABCDEF', SUBSTR(hex_pair, 1, 1)) - 1) * 16 +
-        (INSTR('0123456789ABCDEF', SUBSTR(hex_pair, 2, 1)) - 1) AS decimal_val
+        (INSTR("0123456789ABCDEF", SUBSTR(hex_pair, 1, 1)) - 1) * 16 +
+        (INSTR("0123456789ABCDEF", SUBSTR(hex_pair, 2, 1)) - 1) AS decimal_val
     FROM unpack_hex
-    WHERE hex_pair != ''
+    WHERE hex_pair != ""
 ),
 summed_bytes AS (
     -- Aggregate the sums grouped by the original row orig_rowid
@@ -76,10 +76,10 @@ summed_bytes AS (
 SELECT 
     r.*,
     COALESCE(s.total_byte_sum, 0) AS total_gens,
-    CAST(far_depth as float) / (90 + COALESCE(s.total_byte_sum, 0)) as label
+    (90 + COALESCE(s.total_byte_sum, 0)) / CAST(depth as float) as label
 FROM r
 LEFT JOIN summed_bytes s ON r.orig_rowid = s.orig_rowid
-WHERE far_depth < 30
-ORDER BY label
+WHERE depth < 0
+ORDER BY label DESC
 LIMIT 10;
 ```
