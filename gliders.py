@@ -28,6 +28,8 @@ def offset_based_on_glider(p, glider=mk_glider(0, 0)):
     glider
     """
     g = p.match(glider, halo=halo)
+    if not g.nonempty():
+        raise ValueError(f"Cannot find glider in pattern: {p.rle_string()}")
     x, y, _, _ = g.getrect()
     return (p - g.convolve(glider))(-x, -y)
 
