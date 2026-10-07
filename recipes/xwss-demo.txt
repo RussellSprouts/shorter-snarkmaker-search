@@ -1,0 +1,119 @@
+
+let lwss_s00(d-26) = 1, 92, 90, 129, 132, swim 6, (130) in
+let lwss_s01(d-8) = 5, 151, 253, 90, 196, swim 7, (105) in
+let lwss_s10(d-26) = 3, 96, 102, 103, 145, 105, swim 7, (180) in
+let lwss_s11(d-12) = 3, 105, 210, 128, 131, swim 7, (93) in
+let lwss_s20(d0) = 3, 230, 131, 104, 99, swim 5, (90) in
+let lwss_s21(d6) = 7, 136, 147, 94, swim 5, (155) in
+let lwss_s30(d22) = 7, 182, 146, 102, 132, 109, 110, swim 7, (90) in
+let lwss_s31(d8) = 7, 164, 186, 98, 111, swim 5, (90) in
+
+lwss_s00(d0) lwss_s01(d0) lwss_s10(d0) lwss_s11(d0) lwss_s20(d0) lwss_s21(d0) lwss_s30(d0) lwss_s31(d0)
+
+let lwss_n00(d-20) = 1, 104, 93, 129, swim 4, (90) in
+let lwss_n01(d12) = 7, 148, 109, 152, 108, 90, swim 5, (90) in
+let lwss_n10(d0) = 1, 90, 221, 117, 154, swim 6, (90) in
+let lwss_n11(d-8) = 5, 145, 91, 178, 103, swim 5, (90) in
+let lwss_n20(d-16) = 3, 96, 93, 232, 153, swim 6, (90) in
+let lwss_n21(d14) = 1, 101, 118, 167, 94, 127, swim 5, (90) in
+let lwss_n30(d-10) = 3, 93, 209, 103, 125, swim 5, (90) in
+let lwss_n31(d-6) = 1, 92, 154, 94, 143, 97, swim 5, (90) in
+
+lwss_n00(d0) lwss_n01(d0) lwss_n10(d0) lwss_n11(d0) lwss_n20(d0) lwss_n21(d0) lwss_n30(d0) lwss_n31(d0)
+
+let lwss_w00(d-16) = 3, 230, 99, 92, 141, swim 6, (90) in
+let lwss_w01(d-40) = 3, 97, 185, 168, 155, 90, 104, swim 9, (90) in
+let lwss_w10(d46) = 6, 94, 90, 99, 107, 101, 114, 91, swim 6, (90) in
+let lwss_w11(d-44) = 1, 92, 233, 181, 198, swim 8, (90) in
+let lwss_w20(d-32) = 3, 219, 110, 91, 179, 90, swim 6, (90) in
+let lwss_w21(d-6) = 3, 93, 189, 151, 200, swim 5, (90) in
+let lwss_w30(d4) = 7, 168, 154, 98, 106, 119, swim 6, (90) in
+let lwss_w31(d-16) = 3, 195, 131, 107, 92, 150, 105, swim 9, (154) in
+
+lwss_w00(d0) lwss_w01(d0) lwss_w10(d0) lwss_w11(d0) lwss_w20(d0) lwss_w21(d0) lwss_w30(d0) lwss_w31(d0)
+
+let lwss_e00(d-26) = 3, 96, 92, 107, 194, swim 5, (90) in
+let lwss_e01(d-8) = 3, 93, 118, 208, 125, 90, swim 6, (90) in
+let lwss_e10(d-22) = 1, 90, 109, 105, 100, swim 4, (90) in
+let lwss_e11(d-16) = 7, 164, 191, 105, 111, 119, swim 7, (90) in
+let lwss_e20(d6) = 3, 105, 153, 118, 238, swim 5, (90) in
+let lwss_e21(d-6) = 7, 202, 91, 101, 108, 114, 97, swim 7, (90) in
+let lwss_e30(d-30) = 7, 244, 167, 189, 188, swim 11, (90) in
+let lwss_e31(d-32) = 1, 91, 117, 96, 165, swim 6, (120) in
+
+lwss_e00(d0) lwss_e01(d0) lwss_e10(d0) lwss_e11(d0) lwss_e20(d0) lwss_e21(d0) lwss_e30(d0) lwss_e31(d0)
+
+let mwss_s00(d10) = 3, 215, 117, 175, 156, 185, swim 8, (90) in
+let mwss_s01(d6) = 7, 164, 178, 98, 95, swim 6, (189) in
+let mwss_s10(d16) = 7, 188, 90, 150, 120, 91, swim 6, (99) in
+let mwss_s11(d-2) = 5, 170, 185, 152, 95, 148, 180, 93, swim 10, (139) in
+let mwss_s20(d-2) = 7, 186, 92, 283, 90, 90, swim 7, (90) in
+let mwss_s21(d8) = 7, 136, 165, 90, 158, 107, 103, 105, swim 8, (90) in
+let mwss_s30(d-2) = 5, 151, 159, 156, 154, 96, 155, swim 9, (90) in
+let mwss_s31(d24) = 7, 150, 197, 129, 188, 148, 110, swim 9, (156) in
+
+mwss_s00(d0) mwss_s01(d0) mwss_s10(d0) mwss_s11(d0) mwss_s20(d0) mwss_s21(d0) mwss_s30(d0) mwss_s31(d0)
+
+let mwss_n00(d-10) = 7, 170, 108, 105, 91, 204, 108, swim 7, (90) in
+let mwss_n01(d-28) = 1, 92, 119, 99, 203, 245, 214, 247, swim 13, (90) in
+let mwss_n10(d-10) = 3, 230, 218, 204, 101, swim 7, (90) in
+let mwss_n11(d16) = 7, 164, 215, 148, 128, swim 7, (161) in
+let mwss_n20(d2) = 3, 228, 248, 152, 130, 93, swim 7, (90) in
+let mwss_n21(d28) = 3, 225, 154, 96, 216, 132, 255, swim 10, (91) in
+let mwss_n30(d0) = 5, 203, 162, 93, 134, 141, 97, 162, 236, swim 10, (90) in
+let mwss_n31(d0) = 3, 159, 122, 171, 212, 130, 182, 99, swim 11, (233) in
+
+mwss_n00(d0) mwss_n01(d0) mwss_n10(d0) mwss_n11(d0) mwss_n20(d0) mwss_n21(d0) mwss_n30(d0) mwss_n31(d0)
+
+let mwss_w00(d-14) = 3, 215, 95, 167, 118, 90, swim 6, (90) in
+let mwss_w01(d-10) = 7, 180, 167, 179, 139, 122, swim 7, (90) in
+let mwss_w10(d-24) = 5, 142, 121, 131, 155, 220, swim 7, (90) in
+let mwss_w11(d8) = 5, 145, 187, 98, 183, 195, 194, swim 8, (90) in
+let mwss_w20(d-12) = 3, 202, 99, 99, 132, 115, 97, swim 7, (90) in
+let mwss_w21(d-12) = 5, 144, 118, 173, 144, swim 6, (90) in
+let mwss_w30(d-10) = 3, 222, 155, 220, 121, swim 8, (90) in
+let mwss_w31(d-10) = 7, 202, 96, 100, 180, 114, 166, swim 9, (97) in
+
+mwss_w00(d0) mwss_w01(d0) mwss_w10(d0) mwss_w11(d0) mwss_w20(d0) mwss_w21(d0) mwss_w30(d0) mwss_w31(d0)
+
+let mwss_e00(d-14) = 7, 130, 157, 93, 145, 180, swim 7, (120) in
+let mwss_e01(d2) = 3, 180, 135, 207, 156, swim 7, (90) in
+let mwss_e10(d16) = 3, 110, 112, 102, 96, 203, 97, 126, swim 9, (229) in
+let mwss_e11(d6) = 7, 158, 90, 183, 173, 194, 169, swim 8, (90) in
+let mwss_e20(d-14) = 1, 110, 203, 97, 172, 90, 90, 94, swim 9, (160) in
+let mwss_e21(d12) = 7, 132, 99, 213, 197, swim 6, (109) in
+let mwss_e30(d4) = 7, 186, 92, 208, 98, swim 5, (90) in
+let mwss_e31(d-4) = 7, 156, 100, 141, 90, 159, 103, 91, swim 8, (90) in
+
+mwss_e00(d0) mwss_e01(d0) mwss_e10(d0) mwss_e11(d0) mwss_e20(d0) mwss_e21(d0) mwss_e30(d0) mwss_e31(d0)
+
+let hwss_s01(d26) = 3, 153, 94, 91, 93, 134, 91, 92, swim 6, (90) in
+let hwss_s10(d4) = 7, 180, 162, 95, 175, 168, 113, 128, 175, 201, swim 14, (167) in
+let hwss_s11(d-2) = 3, 207, 142, 175, 178, 154, 93, 251, swim 12, (162) in
+let hwss_s20(d-22) = 3, 114, 217, 231, 141, 160, 151, swim 11, (272) in
+let hwss_s30(d-4) = 5, 153, 187, 242, 157, 165, 90, swim 8, (90) in
+
+hwss_s01(d0) hwss_s10(d0) hwss_s11(d0) hwss_s20(d0) hwss_s30(d0)
+
+let hwss_n00(d-30) = 3, 163, 170, 213, 92, 146, 137, 162, swim 10, (90) in
+let hwss_n10(d-8) = 5, 153, 221, 140, 105, swim 5, (90) in
+let hwss_n11(d22) = 3, 216, 103, 243, 240, 238, 111, 96, swim 12, (163) in
+let hwss_n21(d32) = 6, 94, 139, 138, 104, 213, 198, 250, swim 9, (90) in
+let hwss_n31(d-50) = 3, 230, 194, 145, 119, 105, 170, 135, 241, 98, swim 15, (90) in
+
+hwss_n00(d0) hwss_n10(d0) hwss_n11(d0) hwss_n21(d0) hwss_n31(d0)
+
+let hwss_w01(d-18) = 7, 130, 170, 217, 107, 144, 99, 128, swim 8, (90) in
+let hwss_w10(d-24) = 5, 195, 240, 91, 151, 126, 145, swim 9, (90) in
+let hwss_w21(d4) = 7, 148, 200, 224, 201, 166, swim 8, (90) in
+let hwss_w31(d12) = 1, 101, 239, 195, 110, 97, 178, 97, 125, 130, 90, swim 13, (90) in
+
+hwss_w01(d0) hwss_w10(d0) hwss_w21(d0) hwss_w31(d0)
+
+let hwss_e01(d2) = 3, 139, 98, 134, 97, 168, 128, 123, 90, swim 10, (90) in
+let hwss_e10(d20) = 3, 153, 91, 94, 91, 91, 101, 199, 188, 213, 254, 90, 93, swim 13, (90) in
+let hwss_e21(d10) = 7, 178, 90, 194, 114, 134, 98, swim 8, (131) in
+let hwss_e30(d-16) = 1, 114, 91, 220, 180, 151, 99, 122, 108, 215, 138, 125, swim 14, (90) in
+let hwss_e31(d48) = 3, 96, 239, 204, 194, 159, 129, 254, 95, 134, 93, 91, 201, swim 17, (167) in
+
+hwss_e01(d0) hwss_e10(d0) hwss_e21(d0) hwss_e21(d0) hwss_e30(d0) hwss_e31(d0)
