@@ -212,14 +212,32 @@ argparser.add_argument(
 argparser.add_argument(
     "--delays-from-rle",
     type=str,
-)    
+)
+argparser.add_argument(
+    "--rle-file",
+    type=pathlib.Path,
+    help="A file to evaluate and convert to rle"
+)
+argparser.add_argument(
+    "--only",
+    type=str,
+    help="Evaluates the single recipe as if it were a subtree."
+)
 
 args = argparser.parse_args()
+
+if args.rle_file:
+    with open(args.rle_file) as f:
+        args.print_rle = f.read()
 
 if args.delays_from_rle:
     p = lt.pattern(args.delays_from_rle)
     print(extract_single_channel_recipe(p))
     sys.exit(0)
+
+if args.only:
+    args.subtree = [SubtreeDef(args.only.replace(',', ';'))]
+    args.depth = len(args.only.split(',')) 
 
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
 

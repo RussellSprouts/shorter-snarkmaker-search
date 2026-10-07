@@ -53,14 +53,14 @@ Options that are applicable to multiple commands.
 
 - `--only-gliders`, `--only-90-degree-gliders` - filter out results that aren't pure gliders. Highly speeds up the search.
 
-### `--print-rle` Command
+### `--print-rle` and `--rle-file` Commands
 
 Takes in a text description of a single channel recipe, and outputs an rle. It can accept basic recipes of comma separated delays, but it also supports a small programming language for more complex recipes. See the full documentation at [print-rle.md](../print-rle.md).
 
 ```bash
 $ uv run oncoming.py --print-rle="3, 201, swim 4, (167)"
 
-$ uv run oncoming.py --print-rle"$(cat path/to/recipe/file.txt)"
+$ uv run oncoming.py --rle-file=path/to/recipe/file.txt
 ```
 
 Related:
