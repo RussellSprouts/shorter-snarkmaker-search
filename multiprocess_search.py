@@ -149,8 +149,8 @@ class MultiprocessSearch:
                 self.db.conn.execute(
                     """
                     INSERT OR IGNORE INTO queue (
-                        id, in_progress, cost, starting_point, stream, follow_up_gen_limit, max_depth
-                    ) SELECT 0, 0, 0, 0, x'', ?, 0
+                        id, in_progress, cost, total_cost, starting_point, stream, follow_up_gen_limit, max_depth
+                    ) SELECT 0, 0, 0, 0, 0, x'', ?, 0
                     WHERE NOT EXISTS (SELECT 1 FROM queue) AND NOT EXISTS (SELECT 1 from results)
                     """,
                     (255,),

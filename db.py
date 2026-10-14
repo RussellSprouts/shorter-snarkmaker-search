@@ -5,6 +5,7 @@ from typing import List, Any, Dict, Optional
 import itertools
 import time
 import sys
+import traceback
 
 from lifetree import lt
 
@@ -600,10 +601,16 @@ class ProcessingDatabase:
         return ids
 
     def save_results(self, results: List[tuple[StreamJob, StreamJobResult]]):
+        for r in results:
+            if isinstance(r[1], Exception):
+                error = r[1]
+                traceback.print_exception(type(error), error, error.__traceback__)
+
         self.n_queued -= len(results)
         self.n_results += sum(map(lambda a: len(a[1].valid_children), results))
         for job, _ in results:
             self.queue_stats[job.cost] = self.queue_stats.get(job.cost, 0) - 1
+
 
         self.conn.executemany(
             """INSERT INTO results
