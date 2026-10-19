@@ -25,6 +25,7 @@ let_variable_clause ::= 'let' variable '=' expr 'in'
 let_args ::= '(' (let_arg (',' let_arg)*)? ')'
 let_arg ::= l-?[0-9]+ | d-?[0-9]+ | 'l' '(' expr ')' | 'd' '(' expr ')'
 print ::= 'print' expr
+if ::= 'if' expr 'then' segments ('else' segments)? 'end'
 """
 
 from dataclasses import dataclass
@@ -37,6 +38,10 @@ token_types = {
     'let': re.compile(r'let\b'),
     'in': re.compile(r'in\b'),
     'equals': re.compile(r'='),
+    'not_equals': re.compile(r'!='),
+    'inequality': re.compile(r'[<>]=?'),
+    'logical_and': re.compile(r'&&'),
+    'logical_or': re.compile(r'\|\|'),
     'whitespace': re.compile(r'\s+'),
     'comment': re.compile(r'#.*(\n|$)'),
     'minimum_follow': re.compile(r'\(\s*([0-9]+)\s*\)'),
@@ -46,6 +51,11 @@ token_types = {
     'advance_debris': re.compile(r'(advance_debris)\b'),
     'swim': re.compile(r'(swim)\b'),
     'print': re.compile(r'print\b'),
+    'if': re.compile(r'if\b'),
+    'then': re.compile(r'then\b'),
+    'elif': re.compile(r'elif\b'),
+    'else': re.compile(r'else\b'),
+    'end': re.compile(r'end\b'),
     'mode': re.compile(r'mode\s+(oggca|sc)'),
     'times_operator': re.compile(r'[*/]|mod'),
     'lane': re.compile(r'l(-?[0-9]+)\b'),
@@ -152,6 +162,10 @@ class PrintSegment(Segment):
     value: Expr
 
 @dataclass
+class IfSegment(Segment):
+    conditions: list[tuple[Expr, list[Segment]]]
+
+@dataclass
 class Expr:
     value: int = None
     op: str = None
@@ -184,7 +198,23 @@ class Expr:
             return a // b
         elif self.op == 'mod':
             return a % b
-
+        elif self.op == '=':
+            return int(a == b)
+        elif self.op == '!=':
+            return int(a != b)
+        elif self.op == '>':
+            return int(a > b)
+        elif self.op == '<':
+            return int(a < b)
+        elif self.op == '>=':
+            return int(a >= b)
+        elif self.op == '<=':
+            return int(a <= b)
+        elif self.op == '&&':
+            return int(a and b)
+        elif self.op == '||':
+            return int(a or b)
+    
 def parse_ast(input):
     tokens = tokenize(input)
     def next(n):
@@ -212,27 +242,44 @@ def parse_ast(input):
             case (Token(type='variable', text=text),):
                 return Expr(variable=text)
 
-    def parse_times_expression():
-        val = parse_atom()
-        while tokens and tokens[0].type == 'times_operator':
-            op_tok = tokens.pop(0)
-            val = Expr(
-                op=op_tok.text,
-                a=val,
-                b=parse_atom()
-            )
-        return val
+    def operator(ops, child):
+        def parser():
+            val = child()
+            while tokens and tokens[0].type in ops:
+                op_tok = tokens.pop(0)
+                val = Expr(
+                    op=op_tok.text,
+                    a=val,
+                    b=child()
+                )
+            return val
+        return parser
 
-    def parse_expression():
-        val = parse_times_expression()
-        while tokens and tokens[0].type == 'add_operator':
-            op_tok = tokens.pop(0)
-            val = Expr(
-                op=op_tok.text,
-                a=val,
-                b=parse_times_expression()
-            )
-        return val
+    parse_times_expression = operator(
+        ops=['times_operator'],
+        child=parse_atom
+    )
+    parse_add_expression = operator(
+        ops=['add_operator'],
+        child=parse_times_expression
+    )
+    parse_relational_expression = operator(
+        ops=['inequality'],
+        child=parse_add_expression
+    )
+    parse_equality_expression = operator(
+        ops=['equals', 'not_equals'],
+        child=parse_relational_expression
+    )
+    parse_logical_and_expression = operator(
+        ops=['logical_and'],
+        child=parse_equality_expression
+    )
+    parse_logical_or_expression = operator(
+        ops=['logical_or'],
+        child=parse_logical_and_expression
+    )
+    parse_expression = parse_logical_or_expression
 
     def parse_let_arg():
         match(next(1)):
@@ -328,6 +375,30 @@ def parse_ast(input):
                     syntax_error(mod, f'Expected mod clause')
                 return SetSegment(set=expr,mod=int(mod.match[1]))
 
+    def parse_condition():
+        condition = parse_expression()
+        (then_tok,) = next(1)
+        if then_tok.type != 'then':
+            syntax_error(then_tok, f'Expected `then` after if condition.')
+        then = parse_segments()
+        return condition, then
+
+    def parse_if():
+        conditions = [
+            # parse first if ... then ... clause
+            parse_condition()
+        ]
+        while tokens and tokens[0].type != 'end':
+            match next(1):
+                case (Token(type='elif'),):
+                    conditions.append(parse_condition())
+                case (Token(type='else'),):
+                    conditions.append((Expr(value=1), parse_segments()))
+        (end,) = next(1)
+        if end.type != 'end':
+            syntax_error(end, f'Expected `end` after if block.')
+        return IfSegment(conditions)
+
     def parse_segment():
         match next(1):
             case (Token(type='let'),):
@@ -352,6 +423,8 @@ def parse_ast(input):
             case (Token(type='print'),):
                 expr = parse_expression()
                 return PrintSegment(value=expr)
+            case (Token(type='if'),):
+                return parse_if()
             case _ as t:
                 tokens.insert(0, t[0])
                 expr = parse_expression()
@@ -374,7 +447,7 @@ def parse_ast(input):
                 case (Token(type='comma'),):
                     # remove optional commas
                     tokens.pop(0)
-                case (Token(type=a),) if a == 'in':
+                case (Token(type=a),) if a in ('in', 'else', 'end'):
                     return segments
             if tokens:
                 s = parse_segment()
@@ -540,6 +613,12 @@ def parse_p120_recipe(input, macros):
                 )
             case PrintSegment(value):
                 print('DEBUG PRINT:', value.eval(scope, state), file=sys.stderr)
+            case IfSegment(conditions):
+                for condition, then in conditions:
+                    if condition.eval(scope, state) != 0:
+                        for s in then:
+                            state = evaluate(s, state, scope)
+                        break
             case LetMacroSegment(name, lane, depth, body, scope=visible_scope):
                 qualified_name = name
                 if lane:
