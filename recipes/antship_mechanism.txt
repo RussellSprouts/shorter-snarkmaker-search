@@ -30,7 +30,12 @@ let snarkbreaker_chain1 = 0, 90, 98, 109, 95, (90) in
 let snarkbreaker_chain2 = 1, 90, 98, 109, 95, (90) in
 let snarkbreaker_destroy = 1, 90, 107, (148) in
 
+let block(l-17, d-3) = 7, 144, 92, 145, swim 4, (90) in
 let block(l-18, d12) = 7, 144, 93, swim 2, (90) in
+let block(l-19, d11) = 3, 93, 166, 90, swim 3, (90) in
+let block(l-21,d25) = 7, 140, 184, 97, 93, swim 4, (90) in
+
+let block(l22, d22) = 1, 101, 117, 98, 90, swim 3, (90) in
 
 # detects a block at l-21, d-7, else places a block(l-7) at d-5.
 let detect_block(l-21, d-7) = 3, 195, 96, 188, 177, swim 6, (90) in
@@ -56,6 +61,9 @@ let else_block(l21,d7) = 7, 118, 172, 147, swim 4, (90) in
 let else_glider(l-21) = 7, 157, 108, 186, 134, swim 6, (90) in
 let else_block(l-21,d5) = 1, 103, 96, 124, swim 4, (256) in
 
+let sw_glider(d10) = 3, 198, 105, swim 3, (90) in
+let nw_glider(l20) = 3, 225, 104, 95, 99, swim 6, (159) in
+
 ##################################
 # Recipe
 ##################################
@@ -63,17 +71,18 @@ let else_block(l-21,d5) = 1, 103, 96, 124, swim 4, (256) in
 mode sc
 
 snarkmaker
-sc_push50, sc_push50, sc_push50, sc_push50
+sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
 snarkmaker
 sc_pull1
 snarkmaker
 sc_push3
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
+sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
 construct_arm
 # set the depth so that the marker block for the cell state is
 # at d1.
-set d-340
+set d-490
 
+block(l-21,d-471)
 block(l-18,d-274)
 
 detect_block(l-21, d1) # else, places a block(l-7,d3)
@@ -89,6 +98,9 @@ if_block_push_block(l-7,d-25)
 if_block_push_block(l-7,d-41) # now the block(l-7) is at d-57
 
 if_block(l-7,d-57) then_block(l24, d276)
+
+block(l-21,d473)
+
 toggle_block(l-7,d-57) # now the block(l-7) is at d-53
 
 # destroy the upstream block
@@ -100,14 +112,14 @@ if_block_destroy(l-7,d-49) else_block(l-21,d1)
 swim_2, swim_2
 disable_arm
 
-swim_2, swim_2, swim_2, swim_2, swim_2, swim_0
+swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2
 disabled_arm_to_block
 snarkbreaker1
-wait 2770
+wait 2770+300*4
 snarkbreaker_chain1
 wait 632
 snarkbreaker_chain2
-wait 1446
+wait 1446+150*4
 snarkbreaker_destroy
 
 sc_pull_odd1
@@ -126,18 +138,25 @@ sc_push50
 snarkmaker_chain
 sc_pull1
 snarkmaker_chain
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
-
+sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
+sc_pull1
 construct_arm
+
+# set d0 as the lane where the recipe will exit
+set d-538
+
+block(l22, d-490)
+nw_glider(l20, d10)
 
 # TODO build the next copy of the circuitry here
 
 disable_arm
-swim_2, swim_0
+swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2
+
 disabled_arm_to_block
 
 sc_pull_odd1
-wait 8*113
+wait 8*113+400*4
 sc_pull_odd2
 
 snarkmaker_chain
