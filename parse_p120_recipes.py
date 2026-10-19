@@ -35,7 +35,7 @@ from collections import ChainMap, namedtuple
 import math
 
 token_types = {
-    'let': re.compile(r'let\b'),
+    'let': re.compile(r'let(rec)?\b'),
     'in': re.compile(r'in\b'),
     'equals': re.compile(r'='),
     'not_equals': re.compile(r'!='),
@@ -144,6 +144,7 @@ class LetMacroSegment(Segment):
     arguments: list[str]
     body: list[Segment]
     scope: list[Segment]
+    recursive: bool
 
 @dataclass
 class EvaluatedMacro:
@@ -233,7 +234,8 @@ def parse_ast(input):
         raise SyntaxError(f'SyntaxError at {token.text} (line {line_number}, column {column_number}):\n{message}')
 
     def parse_atom():
-        match next(1):
+        a = next(1)
+        match a:
             case (Token(type='lparen'),):
                 val = parse_expression()
                 (rparen,) = next(1)
@@ -244,6 +246,7 @@ def parse_ast(input):
                 return Expr(value=int(text))
             case (Token(type='variable', text=text),):
                 return Expr(variable=text)
+        syntax_error(a[0], 'Expected expression atom')
 
     def operator(ops, child):
         def parser():
@@ -284,27 +287,8 @@ def parse_ast(input):
     )
     parse_expression = parse_logical_or_expression
 
-    def parse_let_arg_definition():
-        match(next(1)):
-            case (Token(type='depth', match=m),):
-                return 'depth', Expr(value = int(m[1]))
-            case (Token(type='lane', match=m),):
-                return 'lane', Expr(value = int(m[1]))
-            case (Token(type='depth_particle'),):
-                if tokens[0].type != 'lparen':
-                    syntax_error(tokens[0], 'Expected a depth expression d(...)')
-                return 'depth', parse_expression()
-            case (Token(type='lane_particle'),):
-                if tokens[0].type != 'lparen':
-                    syntax_error(tokens[0], 'Expected a lane expression l(...)')
-                return 'lane', parse_expression()
-            case (Token(type='variable', text=text),):
-                return 'variable', Expr(variable=text)
-            case a:
-                syntax_error(a[0], 'Expected a depth or lane indicator, like "d-1", "l12", or "d(5*5)", or a variable name, like "$a"')
-
     def parse_let_arg():
-        match(next(1)):
+        match next(1):
             case (Token(type='depth', match=m),):
                 return 'depth', Expr(value = int(m[1]))
             case (Token(type='lane', match=m),):
@@ -317,7 +301,8 @@ def parse_ast(input):
                 if tokens[0].type != 'lparen':
                     syntax_error(tokens[0], 'Expected a lane expression l(...)')
                 return 'lane', parse_expression()
-            case _:
+            case _ as t:
+                tokens.insert(0, t[0])
                 return 'argument',  parse_expression()
 
     def parse_let_args():
@@ -332,7 +317,7 @@ def parse_ast(input):
                 depth = expr
             elif ld == 'argument':
                 arguments.append(expr)
-            if tokens[0].type == 'comma':
+            if tokens and tokens[0].type == 'comma':
                 next(1)
         (rparen,) = next(1)
         if rparen.type != 'rparen':
@@ -340,7 +325,7 @@ def parse_ast(input):
 
         return lane, depth, arguments
 
-    def parse_let():
+    def parse_let(recursive):
         name = next(1)
         match name:
             case (Token(type='identifier', text=text),):
@@ -348,7 +333,7 @@ def parse_ast(input):
                 depth = None
                 arguments = []
                 if tokens[0].type == 'lparen':
-                    _ = next(1)
+                    next(1)
                     lane, depth, arguments = parse_let_args()
 
                 argument_names = []
@@ -373,7 +358,8 @@ def parse_ast(input):
                     depth=depth,
                     arguments=argument_names,
                     body=segments,
-                    scope=parse_segments()
+                    scope=parse_segments(),
+                    recursive=recursive
                 )
             case (Token(type='variable', text=text),):
                 (equals,) = next(1)
@@ -389,12 +375,13 @@ def parse_ast(input):
                 raise SyntaxError(f'Expected macro/variable name after let')
 
     def parse_macro_call(name):
-        match tokens[0:2]:
-            case (Token(type='lparen'), Token(type='depth')) | (Token(type='lparen'), Token(type='depth_particle')) | (Token(type='lparen'), Token(type='lane')) | (Token(type='lparen'), Token(type='lane_particle')):
-                next(1)
-                lane, depth, arguments = parse_let_args()
-                return MacroCallSegment(name, lane, depth)
-        return MacroCallSegment(name, lane=None, depth=None)
+        if tokens and tokens[0].type == 'minimum_follow':
+            return MacroCallSegment(name, lane=None, depth=None, arguments=[Expr(value=int(tokens[0].match[1]))])
+        elif tokens and tokens[0].type == 'lparen':
+            next(1)
+            lane, depth, arguments = parse_let_args()
+            return MacroCallSegment(name, lane, depth, arguments)
+        return MacroCallSegment(name, lane=None, depth=None, arguments=[])
 
     def parse_set():
         match tokens[0].type:
@@ -434,8 +421,8 @@ def parse_ast(input):
 
     def parse_segment():
         match next(1):
-            case (Token(type='let'),):
-                return parse_let()
+            case (Token(type='let', text=text),):
+                return parse_let(text == 'letrec')
             case (Token(type='wait'),):
                 expr = parse_expression()
                 return WaitSegment(wait=expr)
@@ -480,7 +467,7 @@ def parse_ast(input):
                 case (Token(type='comma'),):
                     # remove optional commas
                     tokens.pop(0)
-                case (Token(type=a),) if a in ('in', 'else', 'end'):
+                case (Token(type=a),) if a in ('in', 'else', 'elif', 'end'):
                     return segments
             if tokens:
                 s = parse_segment()
@@ -523,14 +510,25 @@ def parse_p120_recipe(input, macros):
         next_glider=0,
         target=None
     )
+    global_scope_bag = {
+        '$currentTime': lambda state: state.i + state.next_delay,
+        '$_state_after_minimum_follow': lambda state: int(state.after_minimum_follow),
+        '$_state_next_glider': lambda state: state.next_glider,
+        '$_state_i': lambda state: state.i,
+        '$_state_next_delay': lambda state: state.next_delay,
+        '$_state_set_mod': lambda state: state.set_mod,
+        '$_state_glider_interval': lambda state: state.glider_interval,
+        '$_state_next_glider': lambda state: state.next_glider,
+    }
     global_scope = ChainMap(
-        {'$currentTime': lambda state: state.i + state.next_delay},
+        global_scope_bag,
         {name: EvaluatedMacro(
             name=name,
             lane=None,
             depth=None,
             body=parse_ast(value),
-            scope=ChainMap()
+            scope=ChainMap(),
+            arguments=[]
             ) for name, value in macros.items()
         }
     )
@@ -558,7 +556,7 @@ def parse_p120_recipe(input, macros):
                 )
             case DelaySegment(delay, mod):
                 if state.target is not None:
-                    d = delay.eval(state, scope)
+                    d = delay.eval(scope, state)
                     target = state.target + d
                     state = state._replace(
                         target=None
@@ -570,7 +568,7 @@ def parse_p120_recipe(input, macros):
                         for macro_name, _ in scope.items():
                             if not macro_name.startswith('swim_'):
                                 continue
-                            new_state = evaluate(MacroCallSegment(macro_name, None, None), state, scope)
+                            new_state = evaluate(MacroCallSegment(macro_name, None, None, []), state, scope)
                             swim_results.append(SwimResult(
                                 first_possible_time=new_state.i + new_state.next_delay,
                                 target=target+(new_state.next_glider - state.next_glider),
@@ -652,15 +650,14 @@ def parse_p120_recipe(input, macros):
                         for s in then:
                             state = evaluate(s, state, scope)
                         break
-            case LetMacroSegment(name, lane, depth, arguments, body, scope=visible_scope):
+            case LetMacroSegment(name, lane, depth, arguments, body, scope=visible_scope, recursive=recursive):
                 qualified_name = name
                 if lane:
                     lane = lane.eval(scope, state)
                     qualified_name = f'{name}({lane})'
                 if depth:
                     depth = depth.eval(scope, state)
-                new_scope = scope.new_child({
-                    qualified_name: EvaluatedMacro(
+                evaluated = EvaluatedMacro(
                         name=name,
                         lane=lane,
                         depth=depth,
@@ -668,7 +665,11 @@ def parse_p120_recipe(input, macros):
                         body=body,
                         scope=scope
                     )
+                new_scope = scope.new_child({
+                    qualified_name: evaluated
                 })
+                if recursive:
+                    evaluated.scope = new_scope
                 for s in visible_scope:
                     state = evaluate(s, state, new_scope)
             case LetVariableSegment(name, value, scope=visible_scope):
@@ -678,7 +679,7 @@ def parse_p120_recipe(input, macros):
                 })
                 for s in visible_scope:
                     state = evaluate(s, state, new_scope)
-            case MacroCallSegment(name, lane, depth):
+            case MacroCallSegment(name, lane, depth, arguments):
                 qualified_name = name
                 if lane:
                     lane = lane.eval(scope, state)
@@ -696,15 +697,23 @@ def parse_p120_recipe(input, macros):
                     # so we automatically swim or delay to match it.
                     if macro.depth is None:
                         macro.depth = 0
-                    depth_adjust = depth + scope.get('!depth', 0) - macro.depth
+                    depth_adjust = depth + scope.get('$_depth', 0) - macro.depth
                     state = state._replace(
                         target=state.next_glider + depth_adjust * 4
                     )
 
+                if len(macro.arguments) != len(arguments):
+                    raise Exception(f'Calling macro "{qualified_name}" requires {len(macro.arguments)} arguments ({", ".join(macro.arguments)}), but received {len(arguments)} arguments.')
+
+                new_scope_dict = {
+                    '$_depth': depth_adjust
+                }
+                for var, value in zip(macro.arguments, arguments):
+                    evaluated = value.eval(scope, state)
+                    new_scope_dict[var] = lambda state, evaluated=evaluated: evaluated
+                new_scope = macro.scope.new_child(new_scope_dict)
                 for s in macro.body:
-                    state = evaluate(s, state, macro.scope.new_child({
-                        '!depth': depth_adjust
-                    }))
+                    state = evaluate(s, state, new_scope)
 
         return state
     for s in ast:

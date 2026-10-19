@@ -1,0 +1,30 @@
+# Sample of advanced features -- arguments, flow control, recursive macros.
+
+letrec consume_escaping_gliders($n_gliders) =
+  if $n_gliders >= 2 then
+    2, swim 2, (90), consume_escaping_gliders($n_gliders - 2)
+  elif $n_gliders = 1 then
+    0, swim 1, (90)
+  end
+in
+
+# converts the oggca back to a block
+# Use a matching $depth_adjust to reset if you used `set d(...)` to adjust the
+# depth reference of the oggca.
+let destroy_arm($depth_adjust) =
+  # send a 0 degree glider to shut off the gun
+  disable_arm
+  letrec consume($n) =
+    if $n >= 2 then 2, swim 2, (90), consume($n - 2)
+    elif $n = 1 then 0, swim 1, (90)
+    end
+  in
+  consume(($_state_i - $_state_next_glider - $depth_adjust*4) / 120 + 3)
+  disabled_arm_to_block
+in
+
+construct_arm
+swim_2
+wait 10000
+swim_2
+destroy_arm(0)
