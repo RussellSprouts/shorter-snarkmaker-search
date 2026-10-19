@@ -134,12 +134,14 @@ class MacroCallSegment(Segment):
     name: str
     lane: Expr|None
     depth: Expr|None
+    arguments: list[Expr]
 
 @dataclass
 class LetMacroSegment(Segment):
     name: str
     lane: Expr|None
     depth: Expr|None
+    arguments: list[str]
     body: list[Segment]
     scope: list[Segment]
 
@@ -148,6 +150,7 @@ class EvaluatedMacro:
     name: str
     lane: int|None
     depth: int|None
+    arguments: list[str]
     body: list[Segment]
     scope: ChainMap
 
@@ -281,6 +284,25 @@ def parse_ast(input):
     )
     parse_expression = parse_logical_or_expression
 
+    def parse_let_arg_definition():
+        match(next(1)):
+            case (Token(type='depth', match=m),):
+                return 'depth', Expr(value = int(m[1]))
+            case (Token(type='lane', match=m),):
+                return 'lane', Expr(value = int(m[1]))
+            case (Token(type='depth_particle'),):
+                if tokens[0].type != 'lparen':
+                    syntax_error(tokens[0], 'Expected a depth expression d(...)')
+                return 'depth', parse_expression()
+            case (Token(type='lane_particle'),):
+                if tokens[0].type != 'lparen':
+                    syntax_error(tokens[0], 'Expected a lane expression l(...)')
+                return 'lane', parse_expression()
+            case (Token(type='variable', text=text),):
+                return 'variable', Expr(variable=text)
+            case a:
+                syntax_error(a[0], 'Expected a depth or lane indicator, like "d-1", "l12", or "d(5*5)", or a variable name, like "$a"')
+
     def parse_let_arg():
         match(next(1)):
             case (Token(type='depth', match=m),):
@@ -295,25 +317,28 @@ def parse_ast(input):
                 if tokens[0].type != 'lparen':
                     syntax_error(tokens[0], 'Expected a lane expression l(...)')
                 return 'lane', parse_expression()
-            case a:
-                syntax_error(a[0], 'Expected a depth or lane indicator, like "d-1", "l12", or "d(5*5)"')
+            case _:
+                return 'argument',  parse_expression()
 
     def parse_let_args():
         lane = None
         depth = None
+        arguments = []
         while tokens and tokens[0].type != 'rparen':
             ld, expr = parse_let_arg()
             if ld == 'lane':
                 lane = expr
-            else:
+            elif ld == 'depth':
                 depth = expr
+            elif ld == 'argument':
+                arguments.append(expr)
             if tokens[0].type == 'comma':
                 next(1)
         (rparen,) = next(1)
         if rparen.type != 'rparen':
             syntax_error(tokens[0], 'Expected end paren')
 
-        return lane, depth
+        return lane, depth, arguments
 
     def parse_let():
         name = next(1)
@@ -321,9 +346,16 @@ def parse_ast(input):
             case (Token(type='identifier', text=text),):
                 lane = None
                 depth = None
+                arguments = []
                 if tokens[0].type == 'lparen':
                     _ = next(1)
-                    lane, depth = parse_let_args()
+                    lane, depth, arguments = parse_let_args()
+
+                argument_names = []
+                for arg in arguments:
+                    if arg.variable is None:
+                        syntax_error(name[0], 'Let definition has invalid parameter definition. Expected a depth "d-1", lane "l3", or argument "$a".')
+                    argument_names.append(arg.variable)
 
                 (equals,) = next(1)
                 if equals.type != 'equals':
@@ -339,6 +371,7 @@ def parse_ast(input):
                     name=text,
                     lane=lane,
                     depth=depth,
+                    arguments=argument_names,
                     body=segments,
                     scope=parse_segments()
                 )
@@ -359,7 +392,7 @@ def parse_ast(input):
         match tokens[0:2]:
             case (Token(type='lparen'), Token(type='depth')) | (Token(type='lparen'), Token(type='depth_particle')) | (Token(type='lparen'), Token(type='lane')) | (Token(type='lparen'), Token(type='lane_particle')):
                 next(1)
-                lane, depth = parse_let_args()
+                lane, depth, arguments = parse_let_args()
                 return MacroCallSegment(name, lane, depth)
         return MacroCallSegment(name, lane=None, depth=None)
 
@@ -619,7 +652,7 @@ def parse_p120_recipe(input, macros):
                         for s in then:
                             state = evaluate(s, state, scope)
                         break
-            case LetMacroSegment(name, lane, depth, body, scope=visible_scope):
+            case LetMacroSegment(name, lane, depth, arguments, body, scope=visible_scope):
                 qualified_name = name
                 if lane:
                     lane = lane.eval(scope, state)
@@ -631,6 +664,7 @@ def parse_p120_recipe(input, macros):
                         name=name,
                         lane=lane,
                         depth=depth,
+                        arguments=arguments,
                         body=body,
                         scope=scope
                     )
