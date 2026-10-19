@@ -223,6 +223,11 @@ argparser.add_argument(
     type=str,
     help="Evaluates the single recipe as if it were a subtree."
 )
+argparser.add_argument(
+    "--echo",
+    type=int,
+    help="If set, recipe gliders will be duplicated at the given follow distance."
+)
 
 args = argparser.parse_args()
 
@@ -582,19 +587,23 @@ if args.print_rle:
         gliders_int = parse.delays
         print(gliders_int, file=sys.stderr)
 
+        stream_to_check_patt = single_channel_stream(gliders_int)
+        if args.echo:
+            stream_to_check_patt += single_channel_stream((gliders_int[0] + args.echo, ) + gliders_int[1:])
+
         if parse.start_mode == "sc":
             fake_gun = PI_BLOCKS[1] + debris_pattern
 
         fg = fake_gun
         if parse.advance_debris:
             fg = fake_gun - debris_pattern + debris_pattern[parse.advance_debris]
-        green_patt += fg(stride * i, 0) + single_channel_stream(gliders_int)(
-            stride * i, 0
-        )
+        green_patt += fg(stride * i, 0) + stream_to_check_patt(stride * i, 0)
+        
+
         red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
 
         if args.and_without_debris:
-            green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + single_channel_stream(gliders_int)(
+            green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + stream_to_check_patt(
                 stride * i + stride // 2, 0
             )
             red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i + stride // 2, 0)
@@ -866,6 +875,8 @@ def process_concurrent(s):
     if args.swim_upstream_after:
         stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
     stream_to_check_patt = single_channel_stream(stream_to_check)
+    if args.echo:
+        stream_to_check_patt += single_channel_stream((stream_to_check[0] + args.echo,) + stream_to_check[1:])
     patt = fake_gun + stream_to_check_patt
 
     patt_n = patt[simulate_gens]
