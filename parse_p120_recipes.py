@@ -376,7 +376,8 @@ def parse_ast(input):
 
     def parse_macro_call(name):
         if tokens and tokens[0].type == 'minimum_follow':
-            return MacroCallSegment(name, lane=None, depth=None, arguments=[Expr(value=int(tokens[0].match[1]))])
+            (arg,) = next(1)
+            return MacroCallSegment(name, lane=None, depth=None, arguments=[Expr(value=int(arg.match[1]))])
         elif tokens and tokens[0].type == 'lparen':
             next(1)
             lane, depth, arguments = parse_let_args()

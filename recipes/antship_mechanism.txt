@@ -14,10 +14,90 @@ let sc_destroy = 0, 127, 137, 103, 90, (90) in
 
 let sc_push50 = 0, 126, 162, 175, 179, 111, 104, 91, 105, 91, (90) in
 let sc_pull1 = 0, 109, 91, 94, 91, 90, 96, 90, 91, 146, (240) in
-let sc_pull_even1 = 0, set 0 (mod 240) 125, 108, 130, 90, 90, 103, 90, 110, 91, 114, (182) in
+let sc_pull_even1 = 0, set 0 (mod 240), 125, 108, 130, 90, 90, 103, 90, 110, 91, 114, (182) in
 let sc_pull_even2 = 1 (mod 8), 90, (90) in
 let sc_pull_odd1 = 0, set 0 (mod 240) 125, 108, 130, 90, 90, 103, 96, 208, 103, (95) in
 let sc_pull_odd2 = 4 (mod 8), 90, (90) in
+
+letrec sc_push($distance) =
+  if $distance = 0 then wait 0
+  elif $distance >= 50 then print 50, sc_push50, sc_push($distance - 50)
+  elif $distance >= 44 then sc_push44, sc_push($distance - 44)
+  elif $distance >= 22 then sc_push22, sc_push($distance - 22)
+  elif $distance = 21 then sc_push21
+  elif $distance = 20 then sc_push20
+  elif $distance = 19 then sc_push19
+  elif $distance = 18 then sc_push18
+  elif $distance = 17 then sc_push17
+  elif $distance = 16 then sc_push16
+  elif $distance = 15 then sc_push15
+
+  elif $distance = 14 then sc_push14
+  elif $distance = 13 then sc_push13
+  elif $distance = 12 then sc_push12
+  elif $distance = 11 then sc_push11
+  elif $distance = 10 then sc_push10
+  elif $distance = 9 then sc_push9
+  elif $distance = 8 then sc_push8
+  elif $distance = 7 then sc_push7
+  elif $distance = 6 then sc_push6
+  elif $distance = 5 then sc_push5
+  elif $distance = 4 then sc_push4
+  elif $distance = 3 then sc_push3
+  elif $distance = 2 then sc_push2
+  elif $distance = 1 then sc_push1
+
+  elif $distance = 0-1 then sc_pull1
+  elif $distance = 0-2 then sc_pull2
+  elif $distance = 0-3 then sc_pull3
+  elif $distance = 0-4 then sc_pull4
+  elif $distance = 0-5 then sc_pull5
+  elif $distance = 0-6 then sc_pull6
+  elif $distance = 0-7 then sc_pull7
+  elif $distance = 0-8 then sc_pull8
+  elif $distance = 0-9 then sc_pull9
+  elif $distance = 0-10 then sc_pull10
+  elif $distance = 0-11 then sc_pull11
+  elif $distance = 0-12 then sc_pull12
+  elif $distance = 0-13 then sc_pull13
+  elif $distance = 0-14 then sc_pull14
+  elif $distance = 0-15 then sc_pull15
+  elif $distance = 0-16 then sc_pull16
+  elif $distance = 0-17 then sc_pull17
+  elif $distance = 0-18 then sc_pull18
+  elif $distance = 0-19 then sc_pull19
+  elif $distance = 0-20 then sc_pull20
+  elif $distance = 0-21 then sc_pull21
+  elif $distance = 0-22 then sc_pull22
+  elif $distance = 0-23 then sc_pull23
+  elif $distance = 0-24 then sc_pull24
+  elif $distance = 0-25 then sc_pull25
+  elif $distance = 0-38 then sc_pull38
+
+  elif $distance mod 2 = 0 then sc_pull_even1, wait 4*((0-1)*($distance + 26)), sc_pull_even2
+  
+  elif $distance = 0-27 then sc_pull27
+  elif $distance = 0-29 then sc_pull29
+  elif $distance = 0-31 then sc_pull31
+  elif $distance >= 0-35 then sc_pull29, sc_push($distance + 29)
+  else sc_pull_odd1, wait 4*((0-1)*($distance + 37)), sc_pull_odd2
+  end
+in
+
+# converts the oggca back to a block
+# Use a matching $depth_adjust to reset if you used `set d(...)` to adjust the
+# depth reference of the oggca.
+let destroy_arm($depth_adjust) =
+  # send a 0 degree glider to shut off the gun
+  disable_arm
+  letrec consume($n) =
+    if $n >= 2 then 2, swim 2, (90), consume($n - 2)
+    elif $n = 1 then 0, swim 1, (90)
+    end
+  in
+  consume(($_state_i - $_state_next_glider - $depth_adjust*4) / 120 + 3)
+  disabled_arm_to_block
+in
 
 let construct_arm = 1 (mod 2), 126, 102, 100, 195, 90, 91, 95, 98, 105, 90, 101, 141, 94, 159, 92, 146, 99, 90, 152, 139, 144, 92, 161, 131, 116, 101, 114, 111, 112, 93, 127, 98, 102, 114, 107, 157, 90, 90, 90, 91, 91, 243, 113, 139, 108, 95, 127, 121, 99, 257, 144, 94, 218, 148, 226, 111, 119, 100, 95, 91, 138, 201, 221, 216, 138, 125, mode oggca, set 28 (mod 240), set d0, (90) in
 
@@ -71,12 +151,12 @@ let nw_glider(l20) = 3, 225, 104, 95, 99, swim 6, (159) in
 mode sc
 
 snarkmaker
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
+sc_push(350)
 snarkmaker
-sc_pull1
+sc_push(0-1)
 snarkmaker
-sc_push3
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
+sc_push(3)
+sc_push(1000)
 construct_arm
 # set the depth so that the marker block for the cell state is
 # at d1.
@@ -109,11 +189,8 @@ if_block(l-7,d-53) wait 240 else_glider(l-21)
 toggle_block(l-7,d-53)
 if_block_destroy(l-7,d-49) else_block(l-21,d1)
 
-swim_2, swim_2
-disable_arm
+destroy_arm(0-490)
 
-swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2
-disabled_arm_to_block
 snarkbreaker1
 wait 2770+300*4
 snarkbreaker_chain1
@@ -122,9 +199,7 @@ snarkbreaker_chain2
 wait 1446+150*4
 snarkbreaker_destroy
 
-sc_pull_odd1
-wait 70*8
-sc_pull_odd2
+sc_push(0-177)
 
 snarkmaker_end
 snarkmaker_chain
@@ -133,13 +208,12 @@ snarkmaker_chain
 sc_destroy
 
 snarkmaker_chain
-sc_push50
-sc_push50
+sc_push(100)
 snarkmaker_chain
-sc_pull1
+sc_push(0-1)
 snarkmaker_chain
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
-sc_pull1
+sc_push(800)
+sc_push(0-1)
 construct_arm
 
 # set d0 as the lane where the recipe will exit
@@ -150,18 +224,13 @@ nw_glider(l20, d10)
 
 # TODO build the next copy of the circuitry here
 
-disable_arm
-swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2, swim_2
+destroy_arm(0-538)
 
-disabled_arm_to_block
-
-sc_pull_odd1
-wait 8*113+400*4
-sc_pull_odd2
+sc_push(0-662)
 
 snarkmaker_chain
 
-sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50, sc_push50
+sc_push(400)
 
 wait 10000
 
