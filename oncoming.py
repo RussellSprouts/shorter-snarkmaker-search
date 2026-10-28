@@ -228,6 +228,11 @@ argparser.add_argument(
     type=int,
     help="If set, recipe gliders will be duplicated at the given follow distance."
 )
+argparser.add_argument(
+    "--always-on-debris",
+    type=str,
+    help="Debris that is always present, even in the --and-without-debris case"
+)
 
 args = argparser.parse_args()
 
@@ -421,11 +426,15 @@ $5bo2bo2b2o$6b2o!'''
     x, y, _, _ = rect
     fake_gun = glider_appears(fx - x, fy - y)
 
+always_on_debris_pattern = lt.pattern()
+if args.always_on_debris:
+    always_on_debris_pattern = offset_based_on_glider(lt.pattern(args.always_on_debris))[args.evolve_debris_gens]
+    fake_gun = fake_gun + always_on_debris_pattern
+
 debris_pattern = lt.pattern()
 if args.with_debris_rle:
-    debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))[args.evolve_debris_gens]
+    debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))[args.evolve_debris_gens] - always_on_debris_pattern
     fake_gun = fake_gun + debris_pattern
-
 
 if args.extract_recipes:
 
