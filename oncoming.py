@@ -9,6 +9,7 @@ import os
 from multiprocessing import Pool
 import multiprocessing
 import math
+from collections import defaultdict
 
 import lifelib
 
@@ -233,6 +234,21 @@ argparser.add_argument(
     type=str,
     help="Debris that is always present, even in the --and-without-debris case"
 )
+argparser.add_argument(
+    "--debris-combinations",
+    type=str,
+    help="Debris to add, checking all combinations"
+)
+argparser.add_argument(
+    "--valid-debris-combinations",
+    type=str,
+    help="Which combinations of debris to check. E.g., '0,a,ab'"
+)
+argparser.add_argument(
+    "--n-processes",
+    type=int,
+    default=os.cpu_count() - 1
+)
 
 args = argparser.parse_args()
 
@@ -258,6 +274,25 @@ $14bobo$14b3o9b2o5b2o$14bo11b2o5b2o!
 
 gun_period = args.toolkit.period
 
+debris_combinations = []
+if args.debris_combinations:
+    debris = []
+    for i, d in enumerate(args.debris_combinations.split(';')):
+        debris.append((offset_based_on_glider(lt.pattern(d)), 'abcdefghijklmnopqrstuvwxyz'[i]))
+    for r in range(0, len(debris) + 1):
+        for combo in itertools.combinations(debris, r):
+            patt = lt.pattern()
+            description = ''
+            for p, desc in combo:
+                patt += p
+                description += desc
+            if not description:
+                description = '0'
+            debris_combinations.append((patt, description))
+
+    if args.valid_debris_combinations:
+        valid_combos = set(args.valid_debris_combinations.split(','))
+        debris_combinations = list(filter(lambda a: a[1] in valid_combos, debris_combinations))
 
 def mk_fake_gun(n):
     fake_gun = sum(
@@ -584,6 +619,9 @@ if args.print_rle:
     if args.and_without_debris:
         stride *= 2
 
+    if debris_combinations:
+        stride *= len(debris_combinations)
+
     for i, r in enumerate(recipes):
         if not r.strip():
             continue
@@ -607,10 +645,17 @@ if args.print_rle:
         red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i, 0)
 
         if args.and_without_debris:
-            green_patt += (fake_gun - debris_pattern)(stride * i + stride // 2, 0) + stream_to_check_patt(
-                stride * i + stride // 2, 0
+            shift = stride * i + args.print_rle_stride
+            green_patt += (fake_gun - debris_pattern)(shift, 0) + stream_to_check_patt(
+                shift, 0
             )
-            red_patt += write_text(" ".join(map(str, gliders_int)))(stride * i + stride // 2, 0)
+            red_patt += write_text(" ".join(map(str, gliders_int)))(shift, 0)
+
+        for j, (combo, desc) in enumerate(debris_combinations[1:]):
+            shift = stride * i + (j + 1) * args.print_rle_stride
+            green_patt += (fake_gun + stream_to_check_patt + combo)(shift, 0)
+            red_patt += write_text(desc)(shift, 0)
+ 
 
     if not args.recipe_label:
         red_patt = lt.pattern()
@@ -874,6 +919,7 @@ def evaluate(s, patt, stream_to_check_patt = None):
 
     return (s, sorted(infos))
 
+
 def process_concurrent(s):
     stream_to_check = s
     if args.swim_upstream_after:
@@ -881,9 +927,51 @@ def process_concurrent(s):
     stream_to_check_patt = single_channel_stream(stream_to_check)
     if args.echo:
         stream_to_check_patt += single_channel_stream((stream_to_check[0] + args.echo,) + stream_to_check[1:])
+
+    if debris_combinations:
+        results = set()
+        gliders_consumed = None
+        some_differ = False
+        digests = set()
+        for combo, desc in debris_combinations:
+            patt = fake_gun + stream_to_check_patt + combo
+            patt_n = patt[simulate_gens]
+
+            digests.add((patt_n - combo).digest())
+
+            _, result = evaluate(s, patt_n, stream_to_check_patt)
+            if result and result[0] == 'too big':
+                return
+
+            if gliders_consumed is not None and (patt_n & expected_incoming_gliders_pattern) != gliders_consumed:
+                return
+
+            gliders_consumed = patt_n & expected_incoming_gliders_pattern
+
+            _, result = evaluate(s, patt_n, stream_to_check_patt)
+            results.add((desc, frozenset(result)))
+
+        if len(digests) == 1:
+            return
+
+        contains = defaultdict(set)
+        for desc, result in results:
+            for r in result:
+                contains[r].add(desc)
+
+        items = []
+        for item, c in contains.items():
+            if len(item) <= 3:
+                items.append(item)
+            else:
+                items.append(f'{','.join(sorted(c))}:{item}')
+
+        return s, sorted(tuple(items))
+
     patt = fake_gun + stream_to_check_patt
 
     patt_n = patt[simulate_gens]
+
 
     if args.and_without_debris:
         patt_n_without_debris = (patt - debris_pattern)[simulate_gens]
@@ -983,7 +1071,7 @@ if __name__ == "__main__":
         print('Total:', len_all_options, file=sys.stderr)
 
         multiprocessing.set_start_method('spawn')
-        with Pool(processes=os.cpu_count() - 1) as pool:
+        with Pool(processes=args.n_processes) as pool:
             speedo = Speedometer()
             print("Starting...", file=sys.stderr)
             for result in pool.imap_unordered(process_concurrent, all_options, chunksize=256):
