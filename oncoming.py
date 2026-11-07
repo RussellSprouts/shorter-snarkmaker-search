@@ -423,6 +423,7 @@ $5bo2bo2b2o$6b2o!'''
 
 debris_pattern = lt.pattern()
 if args.with_debris_rle:
+    print(f"--with-debris-rle='{args.with_debris_rle}'")
     debris_pattern = offset_based_on_glider(lt.pattern(args.with_debris_rle))[args.evolve_debris_gens]
     fake_gun = fake_gun + debris_pattern
 
