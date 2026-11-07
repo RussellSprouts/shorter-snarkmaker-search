@@ -74,6 +74,11 @@ argparser.add_argument(
     type=int,
     default=0
 )
+argparser.add_argument(
+    "--echo",
+    type=int,
+    default=0
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -128,6 +133,8 @@ def find_glider_timing(r, consumed):
         consumed /= 2
     delays = recipe_stream_to_delays(r)
     pattern = mk_fake_gun(consumed) + single_channel_stream(delays)
+    if args.echo:
+        pattern += single_channel_stream((delays[0] + args.echo,) + delays[1:])
     pattern = pattern[2048]
     components = pattern_components(pattern)
     if len(components) != 1:
