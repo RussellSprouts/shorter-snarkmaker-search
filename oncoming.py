@@ -249,6 +249,12 @@ argparser.add_argument(
     type=int,
     default=os.cpu_count() - 1
 )
+argparser.add_argument(
+    "--armless",
+    default=False,
+    action=argparse.BooleanOptionalAction,
+    help="Searches for armless recipes instead of OGGCA recipes."
+)
 
 args = argparser.parse_args()
 
@@ -629,6 +635,16 @@ if args.print_rle:
         gliders_int = parse.delays
         print(gliders_int, file=sys.stderr)
 
+        if args.armless:
+            opposing_int = (0,) + gliders_int[1::2]
+            gliders_int = gliders_int[::2]
+            new_fake_gun = single_channel_stream(opposing_int)('rot180')
+            fgx, fgy, fgw, fgh = fake_gun.getrect()
+            nx, ny, nw, nh = new_fake_gun.getrect()
+
+            fake_gun = new_fake_gun(fgx + fgw - nx - nw, fgy + fgh - ny - nh)
+
+
         stream_to_check_patt = single_channel_stream(gliders_int)
         if args.echo:
             stream_to_check_patt += single_channel_stream((gliders_int[0] + args.echo, ) + gliders_int[1:])
@@ -921,10 +937,23 @@ def evaluate(s, patt, stream_to_check_patt = None):
 
 
 def process_concurrent(s):
+    global fake_gun
     stream_to_check = s
     if args.swim_upstream_after:
         stream_to_check = parse_p120_recipe(','.join(map(str, s)) + ',(90), 2, 96, 96, 96, 96, 96, 96, 96, 96', {}).delays
+
+    if args.armless:
+        opposing_int = (0,) + stream_to_check[1::2]
+        stream_to_check = stream_to_check[::2]
+        new_fake_gun = single_channel_stream(opposing_int)('rot180')
+        fgx, fgy, fgw, fgh = fake_gun.getrect()
+        nx, ny, nw, nh = new_fake_gun.getrect()
+
+        fake_gun = new_fake_gun(fgx + fgw - nx - nw, fgy + fgh - ny - nh)
+
+
     stream_to_check_patt = single_channel_stream(stream_to_check)
+
     if args.echo:
         stream_to_check_patt += single_channel_stream((stream_to_check[0] + args.echo,) + stream_to_check[1:])
 
