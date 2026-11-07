@@ -134,7 +134,7 @@ def find_glider_timing(r, consumed):
     delays = recipe_stream_to_delays(r)
     pattern = mk_fake_gun(consumed) + single_channel_stream(delays)
     if args.echo:
-        pattern += single_channel_stream((delays[0] + args.echo,) + delays[1:])
+        pattern += single_channel_stream((delays[0] + args.echo,) + tuple(delays[1:]))
     pattern = pattern[2048]
     components = pattern_components(pattern)
     if len(components) != 1:
