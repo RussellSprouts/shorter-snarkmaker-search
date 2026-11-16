@@ -1,0 +1,17 @@
+let block(l13, d19) = 3, 93, 92, 90, swim 3, (90) in
+let transfer_block(l13, d-5) = 3, 182, 98, 216, 164, 97, 275, 97, swim 13, (90) in
+
+block(l13, d1)
+block(l13, d51)
+block(l13, d101)
+# block(l13, d151)
+block(l13, d201)
+block(l13, d251)
+
+
+transfer_block(l13, d1)
+transfer_block(l13, d51)
+transfer_block(l13, d101)
+transfer_block(l13, d151)
+transfer_block(l13, d201)
+transfer_block(l13, d251)

@@ -1,0 +1,8 @@
+let block_1(l-7,d-11) = 1, 90, 91, 91, swim 3, (90) in
+let block_2(l-7, d21) = 7, 148, 227, swim 4, (122) in
+
+let beehive(l1, d-8) = 1, 104, 238, swim 4, (90) in
+
+block_1(l-7,d-21)
+block_2(l-7,d-29)
+beehive(l1,d-26)

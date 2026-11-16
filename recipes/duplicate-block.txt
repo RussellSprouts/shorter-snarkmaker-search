@@ -1,0 +1,10 @@
+let g1a(d-7) = 0, 221, swim 3, (90) in # (requires state 1)
+let g1r(d-9) = 3, 196, 128, swim 4, (90) in
+let g2a(d-11) = 1, 92, 134, swim 3, (90) in
+let g3p(d-4) = 3, 211, 183, swim 4, (90) in
+let g4a(d0) = 5, 138, swim 2, (121) in # (to state 1)
+let g4b(d0) = 5, 138, 125, swim 3, (90) in
+let g4e(d-4) = 1, 92, 163, swim 4, (150) in
+g4a(d0),   g1a(d7),   g4e(d4),   g4a(d-10), g1a(d9),   g1r(d-3),  g4b(d-4),  g4b(d0),   g3p(d-4),  g2a(d-9)
+g4a(d0),   g1a(d7),   g4e(d4),   g4a(d-10), g1a(d9),   g1r(d-3),  g4b(d-4),  g4b(d0),   g3p(d-4),  g2a(d-9)
+g4a(d0),   g1a(d7),   g4e(d4),   g4a(d-10), g1a(d9),   g1r(d-3),  g4b(d-4),  g4b(d0),   g3p(d-4),  g2a(d-9)

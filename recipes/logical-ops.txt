@@ -1,0 +1,25 @@
+# uv run oncoming.py --with-debris-rle='3o$o$bo32$28b2o$28bobo$29bo!' --and-without-debris --always-on-debris='3o$o$bo30$23b2o$23bo$24b3o$26bo!' --print-rle=''
+
+# unconditionally place block(l-7)
+let block(l-7, d-11) = 1, 90, 91, 91, swim 3, (90) in
+
+# gliders that will delete a block(l-7), if present
+# can be used to move a block
+let glider_nw(l-6) = 7, 194, 108, 94, swim 3, (90) in
+let glider_se(l-8) = 7, 136, 162, swim 4, (90) in
+let glider_nw(l-7) = 1, 92, 159, 102, 101, swim 4, (90) in
+
+# an eater placed so that the glider_nw(l-7) triggers a boat-bit reaction
+let boat_bit(d-7) = 1, 99, 95, 137, 96, swim 6, (104) in
+
+# reads the boat-bit at d7. If no boat, converts it to a block at d9.
+let boat_bit_else_block(l-7, d7) = 3, 94, 116, swim 3, (90) in
+
+# reads the boat-bit at d5. If boat, converts it to a block at d9.
+let boat_bit_then_block(l-7, d5) = 5, 105, 99, swim 3, (90) in
+
+# Count whether there are an even or odd number of block(l-7) between d1 and 100 (up to 2)
+boat_bit(d1)
+glider_nw(l-7, d100)
+glider_nw(l-7, d100)
+boat_bit_then_block(l-7, d1)
