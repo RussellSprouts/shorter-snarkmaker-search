@@ -10,6 +10,8 @@ from multiprocessing import Pool
 import multiprocessing
 import math
 from collections import defaultdict
+import shlex
+import cProfile
 
 import lifelib
 
@@ -962,27 +964,33 @@ def process_concurrent(s):
         results = set()
         gliders_consumed = None
         some_differ = False
-        digests = set()
+        seen_patts = []
+
         for combo, desc in debris_combinations:
             patt = fake_gun + stream_to_check_patt + combo
             patt_n = patt[simulate_gens]
 
-            digests.add((patt_n - combo).digest())
-
-            _, result = evaluate(s, patt_n, stream_to_check_patt)
-            if result and result[0] == 'too big':
+            if (patt_n - expected_incoming_gliders_pattern).population > args.max_population:
+                return
+            if gliders_consumed is None:
+                gliders_consumed = patt_n & expected_incoming_gliders_pattern
+            elif gliders_consumed != (patt_n & expected_incoming_gliders_pattern):
                 return
 
-            if gliders_consumed is not None and (patt_n & expected_incoming_gliders_pattern) != gliders_consumed:
-                return
+            seen_patts.append((combo, desc, patt_n, patt_n - combo))
 
-            gliders_consumed = patt_n & expected_incoming_gliders_pattern
+        digest = None
+        for _, _, _, p in seen_patts:
+            if digest is None:
+                digest = p.digest()
+            elif p.digest() != digest:
+                break
+        else:
+            return
 
+        for combo, desc, patt_n, _ in seen_patts:
             _, result = evaluate(s, patt_n, stream_to_check_patt)
             results.add((desc, frozenset(result)))
-
-        if len(digests) == 1:
-            return
 
         contains = defaultdict(set)
         for desc, result in results:
@@ -1086,6 +1094,7 @@ if __name__ == "__main__":
             args.subtree = list(SubtreeDef(line) for line in f if line.strip())
 
     if args.concurrent:
+        print(shlex.join(['uv', 'run'] + sys.argv))
         print("Generating jobs...", file=sys.stderr)
         if not args.subtree:
             args.subtree = [SubtreeDef("0-7")]

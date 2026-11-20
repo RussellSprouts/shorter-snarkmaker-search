@@ -170,6 +170,8 @@ def find_minimum_follow(r, consumed):
     total = sum(delays)
     envelope = lt.pattern('5o$5o$5o$5o$5o').centre()
     pattern = mk_fake_gun(consumed) + single_channel_stream(delays)
+    if args.echo:
+        pattern += single_channel_stream((delays[0] + args.echo,) + tuple(delays[1:]))
     @functools.lru_cache(maxsize=None)
     def pattern_at_gen(n):
         if n == 0:
