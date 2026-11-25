@@ -82,8 +82,8 @@ class Object:
             direction = m.group(2)
             phase = int(m.group(3))
             color = m.group(4)
-            x = m.group(5)
-            y = m.group(6)
+            x = int(m.group(5))
+            y = int(m.group(6))
             if direction == '0,-2':
                 direction = 0
                 depth = x
@@ -207,7 +207,7 @@ def to_positive_int(n):
         return n * 2
     return -n * 2 - 1
 
-N_GUN_GLIDERS = 10
+N_GUN_GLIDERS = 14
 
 if __name__ == '__main__':
     conn = sqlite3.connect('results/depth-5.sqlite', timeout=10)
@@ -225,8 +225,8 @@ if __name__ == '__main__':
         if not m:
             print("WARNING: unknown line", line)
             return
-        recipe, objects_str = m.group(1), m.group(2)
-        recipe = recipe_to_blob(map(int, recipe.split(',')))
+        recipe_str, objects_str = m.group(1), m.group(2)
+        recipe = recipe_to_blob(map(int, recipe_str.split(',')))
         objects = []
         expected_gun_glider = 0
         for o in re.split(r"'([^']*)'", objects_str):
@@ -240,6 +240,8 @@ if __name__ == '__main__':
 
             obj, depth = Object.of(o)
             objects.append((obj, depth))
+            if obj not in all_objects:
+                print(f"new object in recipe {recipe_str}: {obj}")
             all_objects[obj] += 1
             all_object_names[obj.name] += 1
 
@@ -290,7 +292,7 @@ if __name__ == '__main__':
             )
             conn.executemany(
                 """INSERT INTO recipe_objects(recipe, object, depth) VALUES (?, ?, ?)""",
-                ((recipe_id, object_ids[object], depth) for object, depth in objects)
+                ((recipe_id, object_ids[object], to_positive_int(depth)) for object, depth in objects)
             )
             if recipe_id % 10000 == 0:
                 print(f"Finished {blob_to_recipe(recipe)}")
