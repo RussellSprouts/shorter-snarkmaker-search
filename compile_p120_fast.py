@@ -72,6 +72,11 @@ argparser.add_argument(
     type=int,
     default=2048
 )
+argparser.add_argument(
+    "--explicit-swim",
+    default=False,
+    action=argparse.BooleanOptionalAction
+)
 
 args = argparser.parse_args()
 
@@ -80,7 +85,7 @@ TOOLKIT_FILE = args.toolkit_file
 DIRECTION = args.direction
 
 Recipe = collections.namedtuple("Recipe", ["offset", "consumed", "recipe", "min_follow", "to_state", "requires_state", "symbol"])
-SwimResult = collections.namedtuple("SwimResult", ["first_possible_time", "target", "next_glider", "emits", "emits_str"])
+SwimResult = collections.namedtuple("SwimResult", ["first_possible_time", "target", "next_glider", "emits", "emits_str", "emits_symbols"])
 
 symbol_names = {
     'SW black even': 'g1',
@@ -262,6 +267,7 @@ for step_no, step in enumerate(recipe_steps):
                             next_glider=next_glider + PERIOD * swimrec.consumed,
                             emits=swim_emits,
                             emits_str=swim_emits_str,
+                            emits_symbols=[f"swim_{swimrec.consumed}"]
                         ))
 
                     solutions = list(filter(lambda r: r.target > r.first_possible_time, swim_results))
@@ -282,6 +288,8 @@ for step_no, step in enumerate(recipe_steps):
                     next_glider = best.next_glider
                     emits.extend(best.emits)
                     emits_str.extend(best.emits_str)
+                    if args.explicit_swim:
+                        emits_symbols.extend(best.emits_symbols)
 
                 wait = ((target - first_possible_time) // 8) * 8
                 if wait != 0 and math.isfinite(wait):

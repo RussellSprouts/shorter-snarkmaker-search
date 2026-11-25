@@ -257,6 +257,12 @@ argparser.add_argument(
     action=argparse.BooleanOptionalAction,
     help="Searches for armless recipes instead of OGGCA recipes."
 )
+argparser.add_argument(
+    "--builtin-recipes",
+    default=True,
+    action=argparse.BooleanOptionalAction,
+    help="Include some built-in recipes"
+)
 
 args = argparser.parse_args()
 
@@ -619,6 +625,8 @@ if args.print_rle:
             'sc_push50': 'mode sc, 0, 126, 162, 175, 179, 111, 104, 91, 105, 91, (90)',
         }
     }
+    if not args.builtin_recipes:
+        macros = {}
     green_patt = lt.pattern("")
     red_patt = lt.pattern("")
     recipes = args.print_rle.split(";")
