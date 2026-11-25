@@ -292,7 +292,8 @@ if __name__ == '__main__':
                 """INSERT INTO recipe_objects(recipe, object, depth) VALUES (?, ?, ?)""",
                 ((recipe_id, object_ids[object], depth) for object, depth in objects)
             )
-            if recipe_id % 1000 == 0:
+            if recipe_id % 10000 == 0:
+                print(f"Finished {blob_to_recipe(recipe)}")
                 conn.commit()
             recipe_id += 1
         conn.commit()
