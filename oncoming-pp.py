@@ -114,6 +114,11 @@ argparser.add_argument(
     type=int,
     default=0
 )
+argparser.add_argument(
+    "--include-kickforward-glider",
+    default=True,
+    action=argparse.BooleanOptionalAction
+)
 
 args = argparser.parse_args()
 simulate_gens = args.simulate_gens or args.toolkit.period * args.n_gun_gliders
@@ -306,8 +311,8 @@ def parse_objects(objs):
         obj = parse_object(o)
         if obj['name'] in gun_glider_names:
             gun_gliders.add(obj['name'])
-        #elif obj['info'] == '(l0)(ph3)(♗⬂①)':
-        #    bonus.append(obj)
+        elif not args.include_kickforward_glider and obj['info'] == '(l0)(ph3)(♗⬂①)':
+            bonus.append(obj)
         else:
             results.append(obj)        
     for i in range(0, n_gun_gliders):

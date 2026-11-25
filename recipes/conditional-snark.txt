@@ -1,0 +1,53 @@
+let else_snark(d0) =
+    let swim_4 = 100, 143, 94, 117, swim 4, (90) in
+    let swim_5 = 103, 131, 119, 125, swim 5, (130) in
+    let swim_6 = 99, 238, 190, 103, swim 6, (90) in
+    let swim_7 = 99, 243, 125, 243, swim 7, (123) in
+
+    let g1a(d35) = 99, 198, 97, 124, swim 4, (90) in # (requires state 1) # (to state 1)
+    let g1b(d39) = 98, 92, 133, 104, 99, swim 4, (90) in # (to state 1)
+    let g1d(d35) = 99, 198, 97, 114, 90, swim 5, (90) in # (requires state 1) # (to state 1)
+    let g1f(d15) = 99, 196, 106, 123, 90, swim 5, (90) in # (requires state 1) # (to state 1)
+    let g1l(d39) = 99, 235, 129, 96, 95, swim 5, (90) in
+    let g1ll(d27) = 99, 249, 103, 107, 136, swim 7, (264) in # (to state 1)
+    let g1lll(d15) = 99, 196, 148, 230, 253, swim 8, (271) in # (requires state 1)
+    let g1n(d25) = 99, 174, 153, 103, 117, swim 6, (100) in # (requires state 1) # (to state 1)
+    let g1z(d7) = 98, 209, 196, 141, 146, swim 7, (90) in # (requires state 1) # (to state 1)
+    let g2b(d13) = 103, 139, 151, 229, swim 5, (90) in # (requires state 1) # (to state 1)
+    let g2c(d47) = 100, 140, 105, 103, 182, swim 5, (123) in # (to state 1)
+    let g2g(d-9) = 98, 151, 92, 134, 235, swim 6, (96) in # (requires state 1)
+    let g2k(d27) = 103, 131, 119, 159, 222, swim 6, (90) in # (requires state 1) # (to state 1)
+    let g2p(d13) = 103, 139, 151, 238, 135, swim 6, (90) in # (requires state 1)
+    let g3a(d18) = 103, 131, 119, 135, 158, swim 6, (90) in # (requires state 1) # (to state 1)
+    let g3b(d34) = 98, 101, 245, 125, 117, swim 6, (90) in
+    let g3e(d42) = 99, 253, 129, 102, 143, swim 7, (124) in # (to state 1)
+    let g3i(d26) = 98, 188, 252, 177, 235, swim 8, (150) in
+    let g4e(d58) = 103, 134, 138, 91, 108, swim 4, (90) in # (to state 1)
+    let g4h(d48) = 103, 94, 138, 143, 112, swim 4, (90) in
+    let g4ii(d16) = 98, 127, 253, 105, 207, swim 6, (90) in # (to state 1)
+    let g4j(d32) = 100, 153, 138, 122, 93, swim 4, (90) in # (requires state 1) # (to state 1)
+    let g4k(d10) = 98, 187, 138, 91, 108, swim 6, (90) in # (requires state 1) # (to state 1)
+    let g4m(d34) = 102, 92, 187, 138, 127, swim 5, (90) in # (to state 1)
+    let g4rr(d36) = 99, 215, 104, 239, 109, swim 6, (131) in # (requires state 1)
+    let g4u(d52) = 102, 94, 142, 241, 99, swim 5, (90) in # (requires state 1)
+    let g4v(d24) = 99, 197, 100, 158, 124, swim 5, (90) in # (requires state 1) # (to state 1)
+    let g4y(d28) = 100, 152, 105, 138, 191, swim 5, (90) in # (requires state 1) # (to state 1)
+    g4e(d0),    g4v(d-10),  g4y(d14),   g3a(d24),   g4k(d2),    g1a(d1),    g1d(d15),   g1a(d13),   g4k(d8),    g1a(d15),   
+    g1n(d13),   g1a(d13),   g2k(d15),   g1f(d11),   g2b(d17),   g1z(d19),   g2p(d21),   swim_7,     swim_5,     g1b(d9),    
+    g2p(d17),   swim_7,     swim_5,     g3e(d18),   g3a(d14),   g4k(d-10),  g3a(d-10),  g1f(d-19),  g4k(d-22),  g2b(d-21),  
+    g3a(d-12),  g3a(d-8),   g2p(d-9),   swim_7,     swim_5,     g4h(d-12),  g3i(d-8),   swim_5,     g1b(d-7),   g3a(d-6),   
+    g1f(d-21),  g4k(d-10),  g1f(d-17),  g4u(d32),   g4m(d34),   g4k(d34),   g3a(d22),   g3a(d14),   g1a(d23),   g1f(d11),   
+    g1lll(d19), swim_7,     swim_5,     g4ii(d14),  g3a(d34),   g4j(d40),   g2g(d29),   swim_7,     swim_5,     g3b(d28),   
+    g2c(d31),   g4rr(d44),  swim_5,     g1ll(d35),  g4k(d30),   g4rr(d30),  swim_7,     swim_7,     swim_5,     g4h(d-4),   
+    swim_7,     g1b(d-13),  g2p(d-9),   swim_5,     g3i(d-8),   swim_5,     g3e(d0),    g2p(d-5),   swim_7,     swim_5,     
+    g4m(d-22),  g1d(d7),    g1a(d13),   g1f(d3),    g4k(d6),    g4rr(d10),  swim_5,     g4m(d6),    g2p(d1),    swim_7,     
+    swim_4,     g3e(d6),    g1a(d-15),  g4k(d-20),  g3a(d-28),  g1a(d-19),  g3a(d-26),  g4u(d-10),  g1l(d1)
+
+in
+
+let block(l13, d19) = 3, 93, 92, 90, swim 3, (90) in
+let if_block(l13, d-7) = 3, 104, 211, swim 4, (90) in
+
+if_block(l13, d1)
+
+else_snark(d200)
