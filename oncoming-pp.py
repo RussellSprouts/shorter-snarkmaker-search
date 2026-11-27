@@ -16,7 +16,7 @@ from lifetree import lt
 from gliders import mk_glider, single_channel_stream, rewind_glider, offset_based_on_glider
 
 argparser = argparse.ArgumentParser(
-    prog="oncoming.py", description="Search for glider patterns"
+    prog="oncoming-pp.py", description="Search for glider patterns"
 )
 
 class ToolkitDef:
@@ -81,6 +81,11 @@ argparser.add_argument(
 )
 argparser.add_argument(
     "--process-objects",
+    default=False,
+    action=argparse.BooleanOptionalAction
+)
+argparser.add_argument(
+    "--allow-multiple-objects",
     default=False,
     action=argparse.BooleanOptionalAction
 )
@@ -423,9 +428,10 @@ if __name__ == '__main__':
                     raise SyntaxError(f"Invalid line: {line}")
                 stream = tuple(map(int, filter(bool, m.group(1).split(','))))
                 info = parse_objects(m.group(2) or '')
-                if args.process_objects and len(info['objects']) == 1:
-                    obj_info = parse_object_info(info['objects'][0]['info'])
-                    item = f"{info['objects'][0]['name']}(l{obj_info.lane},o{obj_info.orientation},p{obj_info.phase})"
+                if args.process_objects and (len(info['objects']) == 1 or args.allow_multiple_objects):
+                    obj = info['objects'][0]
+                    obj_info = parse_object_info(['info'])
+                    item = f"{obj['name']}(l{obj_info.lane},o{obj_info.orientation},p{obj_info.phase})"
                     recipe_store = recs[item]
                     if not recipe_store.could_beat(sum(stream[1:]) + args.toolkit.min_spacing, obj_info.depth):
                         continue
@@ -441,8 +447,8 @@ if __name__ == '__main__':
                         minimum_follow,
                         total_time,
                         info['consumed'],
-                        info['objects'][0]['info'] if info['objects'] else '',
-                        object=info['objects'][0]['name'],
+                        obj['info'] if info['objects'] else '',
+                        object=obj['name'],
                         obj_info=obj_info
                     )
                     recs[item].append(desc)
