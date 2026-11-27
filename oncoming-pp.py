@@ -469,7 +469,7 @@ if __name__ == '__main__':
                     )
                     print(desc)
                     recs[info['objects'][0]['info'].split('(')[-1][:-1]].append(desc)
-                elif len(info['objects']) == 1 and info['objects'][0]['name'] in ('lwss', 'xq4_27dee6', 'xq4_27deee6'):
+                elif len(info['objects']) == 1 and info['objects'][0]['name'] in ('lwss', 'xq4_27dee6', 'xq4_27deee6','a:lwss', 'a:xq4_27dee6', 'a:xq4_27deee6'):
                     # an xwss
                     minimum_follow = find_minimum_follow(m.group(1), info['consumed'])
                     if not minimum_follow: continue
